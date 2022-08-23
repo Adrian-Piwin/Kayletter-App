@@ -1,8 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore'
 
-var noteList = []
-
 window.addEventListener("load", function(event) {
     let btnAddNote = document.getElementById("btnAddNote")
     let btnFinish = document.getElementById("btnFinish")
@@ -26,6 +24,7 @@ const firebaseApp = initializeApp({
 
 const db = getFirestore();
 
+// Return list of notes from db 
 async function dbGetNotes(code){
     const colRef = collection(db, code)
 
@@ -38,9 +37,11 @@ async function dbGetNotes(code){
     return data
 }
 
+// Add note to db
 function dbAddNote(code, val){
     const colRef = collection(db, code)
 
+    // Get current date
     let currentDate = new Date()
     let cDay = currentDate.getDate()
     let cMonth = currentDate.getMonth() + 1
@@ -54,8 +55,9 @@ function dbAddNote(code, val){
     });
 }
 
-function deleteData(val){
-    const docRef = doc(db, 'safe-code', val)
+// Delete note from db
+function dbDelNote(code, val){
+    const docRef = doc(db, code, val)
 
     deleteDoc(docRef)
 }
@@ -68,42 +70,82 @@ function addNote(){
     noteContainer.appendChild(note)
 }
 
-// Apply changes to the given code
+// Apply changes for the current code
 function finish(){
     let code = document.getElementById("inputCode").value
-    let nodeContainer = document.getElementById("noteContainer")
+    let currentNotes = getCurrentNotes()
+    console.log(currentNotes)
 
-    // Add each note found in container to the database
-    for (let i = 0; i < nodeContainer.children.length; i++){
-        if (nodeContainer.children[i].value != "")
-            dbAddNote(code, nodeContainer.children[i].value)
-    }
+    dbGetNotes(code).then(notes => {
+        // Delete notes from db
+        for (let i = 0; i < notes.length; i++){
+            dbDelNote(code, notes[i].id)
+        }
+
+        // Add each note 
+        for (let i = 0; i < currentNotes.length; i++){
+            dbAddNote(code, currentNotes[i])
+        }
+
+        displayMsg("Notes updated")
+    });
 }
 
-// Load notes for this code 
+// Load notes for the given code 
 function loadNotes(){
     let code = document.getElementById("inputCode").value
+    if (code == "") {
+        displayMsg("Valid code required")
+        return
+    }
+
     dbGetNotes(code).then(notes => {
+        if (notes.length == 0){
+            displayMsg("No notes found for this code")
+            return
+        }
+
+        clearNotes()
         let noteContainer = document.getElementById("noteContainer").children
 
-        for (let i = 0; i < notes.length; i++){
-            if (noteContainer[i].value != undefined) {
-                noteContainer[i].value = notes[i].note
-            }
-            else{
+        // Create as many notes as needed
+        let diff = noteContainer.length - notes.length
+        if (diff < 0){
+            for (let i = 0; i < diff*-1; i++){
                 addNote()
-                noteContainer = document.getElementById("noteContainer").children
-                noteContainer[i].value = notes[i].note
             }
         }
 
-        noteList = notes
+        // Fill notes with notes found in database
+        for (let i = 0; i < notes.length; i++){
+            noteContainer[i].value = notes[i].note
+        }
     });
-
-    
-    
 }
 
+// Return list of notes in note container
+function getCurrentNotes(){
+    let noteContainer = document.getElementById("noteContainer");
+    let noteList = []
+    for (let i = 0; i < noteContainer.children.length; i++){
+        if (noteContainer.children[i].value != '' && noteContainer.children[i].value != null)
+            noteList.push(noteContainer.children[i].value)
+    }
+    return noteList
+}
 
+// Clear notes on page
+function clearNotes(){
+    let noteContainer = document.getElementById("noteContainer");
+    for (let i = 0; i < noteContainer.children.length; i++){
+        noteContainer.children[i].value = ''
+    }
+}
+
+// Display message to user
+function displayMsg(msg){
+    let resultMsg = document.getElementById("resultMsg");
+    resultMsg.innerHTML = msg 
+}
 
 
