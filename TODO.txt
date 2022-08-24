@@ -1,0 +1,5 @@
+- Add effect when new note is revealed
+- Display how many hours until new note is revealed
+- Add something when flower is tapped
+- Ability to change image
+- Add mobile styles
