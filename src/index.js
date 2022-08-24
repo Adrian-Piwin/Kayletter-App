@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query, orderBy, doc } from 'firebase/firestore'
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query, getDoc, orderBy, doc, setDoc } from 'firebase/firestore'
 
 var utilityObj = new Utility()
 var textPromptObj = null
+var currentCode = null
 var noteList = []
 var currentNoteIndex = 0
 var lastReadNoteIndex = 0
@@ -30,7 +31,8 @@ window.addEventListener("load", function(event) {
         leftArrow.addEventListener('click', leftArrowClick)
         rightArrow.addEventListener('click', rightArrowClick)
 
-        displayPageLoad("test")
+        currentCode = "test"
+        displayPageLoad()
     }
 
 });
@@ -76,11 +78,27 @@ function dbAddNote(code, val){
     });
 }
 
+// Store a variable associated with this code to db
+function dbAddVariable(code, varName, value){
+    const docRef = doc(db, code, "variables")
+    setDoc(docRef, {[varName]: value}, {merge: true})
+}
+
+// Retrieve a variable associated with this code to db
+async function dbGetVariable(code, varName){
+    const docRef = doc(db, code, "variables")
+    const snapshot = await getDoc(docRef)
+
+    if (snapshot.exists()){
+        return snapshot.data()[varName]
+    }
+    return ""
+}
+
 // Update note from db
 function dbUpdateNote(code, noteId, newNote){
     const docRef = doc(db, code, noteId);
 
-    // Set the "capital" field of the city 'DC'
     updateDoc(docRef, {
         note: newNote
     });
@@ -118,6 +136,7 @@ function addNote(){
 // Apply changes for the current code
 function updateNotes(){
     let code = document.getElementById("inputCode").value
+    let pageTitle = document.getElementById("inputTitle").value
     let currentNotes = getCurrentNotes()
 
     dbGetNotes(code).then(notes => {
@@ -136,6 +155,9 @@ function updateNotes(){
                     dbAddNote(code, currentNotes[i])
             }
         }
+
+        // Store title
+        dbAddVariable(code, "pageTitle", pageTitle)
 
         utilityObj.Toast("Notes updated", 4)
     });
@@ -165,21 +187,28 @@ function loadNotes(){
                 addNote()
             }
         }
-
+ 
         // Fill notes with notes found in database
         for (let i = 0; i < notes.length; i++){
             noteContainer[i].value = notes[i].note
         }
     });
+
+    // Load title and display
+    dbGetVariable(code, "pageTitle").then(title => {
+        let titleElm = document.getElementById("inputTitle")
+        titleElm.value = title
+    })
 }
 
 /* ==== DISPLAY PAGE ====*/ 
 
-function displayPageLoad(code){
-    dbGetNotes(code).then(notes => {
+function displayPageLoad(){
+    // Load notes and display
+    dbGetNotes(currentCode).then(notes => {
         // Set first note as read if not done
         if (notes[0].read == false)
-            dbReadNote(code, notes[0].id)
+            dbReadNote(currentCode, notes[0].id)
 
         // Display last read note
         for (let i = 0; i < notes.length; i++){
@@ -193,6 +222,12 @@ function displayPageLoad(code){
 
         // Store notes
         noteList = notes
+    })
+
+    // Load title and display
+    dbGetVariable(currentCode, "pageTitle").then(title => {
+        let titleElm = document.getElementById("title")
+        titleElm.innerHTML = title
     })
 }
 
@@ -221,9 +256,9 @@ function rightArrowClick(){
     let lastReadNote = noteList[lastReadNoteIndex]
     // If next note has not been read
     // Check if it has been a day since reading most recently read note
-    if ((lastReadNote.readOn / 1000 + 86400) < getCurrentDate() / 1000){
+    if (((lastReadNote.readOn / 1000) + 86400) < getCurrentDate() / 1000){
         textPromptObj.EnterText(noteList[lastReadNoteIndex+1].note)
-        dbReadNote(code, noteList[lastReadNoteIndex+1].id)
+        dbReadNote(currentCode, noteList[lastReadNoteIndex+1].id)
         currentNoteIndex++
     }else{
         utilityObj.Toast("Check for a new note tomorrow", 4)
