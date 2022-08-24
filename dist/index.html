@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="bundle.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="snackbar-styles.css">
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
     <title>Lakay</title>
 </head>
 <body>
@@ -20,26 +24,31 @@
         <div>Code: </div>
         <input id="inputCode" type="text">
     </div>
+
+    <div id="codeContainer">
+        <div>Title: </div>
+        <input id="inputTitle" type="text">
+    </div>
         
     <div id="noteContainer">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
-        <input class="w3-input" type="text">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
+        <input class="w3-input" type="text" maxlength="420">
     </div>
 
     <div>
-        <button id="btnAddNote">Add Note</button>
         <button id="btnLoadNotes">Load Notes</button>
+        <button id="btnUpdateNotes">Update Notes</button>
     </div>
-    <button style="margin-top: -12px;" id="btnFinish">Finish</button>
+    <button style="margin-top: -12px;" id="btnAddNote">Add Note</button>
 
-    <div id="resultMsg"></div>
+    <div id="snackbar"></div>
 
 </body>
 </html>
