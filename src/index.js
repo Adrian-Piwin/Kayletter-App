@@ -260,8 +260,13 @@ function rightArrowClick(){
         textPromptObj.EnterText(noteList[lastReadNoteIndex+1].note)
         dbReadNote(currentCode, noteList[lastReadNoteIndex+1].id)
         currentNoteIndex++
+
+        // Play animation on new note revealed
+        utilityObj.PlayAnimation(document.getElementById("msgBackgroundEffect"), "fadeInOut", "5", "ease-in-out")
     }else{
-        utilityObj.Toast("Check for a new note tomorrow", 4)
+        // Get time to wait in hours
+        let timeLeft = ((((lastReadNote.readOn / 1000) + 86400) - (getCurrentDate() / 1000)) / 60) / 60
+        utilityObj.Toast("New note available in " + Math.floor(timeLeft) + " hours", 4)
     }
 }
 

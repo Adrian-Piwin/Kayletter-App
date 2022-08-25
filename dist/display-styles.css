@@ -27,14 +27,26 @@ body{
 }
 
 #flowerContainer{
+    position: relative;
     animation: fadeIn ease-in-out 1s;
     animation-iteration-count: 1;
     animation-fill-mode: forwards;
 }
 
-#flowerContainer img{
+#flower{
     padding: 10px;
     width: 600px;
+}
+
+#msgBackgroundEffect{
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    transform: translate(-50%, -50%);
+    z-index: -10;
+
+    width: 500px;
+    opacity: 0;
 }
 
 #msgContainer{
@@ -111,8 +123,17 @@ body{
      }
 }
 
-@keyframes fadeOut {
+@keyframes fadeInOut {
     0% {
+        opacity: 0;
+    }
+    25% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+    }
+    75%{
         opacity: 1;
     }
     100% {
