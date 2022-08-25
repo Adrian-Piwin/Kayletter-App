@@ -36,6 +36,12 @@ body{
     gap: 20px;
 }
 
+#outputUsername{
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
 #title{
     width: 100%;
     font-size: 60px;
@@ -44,7 +50,9 @@ body{
     font-family: 'Indie Flower', cursive;
 }
 
-#codeContainer{
+.itemContainer{
+    display: flex;
+    align-items: center;
     text-align: center;
     gap: 10px;
 }
@@ -81,6 +89,7 @@ body{
 }
 
 button{
+    height: 30px;
     width: 120px;
     border-radius: 15px;
 }
@@ -91,4 +100,9 @@ button:hover{
 
 button:active {
     transform: translateY(3px);
+}
+
+input{
+    border: black 2px solid;
+    width: 150px;
 }

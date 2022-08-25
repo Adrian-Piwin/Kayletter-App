@@ -14,23 +14,28 @@
     <title>Lakay</title>
 </head>
 <body>
+    <div id="outputUsername">Not signed in</div>
     <div id="title">Create Notes</div>
 
     <div id="flowerContainer">
         <img src="/dist/flowers/sunflower.gif" alt="">
     </div>
 
-    <div id="codeContainer">
-        <div>Code: </div>
-        <input id="inputCode" type="text">
+    <div class="itemContainer signedInHidden">
+        <input id="inputUsername" placeholder="Username" type="text">
+        <input id="inputPassword" placeholder="Password" type="text">
     </div>
 
-    <div id="codeContainer">
-        <div>Title: </div>
-        <input id="inputTitle" type="text">
+    <div class="itemContainer signedInHidden">
+        <button id="btnSignIn">Sign In</button>
+        <button id="btnSignUp">Sign Up</button>
     </div>
-        
-    <div id="noteContainer">
+
+    <div class="itemContainer signedOutHidden">
+        <input id="inputTitle" placeholder="Title" type="text">
+    </div>
+    
+    <div id="noteContainer" class="signedOutHidden">
         <input class="w3-input" type="text" maxlength="420">
         <input class="w3-input" type="text" maxlength="420">
         <input class="w3-input" type="text" maxlength="420">
@@ -42,11 +47,15 @@
         <input class="w3-input" type="text" maxlength="420">
     </div>
 
-    <div>
-        <button id="btnLoadNotes">Load Notes</button>
-        <button id="btnUpdateNotes">Update Notes</button>
+    <div class="itemContainer signedOutHidden">
+        <div>Your display page URL:</div>
+        <a id="outputDisplayPageLink"></a>
     </div>
-    <button style="margin-top: -12px;" id="btnAddNote">Add Note</button>
+
+    <div class="itemContainer signedOutHidden">
+        <button id="btnAddNote">Add Note</button>
+        <button id="btnSaveChanges" class="signedOutHidden">Save</button>
+    </div>
 
     <div id="snackbar"></div>
 

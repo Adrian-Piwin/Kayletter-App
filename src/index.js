@@ -7,6 +7,12 @@ var currentCode = null
 var noteList = []
 var currentNoteIndex = 0
 var lastReadNoteIndex = 0
+var currentUser = ""
+
+// Strings to access variables from db
+var dbVarPassword = "password"
+var dbVarPageTitle = "pageTitle"
+var dbVarDisplayPageId = "displayPageId"
 
 window.addEventListener("load", function(event) {
 
@@ -15,24 +21,38 @@ window.addEventListener("load", function(event) {
     
     if (page == "index.html"){
         let btnAddNote = document.getElementById("btnAddNote")
-        let btnUpdateNotes = document.getElementById("btnUpdateNotes")
-        let btnLoadNotes = document.getElementById("btnLoadNotes")
+        let btnSaveChanges = document.getElementById("btnSaveChanges")
+        let btnSignIn = document.getElementById("btnSignIn")
+        let btnSignUp = document.getElementById("btnSignUp")
 
         btnAddNote.addEventListener('click', addNote)
-        btnUpdateNotes.addEventListener('click', updateNotes)
-        btnLoadNotes.addEventListener('click', loadNotes)
+        btnSaveChanges.addEventListener('click', updateNotes)
+        btnSignIn.addEventListener('click', signIn)
+        btnSignUp.addEventListener('click', signUp)
+
+        hideElements("signedOutHidden", true)
     }else if (page == "display.html"){
         let leftArrow = document.getElementById("leftArrow")
         let rightArrow = document.getElementById("rightArrow")
+        let flower = document.getElementById("flowerContainer")
         let msgElm = document.getElementById("msg")
 
         textPromptObj = new TextPrompt(msgElm)
 
         leftArrow.addEventListener('click', leftArrowClick)
         rightArrow.addEventListener('click', rightArrowClick)
+        flower.addEventListener('dblclick', flowerDblClick)
 
-        currentCode = "test"
-        displayPageLoad()
+        // Get display id from URL
+        let params = location.search
+        params = params.substring(params.indexOf("=") + 1);
+
+        if (params == undefined){
+            utilityObj.Toast("Page does not exist")
+        }else{
+            currentCode = window.atob( params );
+            displayPageLoad()
+        }
     }
 
 });
@@ -79,7 +99,7 @@ function dbAddNote(code, val){
 }
 
 // Store a variable associated with this code to db
-function dbAddVariable(code, varName, value){
+function dbSetVariable(code, varName, value){
     const docRef = doc(db, code, "variables")
     setDoc(docRef, {[varName]: value}, {merge: true})
 }
@@ -135,7 +155,10 @@ function addNote(){
 
 // Apply changes for the current code
 function updateNotes(){
-    let code = document.getElementById("inputCode").value
+    if (currentUser == "")
+        return
+
+    let code = currentUser
     let pageTitle = document.getElementById("inputTitle").value
     let currentNotes = getCurrentNotes()
 
@@ -157,23 +180,18 @@ function updateNotes(){
         }
 
         // Store title
-        dbAddVariable(code, "pageTitle", pageTitle)
+        dbSetVariable(code, dbVarPageTitle, pageTitle)
 
         utilityObj.Toast("Notes updated", 4)
     });
 }
 
-// Load notes for the given code 
-function loadNotes(){
-    let code = document.getElementById("inputCode").value
-    if (code == "") {
-        utilityObj.Toast("Valid code required", 4)
-        return
-    }
+// Load all db data for current user
+function loadUser(){
+    let code = currentUser
 
     dbGetNotes(code).then(notes => {
         if (notes.length == 0){
-            utilityObj.Toast("No notes found for this code", 4)
             return
         }
 
@@ -195,9 +213,67 @@ function loadNotes(){
     });
 
     // Load title and display
-    dbGetVariable(code, "pageTitle").then(title => {
+    dbGetVariable(code, dbVarPageTitle).then(title => {
         let titleElm = document.getElementById("inputTitle")
         titleElm.value = title
+    })
+
+    // Load display page link
+    dbGetVariable(code, dbVarDisplayPageId).then(displayPageId => {
+        let displayPageLinkElm = document.getElementById("outputDisplayPageLink")
+        let currentHost = window.location.host;
+        displayPageLinkElm.innerHTML = currentHost + "/dist/display.html" + "?displayId=" + displayPageId
+        displayPageLinkElm.href = "/dist/display.html" + "?displayId=" + displayPageId
+    })
+}
+
+// Attempts user sign in to retrieve data from db
+function signIn(){
+    let username = document.getElementById("inputUsername").value
+    let passwordIn = document.getElementById("inputPassword").value
+
+    dbGetVariable(username, dbVarPassword).then(password => {
+        if (password == passwordIn){
+            utilityObj.Toast("Signed in successfully", 3)
+        }
+        else if (password == ""){
+            utilityObj.Toast("User does not exist", 3)
+            return
+        }
+        else {
+            utilityObj.Toast("Incorrect password", 3)
+            return
+        }
+
+        currentUser = username
+        document.getElementById("outputUsername").innerHTML = "User: " + currentUser
+        hideElements("signedOutHidden", false)
+        hideElements("signedInHidden", true)
+        loadUser()
+    })
+}
+
+// Signs user up to db if username does not already exist
+function signUp(){
+    let username = document.getElementById("inputUsername").value
+    let passwordIn = document.getElementById("inputPassword").value
+
+    dbGetVariable(username, dbVarPassword).then(password => {
+        // If there is no account for this username, create one
+        if (password == ""){
+            dbSetVariable(username, dbVarPassword, passwordIn)
+            dbSetVariable(username, dbVarDisplayPageId, window.btoa( username ))
+            utilityObj.Toast("User created successfully", 3)
+        }
+        else{
+            utilityObj.Toast("User already exists, try a different username", 3)
+            return
+        }
+
+        currentUser = username
+        document.getElementById("outputUsername").innerHTML = "User: " + currentUser
+        hideElements("signedOutHidden", false)
+        hideElements("signedInHidden", true)
     })
 }
 
@@ -225,7 +301,7 @@ function displayPageLoad(){
     })
 
     // Load title and display
-    dbGetVariable(currentCode, "pageTitle").then(title => {
+    dbGetVariable(currentCode, dbVarPageTitle).then(title => {
         let titleElm = document.getElementById("title")
         titleElm.innerHTML = title
     })
@@ -270,7 +346,24 @@ function rightArrowClick(){
     }
 }
 
+function flowerDblClick(){
+    utilityObj.PlayAnimation(document.getElementById("msgBackgroundEffect"), "fadeInOut", "5", "ease-in-out")
+}
+
 /* ==== HELP FUNCTIONS ====*/ 
+
+// Hide / Unhide all elements with a class
+function hideElements(className, isHidden){
+    let elements = document.getElementsByClassName(className)
+
+    for (let i = 0; i < elements.length; i++){
+        if (isHidden){
+            elements[i].style.opacity = "0"
+        }else{
+            elements[i].style.opacity = "1"
+        }
+    }
+}
 
 // Return list of notes in note container
 function getCurrentNotes(){
