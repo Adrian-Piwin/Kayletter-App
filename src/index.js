@@ -222,8 +222,8 @@ function loadUser(){
     dbGetVariable(code, dbVarDisplayPageId).then(displayPageId => {
         let displayPageLinkElm = document.getElementById("outputDisplayPageLink")
         let currentHost = window.location.host;
-        displayPageLinkElm.innerHTML = currentHost + "/dist/display.html" + "?displayId=" + displayPageId
-        displayPageLinkElm.href = "/dist/display.html" + "?displayId=" + displayPageId
+        displayPageLinkElm.innerHTML = currentHost + "/display.html" + "?displayId=" + displayPageId
+        displayPageLinkElm.href = "/display.html" + "?displayId=" + displayPageId
     })
 }
 
@@ -289,7 +289,7 @@ function displayPageLoad(){
         // Display last read note
         for (let i = 0; i < notes.length; i++){
             if (notes[i].read == true && notes[i+1] != undefined ? notes[i+1].read == false : true){
-                textPromptObj.EnterText(notes[i].note)
+                setTimeout(textPromptObj.EnterText(notes[i].note), 3000)
                 currentNoteIndex = i
                 lastReadNoteIndex = i
                 break
