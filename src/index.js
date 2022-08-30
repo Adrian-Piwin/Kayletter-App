@@ -51,7 +51,8 @@ window.addEventListener("load", function(event) {
             utilityObj.Toast("Page does not exist")
         }else{
             currentCode = window.atob( params );
-            displayPageLoad()
+            displayLoadTitle()
+            setTimeout(displayLoadNotes, 2000)
         }
     }
 
@@ -279,7 +280,7 @@ function signUp(){
 
 /* ==== DISPLAY PAGE ====*/ 
 
-function displayPageLoad(){
+function displayLoadNotes(){
     // Load notes and display
     dbGetNotes(currentCode).then(notes => {
         // Set first note as read if not done
@@ -289,7 +290,7 @@ function displayPageLoad(){
         // Display last read note
         for (let i = 0; i < notes.length; i++){
             if (notes[i].read == true && notes[i+1] != undefined ? notes[i+1].read == false : true){
-                setTimeout(textPromptObj.EnterText(notes[i].note), 3000)
+                textPromptObj.EnterText(notes[i].note)
                 currentNoteIndex = i
                 lastReadNoteIndex = i
                 break
@@ -299,7 +300,9 @@ function displayPageLoad(){
         // Store notes
         noteList = notes
     })
+}
 
+function displayLoadTitle(){
     // Load title and display
     dbGetVariable(currentCode, dbVarPageTitle).then(title => {
         let titleElm = document.getElementById("title")
@@ -424,8 +427,8 @@ function Utility(){
 function TextPrompt(element){
     this.element = element;
     this.typingTimeoutIds = [];
-    this.typeInterval = 80;
-    this.deleteInterval = 50;
+    this.typeInterval = 50;
+    this.deleteInterval = 20;
 
     // Start typing if empty, or delete then start typing
     this.EnterText = function(text){
@@ -439,7 +442,7 @@ function TextPrompt(element){
             // Type new text once delete is finished
             setTimeout(() => {
                 this.TypeText(text);
-            }, timeToDel+200);
+            }, timeToDel+500);
         }
         else{
             this.TypeText(text);
