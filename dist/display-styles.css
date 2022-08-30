@@ -84,10 +84,11 @@ body{
 
 #leftArrow{
     left: 0;
+    transform: translateY(-50%) scaleX(-1);
 }
 
 #leftArrow:active{
-    left: -10px;
+    left: -5px;
 }
 
 #rightArrow{
@@ -95,7 +96,7 @@ body{
 }
 
 #rightArrow:active{
-    right: -10px;
+    right: -5px;
 }
 
 #msg{
