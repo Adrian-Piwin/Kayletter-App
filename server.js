@@ -1,7 +1,7 @@
 var path = require("path");
 var express = require("express");
 
-var DIST_DIR = path.join(__dirname, "dist");
+var PUBLIC_DIR = path.join(__dirname, "dist");
 var PORT = 80;
 var app = express();
 
@@ -13,6 +13,8 @@ app.get('/', function (req, res) {
 });
 
 //Serving the files on the dist folder
-app.use(express.static(DIST_DIR));
+app.use(express.static(PUBLIC_DIR));
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log('Running on port ' + PORT);
+})

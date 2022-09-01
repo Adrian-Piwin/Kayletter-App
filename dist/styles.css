@@ -42,6 +42,22 @@ body{
     right: 5px;
 }
 
+#btnHelp{
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    text-align: center;
+    font-size: 25px;
+    width: 40px;
+    height: 40px;
+    border: black 2px solid;
+    border-radius: 20px;
+}
+
+#btnHelp :hover{
+    cursor: pointer;
+}
+
 #title{
     width: 100%;
     font-size: 60px;
@@ -105,4 +121,20 @@ button:active {
 input{
     border: black 2px solid;
     width: 150px;
+}
+
+@media only screen and (max-width: 600px) {
+    #flowerContainer{
+        display: none;
+    }
+
+    #noteContainer{
+        width: 90%;
+    }
+
+    #btnHelp{
+        font-size: 22px;
+        width: 35px;
+        height: 35px;
+    }
 }

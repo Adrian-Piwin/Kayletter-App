@@ -24,11 +24,13 @@ window.addEventListener("load", function(event) {
         let btnSaveChanges = document.getElementById("btnSaveChanges")
         let btnSignIn = document.getElementById("btnSignIn")
         let btnSignUp = document.getElementById("btnSignUp")
+        let btnHelp = document.getElementById("btnHelp")
 
         btnAddNote.addEventListener('click', addNote)
         btnSaveChanges.addEventListener('click', updateNotes)
         btnSignIn.addEventListener('click', signIn)
         btnSignUp.addEventListener('click', signUp)
+        btnHelp.addEventListener('click', help)
 
         hideElements("signedOutHidden", true)
     }else if (page == "display.html"){
@@ -187,11 +189,9 @@ function updateNotes(){
     });
 }
 
-// Load all db data for current user
-function loadUser(){
-    let code = currentUser
-
-    dbGetNotes(code).then(notes => {
+// Loads notes
+function loadNotes(){
+    dbGetNotes(currentUser).then(notes => {
         if (notes.length == 0){
             return
         }
@@ -210,17 +210,26 @@ function loadUser(){
         // Fill notes with notes found in database
         for (let i = 0; i < notes.length; i++){
             noteContainer[i].value = notes[i].note
+
+            // Show what notes have been read
+            if (notes[i].read == true){
+                noteContainer[i].style.backgroundColor = "#fdfd96";
+            }
         }
     });
+}
 
+// Loads title and display page link
+function loadAttributes(){
     // Load title and display
-    dbGetVariable(code, dbVarPageTitle).then(title => {
+    dbGetVariable(currentUser, dbVarPageTitle).then(title => {
+        if (title == undefined) return;
         let titleElm = document.getElementById("inputTitle")
         titleElm.value = title
     })
 
     // Load display page link
-    dbGetVariable(code, dbVarDisplayPageId).then(displayPageId => {
+    dbGetVariable(currentUser, dbVarDisplayPageId).then(displayPageId => {
         let displayPageLinkElm = document.getElementById("outputDisplayPageLink")
         let currentHost = window.location.host;
         displayPageLinkElm.innerHTML = currentHost + "/display.html" + "?displayId=" + displayPageId
@@ -250,7 +259,8 @@ function signIn(){
         document.getElementById("outputUsername").innerHTML = "User: " + currentUser
         hideElements("signedOutHidden", false)
         hideElements("signedInHidden", true)
-        loadUser()
+        loadNotes()
+        loadAttributes()
     })
 }
 
@@ -275,7 +285,12 @@ function signUp(){
         document.getElementById("outputUsername").innerHTML = "User: " + currentUser
         hideElements("signedOutHidden", false)
         hideElements("signedInHidden", true)
+        loadAttributes()
     })
+}
+
+function help(){
+    utilityObj.Toast("Create an account, set a title and write as many notes as you want\nOnce finished, press save and you can see the notes output page with the display link\nOn this page, notes that have been read will be highlighted", 10)
 }
 
 /* ==== DISPLAY PAGE ====*/ 
@@ -361,9 +376,9 @@ function hideElements(className, isHidden){
 
     for (let i = 0; i < elements.length; i++){
         if (isHidden){
-            elements[i].style.opacity = "0"
+            elements[i].style.display = "none"
         }else{
-            elements[i].style.opacity = "1"
+            elements[i].style.display = ""
         }
     }
 }
