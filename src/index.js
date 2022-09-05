@@ -178,7 +178,7 @@ function updateNotes(){
         if (currentNotes.length > notes.length){
             for (let i = notes.length; i < currentNotes.length; i++){
                 if (currentNotes[i] != '')
-                    dbAddNote(code, currentNotes[i])
+                    setTimeout(dbAddNote, 100, code, currentNotes[i])
             }
         }
 
