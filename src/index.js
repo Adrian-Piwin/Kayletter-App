@@ -20,19 +20,18 @@ window.addEventListener("load", function(event) {
     var page = path.split("/").pop();
     
     if (page == "index.html"){
-        let btnAddNote = document.getElementById("btnAddNote")
         let btnSaveChanges = document.getElementById("btnSaveChanges")
         let btnSignIn = document.getElementById("btnSignIn")
         let btnSignUp = document.getElementById("btnSignUp")
         let btnHelp = document.getElementById("btnHelp")
 
-        btnAddNote.addEventListener('click', addNote)
         btnSaveChanges.addEventListener('click', updateNotes)
         btnSignIn.addEventListener('click', signIn)
         btnSignUp.addEventListener('click', signUp)
         btnHelp.addEventListener('click', help)
 
-        hideElements("signedOutHidden", true)
+        autoAddNote();
+
     }else if (page == "display.html"){
         let leftArrow = document.getElementById("leftArrow")
         let rightArrow = document.getElementById("rightArrow")
@@ -147,6 +146,15 @@ function dbDeleteNote(code, val){
 
 /* ==== INDEX PAGE ====*/ 
 
+// Automatically add note element
+function autoAddNote(){
+    let noteContainer = document.getElementById("noteContainer");
+
+    noteContainer.children[noteContainer.children.length-1].removeEventListener("click", autoAddNote);
+    addNote();
+    noteContainer.children[noteContainer.children.length-1].addEventListener("click", autoAddNote);
+}
+
 // Add note element on page
 function addNote(){
     let noteContainer = document.getElementById("noteContainer");
@@ -257,8 +265,6 @@ function signIn(){
 
         currentUser = username
         document.getElementById("outputUsername").innerHTML = "User: " + currentUser
-        hideElements("signedOutHidden", false)
-        hideElements("signedInHidden", true)
         loadNotes()
         loadAttributes()
     })
@@ -283,8 +289,6 @@ function signUp(){
 
         currentUser = username
         document.getElementById("outputUsername").innerHTML = "User: " + currentUser
-        hideElements("signedOutHidden", false)
-        hideElements("signedInHidden", true)
         loadAttributes()
     })
 }
