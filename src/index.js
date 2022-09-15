@@ -13,6 +13,7 @@ var lastReadNoteIndex = 0
 // Strings to access variables from db
 var dbVarPassword = "password"
 var dbVarPageTitle = "pageTitle"
+var dbVarImageURL = "imageURL"
 var dbVarUsername = "displayPageId"
 
 window.addEventListener("load", function(event) {
@@ -69,6 +70,7 @@ window.addEventListener("load", function(event) {
             utilityObj.Toast("Page does not exist",4)
         }else{
             currentCode = window.atob( params );
+            displayLoadImage()
             displayLoadTitle()
             setTimeout(displayLoadNotes, 2000)
         }
@@ -183,6 +185,8 @@ function addNote(){
 // Apply changes for the current code
 async function updateNotes(){
     let pageTitle = document.getElementById("inputTitle").value
+    let imageURL = document.getElementById("inputImageURL").value
+
     let currentNotes = getCurrentNotes()
 
     // Count how many actual notes are present
@@ -225,8 +229,10 @@ async function updateNotes(){
 
     // Store title
     dbSetVariable(currentCode, dbVarPageTitle, pageTitle)
+    // Store image url
+    dbSetVariable(currentCode, dbVarImageURL, imageURL)
 
-    utilityObj.Toast("Notes updated", 4)
+    utilityObj.Toast("Notes updated", 2)
 }
 
 // Loads notes
@@ -267,6 +273,14 @@ function loadAttributes(){
         let titleElm = document.getElementById("inputTitle")
         titleElm.value = title
     })
+
+    // Load IMG URL
+    dbGetVariable(currentCode, dbVarImageURL).then(url => {
+        if (url == undefined) return;
+        let urlElm = document.getElementById("inputImageURL")
+        urlElm.value = url
+    })
+
 }
 
 // Copy URL to clipboard
@@ -322,7 +336,7 @@ async function signUp(){
 }
 
 function help(){
-    utilityObj.Toast("Create an account, set a title and write as many notes as you want\nOnce finished, press save and you can see the notes output page with the display link\nOn this page, notes that have been read will be highlighted", 10)
+    utilityObj.Toast("Set a title and write some notes, press save.\nTo access this page again press Edit Page URL to copy your unique edit URL.\nTo see the display page press Display Page URL to copy your unique display URL.", 10)
 }
 
 /* ==== DISPLAY PAGE ====*/ 
@@ -354,6 +368,15 @@ function displayLoadTitle(){
     dbGetVariable(currentCode, dbVarPageTitle).then(title => {
         let titleElm = document.getElementById("title")
         titleElm.innerHTML = title
+    })
+}
+
+function displayLoadImage(){
+    // Load title and display
+    dbGetVariable(currentCode, dbVarImageURL).then(url => {
+        if (url == "" || url == undefined) return;
+        let imageElm = document.getElementById("flower")
+        imageElm.src = url
     })
 }
 
