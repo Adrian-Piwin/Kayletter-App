@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query, getDoc, orderBy, doc, setDoc } from 'firebase/firestore'
 
 var utilityObj = new Utility()
-var textPromptObj = null
 var currentCode = null
 var noteList = []
 
 // Display
 var currentNoteIndex = 0
 var lastReadNoteIndex = 0
+var canChangeNote = true
 
 // Strings to access variables from db
 var dbVarPassword = "password"
@@ -52,10 +52,8 @@ window.addEventListener("load", function(event) {
     }else if (page == "display.html"){
         let leftArrow = document.getElementById("leftArrow")
         let rightArrow = document.getElementById("rightArrow")
-        let flower = document.getElementById("flowerContainer")
+        let flower = document.getElementById("flower")
         let msgElm = document.getElementById("msg")
-
-        textPromptObj = new TextPrompt(msgElm)
 
         leftArrow.addEventListener('click', leftArrowClick)
         rightArrow.addEventListener('click', rightArrowClick)
@@ -72,7 +70,8 @@ window.addEventListener("load", function(event) {
             currentCode = window.atob( params );
             displayLoadImage()
             displayLoadTitle()
-            setTimeout(displayLoadNotes, 2000)
+
+            setTimeout(displayLoadNotes, 2500)
         }
     }
 
@@ -326,6 +325,9 @@ async function signUp(){
     if (password == ""){
         dbSetVariable(usernameIn, dbVarPassword, window.btoa( passwordIn ))
         dbSetVariable(usernameIn, dbVarUsername, window.btoa( usernameIn ))
+        // Store edit url as backup
+        let url = currentHost + "/index.html" + "?username=" + window.btoa(usernameIn) + "&password=" + window.btoa(passwordIn);
+        dbSetVariable(usernameIn, "EditURL", url)
     }
     else{
         return
@@ -351,7 +353,7 @@ function displayLoadNotes(){
         // Display last read note
         for (let i = 0; i < notes.length; i++){
             if (notes[i].read == true && notes[i+1] != undefined ? notes[i+1].read == false : true){
-                textPromptObj.EnterText(notes[i].note)
+                displayNote(notes[i].note)
                 currentNoteIndex = i
                 lastReadNoteIndex = i
                 break
@@ -361,6 +363,37 @@ function displayLoadNotes(){
         // Store notes
         noteList = notes
     })
+}
+
+function displayNote(note){
+    let noteTarget = document.getElementById("noteTarget");
+    let fadeTimer = 1000
+
+    if (noteTarget.innerHTML != ""){
+        utilityObj.PlayAnimation(noteTarget, "fadeOut", "1", "ease-in-out")
+    }else
+        fadeTimer = 0
+            
+    setTimeout(() => {
+        noteTarget.innerHTML = note;
+        noteTarget.style.opacity = 0;
+        setTimeout(() => {
+            noteTarget.style.opacity = 1;
+        }, 100)
+
+        var textWrapper = document.querySelector('.ml6 .letters');
+        textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
+        
+        anime.timeline({loop: false})
+            .add({
+                targets: '.ml6 .letter',
+                translateY: ["1.1em", 0],
+                translateZ: 0,
+                duration: 750,
+                opacity: [0,1],
+                delay: (el, i) => 50 * i
+            })
+    }, fadeTimer)
 }
 
 function displayLoadTitle(){
@@ -381,14 +414,30 @@ function displayLoadImage(){
 }
 
 function leftArrowClick(){
+    if (!canChangeNote) return;
+
+    // Stop user from spamming
+    canChangeNote = false; 
+    setTimeout(() => {
+        canChangeNote = true;
+    }, 1000)
+
     // Display previous note if exists
     if (noteList[currentNoteIndex-1] != undefined){
-        textPromptObj.EnterText(noteList[currentNoteIndex-1].note)
+        displayNote(noteList[currentNoteIndex-1].note)
         currentNoteIndex--
     }
 }
 
 function rightArrowClick(){
+    if (!canChangeNote) return;
+
+    // Stop user from spamming
+    canChangeNote = false; 
+    setTimeout(() => {
+        canChangeNote = true;
+    }, 1000)
+
     // Check if a new note exists
     if (noteList[currentNoteIndex+1] == undefined){
         utilityObj.Toast("No more notes for now!", 4)
@@ -397,7 +446,7 @@ function rightArrowClick(){
 
     // Check if next note has been read already, allowing to see it
     if (noteList[currentNoteIndex+1].read == true){
-        textPromptObj.EnterText(noteList[currentNoteIndex+1].note)
+        displayNote(noteList[currentNoteIndex+1].note)
         currentNoteIndex++
         return
     }
@@ -406,7 +455,7 @@ function rightArrowClick(){
     // If next note has not been read
     // Check if it has been a day since reading most recently read note
     if (((lastReadNote.readOn / 1000) + 86400) < getCurrentDate() / 1000){
-        textPromptObj.EnterText(noteList[lastReadNoteIndex+1].note)
+        displayNote(noteList[lastReadNoteIndex+1].note)
         dbReadNote(currentCode, noteList[lastReadNoteIndex+1].id)
         currentNoteIndex++
 
@@ -501,82 +550,5 @@ function Utility(){
         {
             snackbarElm.style.visibility = 'hidden';
         }, timeToShow * 1000);
-    }
-}
-
-/* ==== TEXT PROMPT OBJECT ====*/ 
-
-function TextPrompt(element){
-    this.element = element;
-    this.typingTimeoutIds = [];
-    this.typeInterval = 50;
-    this.deleteInterval = 20;
-
-    // Start typing if empty, or delete then start typing
-    this.EnterText = function(text){
-        if (this.element.innerHTML != ""){
-            // Stop current typing
-            this.ClearTimeouts();
-            // Calculate time to delete current text
-            let timeToDel = this.element.innerHTML.length * this.deleteInterval;
-            // Delete current text
-            this.DeleteText();
-            // Type new text once delete is finished
-            setTimeout(() => {
-                this.TypeText(text);
-            }, timeToDel+500);
-        }
-        else{
-            this.TypeText(text);
-        }
-    }
-
-    // Delete text
-    this.ClearText = function(){
-        // Stop current typing
-        this.ClearTimeouts();
-        // Delete all
-        this.DeleteText();
-    }
-
-    // Enter text letter by letter, with an interval
-    this.TypeText = function(text, textIndex=0){
-        // End of recursion
-        if (text.length == textIndex) {
-            return;
-        }
-
-        // Add new letter from string to element
-        let newText = this.element.innerHTML;
-        newText += text[textIndex];
-        this.element.innerHTML = newText;
-
-        // Recursion
-        this.typingTimeoutIds.push(setTimeout(() => {
-            this.TypeText(text, textIndex+1, false);
-        }, this.typeInterval));
-        
-    }
-
-    // Delete text letter by letter, with an interval
-    this.DeleteText = function(){
-        clearTimeout(this.typingTimeoutId);
-        let str = this.element.innerHTML;
-        if (str.length == 0) return;
-
-        str = str.slice(0, -1);
-        this.element.innerHTML = str;
-
-        setTimeout(() => {
-            this.DeleteText();
-        }, this.deleteInterval);
-    }
-
-    // Clear all timeouts
-    this.ClearTimeouts = function(){
-        for (let i = 0; i < this.typingTimeoutIds.length; i++){
-            clearTimeout(this.typingTimeoutIds[i]);
-        }
-        this.typingTimeoutIds = [];
     }
 }
