@@ -5,14 +5,15 @@ var utilityObj = new Utility()
 var textPromptObj = null
 var currentCode = null
 var noteList = []
+
+// Display
 var currentNoteIndex = 0
 var lastReadNoteIndex = 0
-var currentUser = ""
 
 // Strings to access variables from db
 var dbVarPassword = "password"
 var dbVarPageTitle = "pageTitle"
-var dbVarDisplayPageId = "displayPageId"
+var dbVarUsername = "displayPageId"
 
 window.addEventListener("load", function(event) {
 
@@ -21,16 +22,31 @@ window.addEventListener("load", function(event) {
     
     if (page == "index.html"){
         let btnSaveChanges = document.getElementById("btnSaveChanges")
-        let btnSignIn = document.getElementById("btnSignIn")
-        let btnSignUp = document.getElementById("btnSignUp")
         let btnHelp = document.getElementById("btnHelp")
+        let btnGetDisplayURL = document.getElementById("btnGetDisplayURL")
+        let btnGetEditURL = document.getElementById("btnGetEditURL")
+
 
         btnSaveChanges.addEventListener('click', updateNotes)
-        btnSignIn.addEventListener('click', signIn)
-        btnSignUp.addEventListener('click', signUp)
         btnHelp.addEventListener('click', help)
+        btnGetDisplayURL.addEventListener('click', function(){
+            copyURLClipboard("display");
+        })
+        btnGetEditURL.addEventListener('click', function(){
+            copyURLClipboard("edit");
+        })
 
         autoAddNote();
+
+        // Get user from URL
+        let params = location.search
+        params = new URLSearchParams(params);
+        let username = params.get('username')
+        let password = params.get('password')
+
+        if (username != undefined && password != undefined){
+            signIn(username, password)
+        }
 
     }else if (page == "display.html"){
         let leftArrow = document.getElementById("leftArrow")
@@ -46,10 +62,11 @@ window.addEventListener("load", function(event) {
 
         // Get display id from URL
         let params = location.search
-        params = params.substring(params.indexOf("=") + 1);
+        params = new URLSearchParams(params);
+        params = params.get('displayId')
 
         if (params == undefined){
-            utilityObj.Toast("Page does not exist")
+            utilityObj.Toast("Page does not exist",4)
         }else{
             currentCode = window.atob( params );
             displayLoadTitle()
@@ -130,7 +147,6 @@ function dbUpdateNote(code, noteId, newNote){
 function dbReadNote(code, noteId){
     const docRef = doc(db, code, noteId);
 
-    // Set the "capital" field of the city 'DC'
     updateDoc(docRef, {
         readOn: getCurrentDate(),
         read: true
@@ -165,41 +181,57 @@ function addNote(){
 }
 
 // Apply changes for the current code
-function updateNotes(){
-    if (currentUser == "")
-        return
-
-    let code = currentUser
+async function updateNotes(){
     let pageTitle = document.getElementById("inputTitle").value
     let currentNotes = getCurrentNotes()
 
-    dbGetNotes(code).then(notes => {
-        // Update note if text is on notes line, otherwise delete note
-        for (let i = 0; i < notes.length; i++){
-            if (currentNotes[i] == '')
-                dbDeleteNote(code, notes[i].id)
-            else
-                dbUpdateNote(code, notes[i].id, currentNotes[i])
+    // Count how many actual notes are present
+    let actNoteCount = 0
+    for (let i = 0; i < currentNotes.length; i++){
+        if (currentNotes[i].length > 0) actNoteCount++;
+    }
+
+    // Create user if does not exist
+    if (currentCode == null || currentCode == ""){
+        if (pageTitle == ""){
+            utilityObj.Toast("Missing page title", 2)
+            return;
         }
-
-        // Create note if does not exist
-        if (currentNotes.length > notes.length){
-            for (let i = notes.length; i < currentNotes.length; i++){
-                if (currentNotes[i] != '')
-                    setTimeout(dbAddNote, 100, code, currentNotes[i])
-            }
+        else if (actNoteCount < 5){
+            utilityObj.Toast("Must make at least 5 notes", 2)
+            return;
         }
+        else{
+            await signUp()
+        }
+    }
 
-        // Store title
-        dbSetVariable(code, dbVarPageTitle, pageTitle)
+    let notes = await dbGetNotes(currentCode)
+    // Update note if text is on notes line, otherwise delete note
+    for (let i = 0; i < notes.length; i++){
+        if (currentNotes[i] == '')
+            dbDeleteNote(currentCode, notes[i].id)
+        else
+            dbUpdateNote(currentCode, notes[i].id, currentNotes[i])
+    }
 
-        utilityObj.Toast("Notes updated", 4)
-    });
+    // Create note if does not exist
+    if (currentNotes.length > notes.length){
+        for (let i = notes.length; i < currentNotes.length; i++){
+            if (currentNotes[i] != '')
+                setTimeout(dbAddNote, 100, currentCode, currentNotes[i])
+        }
+    }
+
+    // Store title
+    dbSetVariable(currentCode, dbVarPageTitle, pageTitle)
+
+    utilityObj.Toast("Notes updated", 4)
 }
 
 // Loads notes
 function loadNotes(){
-    dbGetNotes(currentUser).then(notes => {
+    dbGetNotes(currentCode).then(notes => {
         if (notes.length == 0){
             return
         }
@@ -210,8 +242,8 @@ function loadNotes(){
         // Create as many notes as needed
         let diff = noteContainer.length - notes.length
         if (diff < 0){
-            for (let i = 0; i < diff*-1; i++){
-                addNote()
+            for (let i = -1; i < diff*-1; i++){
+                autoAddNote()
             }
         }
  
@@ -227,70 +259,66 @@ function loadNotes(){
     });
 }
 
-// Loads title and display page link
+// Loads title 
 function loadAttributes(){
-    // Load title and display
-    dbGetVariable(currentUser, dbVarPageTitle).then(title => {
+    // Load title
+    dbGetVariable(currentCode, dbVarPageTitle).then(title => {
         if (title == undefined) return;
         let titleElm = document.getElementById("inputTitle")
         titleElm.value = title
     })
+}
 
-    // Load display page link
-    dbGetVariable(currentUser, dbVarDisplayPageId).then(displayPageId => {
-        let displayPageLinkElm = document.getElementById("outputDisplayPageLink")
-        let currentHost = window.location.host;
-        displayPageLinkElm.innerHTML = currentHost + "/display.html" + "?displayId=" + displayPageId
-        displayPageLinkElm.href = "/display.html" + "?displayId=" + displayPageId
+// Copy URL to clipboard
+function copyURLClipboard(urlOpt){
+    if (currentCode == null || currentCode == ""){
+        utilityObj.Toast("Create and save some notes first", 4);
+        return;
+    }
+
+    dbGetVariable(currentCode, dbVarUsername).then(username => {
+        dbGetVariable(currentCode, dbVarPassword).then(password => {
+            let currentHost = window.location.host;
+            let url = urlOpt == "display" ? currentHost + "/display.html" + "?displayId=" + username :
+            currentHost + "/index.html" + "?username=" + window.btoa(currentCode) + "&password=" + window.btoa(password);
+            
+            navigator.clipboard.writeText(url)
+            utilityObj.Toast("Copied to clipboard", 2);
+        })
     })
 }
 
 // Attempts user sign in to retrieve data from db
-function signIn(){
-    let username = document.getElementById("inputUsername").value
-    let passwordIn = document.getElementById("inputPassword").value
+function signIn(usernameIn, passwordIn){
+    usernameIn = window.atob(usernameIn);
+    passwordIn = window.atob(passwordIn);
 
-    dbGetVariable(username, dbVarPassword).then(password => {
-        if (password == passwordIn){
-            utilityObj.Toast("Signed in successfully", 3)
-        }
-        else if (password == ""){
-            utilityObj.Toast("User does not exist", 3)
-            return
-        }
-        else {
-            utilityObj.Toast("Incorrect password", 3)
-            return
-        }
+    dbGetVariable(usernameIn, dbVarPassword).then(password => {
+        if (passwordIn != password) return;
 
-        currentUser = username
-        document.getElementById("outputUsername").innerHTML = "User: " + currentUser
+        currentCode = usernameIn
         loadNotes()
         loadAttributes()
     })
 }
 
 // Signs user up to db if username does not already exist
-function signUp(){
-    let username = document.getElementById("inputUsername").value
-    let passwordIn = document.getElementById("inputPassword").value
+async function signUp(){
+    let usernameIn = createRandomStr(8)
+    let passwordIn = createRandomStr(8)
 
-    dbGetVariable(username, dbVarPassword).then(password => {
-        // If there is no account for this username, create one
-        if (password == ""){
-            dbSetVariable(username, dbVarPassword, passwordIn)
-            dbSetVariable(username, dbVarDisplayPageId, window.btoa( username ))
-            utilityObj.Toast("User created successfully", 3)
-        }
-        else{
-            utilityObj.Toast("User already exists, try a different username", 3)
-            return
-        }
+    let password = await dbGetVariable(usernameIn, dbVarPassword)
+    // If there is no account for this username, create one
+    if (password == ""){
+        dbSetVariable(usernameIn, dbVarPassword, window.btoa( passwordIn ))
+        dbSetVariable(usernameIn, dbVarUsername, window.btoa( usernameIn ))
+    }
+    else{
+        return
+    }
 
-        currentUser = username
-        document.getElementById("outputUsername").innerHTML = "User: " + currentUser
-        loadAttributes()
-    })
+    currentCode = usernameIn
+    loadAttributes()
 }
 
 function help(){
@@ -373,6 +401,18 @@ function flowerDblClick(){
 }
 
 /* ==== HELP FUNCTIONS ====*/ 
+
+// Make random string
+function createRandomStr(length) {
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * 
+ charactersLength));
+   }
+   return result;
+}
 
 // Hide / Unhide all elements with a class
 function hideElements(className, isHidden){
