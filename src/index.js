@@ -4,7 +4,7 @@ import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query,
 var utilityObj = new Utility()
 var currentCode = null
 var noteList = []
-var defaultImgSrc = "../dist/flowers/sunflower.gif"
+var defaultImgSrc = "/flowers/sunflower.gif"
 
 // Display
 var currentNoteIndex = 0
@@ -46,6 +46,10 @@ window.addEventListener("load", function(event) {
         let username = params.get('username')
         let password = params.get('password')
 
+        // Set default img
+        let imageElm = document.getElementById("flower")
+        imageElm.src = defaultImgSrc
+
         if (username != undefined && password != undefined){
             signIn(username, password)
         }
@@ -69,6 +73,10 @@ window.addEventListener("load", function(event) {
             }
         })
         noteTarget.addEventListener('dblclick', displaySetFavNote)
+
+        // Set default img
+        let imageElm = document.getElementById("flower")
+        imageElm.src = defaultImgSrc
 
         // Get display id from URL
         let params = location.search
