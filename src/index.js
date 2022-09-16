@@ -9,13 +9,13 @@ var defaultImgSrc = "../dist/flowers/sunflower.gif"
 // Display
 var currentNoteIndex = 0
 var lastReadNoteIndex = 0
-var canChangeNote = true
 
 // Strings to access variables from db
 var dbVarPassword = "password"
 var dbVarPageTitle = "pageTitle"
 var dbVarImageURL = "imageURL"
 var dbVarUsername = "displayPageId"
+var dbVarFavorite = "favoriteNote"
 
 window.addEventListener("load", function(event) {
 
@@ -54,11 +54,21 @@ window.addEventListener("load", function(event) {
         let leftArrow = document.getElementById("leftArrow")
         let rightArrow = document.getElementById("rightArrow")
         let flower = document.getElementById("flower")
-        let msgElm = document.getElementById("msg")
+        let noteTarget = document.getElementById("noteTarget")
 
         leftArrow.addEventListener('click', leftArrowClick)
+        leftArrow.addEventListener('dblclick', leftArrowDblClick)
+
         rightArrow.addEventListener('click', rightArrowClick)
+        rightArrow.addEventListener('dblclick', rightArrowDblClick)
+
         flower.addEventListener('dblclick', flowerDblClick)
+        flower.addEventListener('click', function (evt) {
+            if (evt.detail === 3) {
+                displayFavNote()
+            }
+        })
+        noteTarget.addEventListener('dblclick', displaySetFavNote)
 
         // Get display id from URL
         let params = location.search
@@ -240,33 +250,40 @@ async function updateNotes(){
 }
 
 // Loads notes
-function loadNotes(){
-    dbGetNotes(currentCode).then(notes => {
-        if (notes.length == 0){
-            return
+async function loadNotes(){
+    let notes = await dbGetNotes(currentCode)
+    let favNote = await dbGetVariable(currentCode, dbVarFavorite)
+
+    if (notes.length == 0){
+        return
+    }
+
+    clearNotes()
+    let noteContainer = document.getElementById("noteContainer").children
+
+    // Create as many notes as needed
+    let diff = noteContainer.length - notes.length
+    if (diff < 0){
+        for (let i = -1; i < diff*-1; i++){
+            autoAddNote()
+        }
+    }
+
+    // Fill notes with notes found in database
+    for (let i = 0; i < notes.length; i++){
+        noteContainer[i].value = notes[i].note
+
+        // Show what notes have been read
+        if (notes[i].read == true){
+            noteContainer[i].style.backgroundColor = "#fdfd96";
         }
 
-        clearNotes()
-        let noteContainer = document.getElementById("noteContainer").children
-
-        // Create as many notes as needed
-        let diff = noteContainer.length - notes.length
-        if (diff < 0){
-            for (let i = -1; i < diff*-1; i++){
-                autoAddNote()
-            }
+        // Show favorite note
+        if ((favNote != null || favNote != "") && favNote == i){
+            noteContainer[i].style.backgroundColor = "#FF748C";
         }
+    }
  
-        // Fill notes with notes found in database
-        for (let i = 0; i < notes.length; i++){
-            noteContainer[i].value = notes[i].note
-
-            // Show what notes have been read
-            if (notes[i].read == true){
-                noteContainer[i].style.backgroundColor = "#fdfd96";
-            }
-        }
-    });
 }
 
 // Loads title 
@@ -385,7 +402,7 @@ function displayNote(note){
             
     setTimeout(() => {
         noteTarget.innerHTML = note;
-        utilityObj.PlayAnimation(noteTarget, "fadeIn", "0.1", "ease-in-out")
+        utilityObj.PlayAnimation(noteTarget, "fadeIn2", "0.2", "ease-in-out")
 
         var textWrapper = document.querySelector('.ml6 .letters');
         textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
@@ -432,7 +449,7 @@ function displayLoadTimer(){
         let minutes = Math.floor((timeleft % (1000 * 60 * 60)) / (1000 * 60));
         let seconds = Math.floor((timeleft % (1000 * 60)) / 1000);
 
-        timerElm.innerHTML = "New note in " + hours + ":" + minutes + ":" + seconds
+        timerElm.innerHTML = "New note in " + (hours.toString().length == 1 ? "0" : "") + hours + " : " + (minutes.toString().length == 1 ? "0" : "") + minutes + " : " + (seconds.toString().length == 1 ? "0" : "") + seconds
 
         if (timeleft <= 0){
             timerElm.innerHTML = "New note available"
@@ -442,14 +459,6 @@ function displayLoadTimer(){
 }
 
 function leftArrowClick(){
-    if (!canChangeNote) return;
-
-    // Stop user from spamming
-    canChangeNote = false; 
-    setTimeout(() => {
-        canChangeNote = true;
-    }, 1000)
-
     // Display previous note if exists
     if (noteList[currentNoteIndex-1] != undefined){
         displayNote(noteList[currentNoteIndex-1].note)
@@ -457,15 +466,13 @@ function leftArrowClick(){
     }
 }
 
+function leftArrowDblClick(){
+    // Display first note
+    displayNote(noteList[0].note)
+    currentNoteIndex = 0
+}
+
 function rightArrowClick(){
-    if (!canChangeNote) return;
-
-    // Stop user from spamming
-    canChangeNote = false; 
-    setTimeout(() => {
-        canChangeNote = true;
-    }, 1000)
-
     // Check if a new note exists
     if (noteList[currentNoteIndex+1] == undefined){
         utilityObj.Toast("No more notes for now!", 4)
@@ -497,8 +504,31 @@ function rightArrowClick(){
     }
 }
 
+function rightArrowDblClick(){
+    // Display last note
+    displayNote(noteList[lastReadNoteIndex].note)
+    currentNoteIndex = lastReadNoteIndex
+}
+
+// Show hearts on double click
 function flowerDblClick(){
     utilityObj.PlayAnimation(document.getElementById("msgBackgroundEffect"), "fadeInOut", "5", "ease-in-out")
+}
+
+// Set note as favorite on triple click
+function displaySetFavNote(){
+    dbSetVariable(currentCode, dbVarFavorite, currentNoteIndex)
+    utilityObj.Toast('Set as favorite note', 2)
+}
+
+// Display favorite note on double click
+function displayFavNote(){
+    dbGetVariable(currentCode, dbVarFavorite).then(favIndex => {
+        if (favIndex == null || favIndex == "") return
+
+        displayNote(noteList[favIndex].note)
+        currentNoteIndex = favIndex
+    })
 }
 
 /* ==== HELP FUNCTIONS ====*/ 

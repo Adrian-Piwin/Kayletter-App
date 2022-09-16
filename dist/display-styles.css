@@ -30,6 +30,10 @@ body{
     animation-fill-mode: forwards;
 }
 
+#title:hover{
+    cursor: default;
+}
+
 #flower{
     height: 60%;
     position: absolute;
@@ -40,6 +44,10 @@ body{
     animation: fadeIn ease-in-out 1s;
     animation-iteration-count: 1;
     animation-fill-mode: forwards;
+}
+
+#flower:hover{
+    cursor: pointer;
 }
 
 #msgBackgroundEffect{
@@ -86,7 +94,7 @@ body{
 }
 
 #leftArrow:active{
-    left: -5px;
+    scale: 1.1;
 }
 
 #rightArrow{
@@ -94,11 +102,15 @@ body{
 }
 
 #rightArrow:active{
-    right: -5px;
+    scale: 1.1;
 }
 
 #noteTarget{
     animation-fill-mode: forwards;
+}
+
+#noteTarget:hover{
+    cursor: pointer;
 }
 
 .ml6 {
