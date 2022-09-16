@@ -34,7 +34,7 @@ body{
     height: 60%;
     position: absolute;
     left: 50%;
-    top: 50%;
+    top: 45%;
     transform: translate(-50%, -50%);
 
     animation: fadeIn ease-in-out 1s;
@@ -45,7 +45,7 @@ body{
 #msgBackgroundEffect{
     position: absolute;
     left: 50%;
-    top: 45%;
+    top: 40%;
     transform: translate(-50%, -50%);
     z-index: -10;
 
@@ -97,6 +97,10 @@ body{
     right: -5px;
 }
 
+#noteTarget{
+    animation-fill-mode: forwards;
+}
+
 .ml6 {
     font-family: 'Indie Flower', cursive;
     position: relative;
@@ -120,11 +124,22 @@ body{
     line-height: 1em;
 }
 
+#liveTimer{
+    font-family: 'Indie Flower', cursive;
+    padding: 0 0 10px 0;
+    width: 100%;
+    text-align: center;
+
+    animation: fadeIn2 ease-in-out 4s;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+}
+
 /* ==== Mobile Styles ====*/
 
 @media only screen and (max-width: 600px) {
     .arrow{
-        font-size: 40px
+        font-size: 30px
     }
 
     #wrapper{
@@ -139,7 +154,7 @@ body{
     }
 
     #msgContainer{
-        width: 90%;
+        width: 95%;
     }
 
     .ml6{

@@ -4,6 +4,7 @@ import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query,
 var utilityObj = new Utility()
 var currentCode = null
 var noteList = []
+var defaultImgSrc = "../dist/flowers/sunflower.gif"
 
 // Display
 var currentNoteIndex = 0
@@ -71,7 +72,7 @@ window.addEventListener("load", function(event) {
             displayLoadImage()
             displayLoadTitle()
 
-            setTimeout(displayLoadNotes, 2500)
+            setTimeout(displayLoadNotes, 1500)
         }
     }
 
@@ -177,7 +178,7 @@ function addNote(){
     let noteContainer = document.getElementById("noteContainer");
     let note = document.createElement("input")
     note.classList.add("w3-input")
-    note.maxLength = 420
+    note.maxLength = 240
     noteContainer.appendChild(note)
 }
 
@@ -185,6 +186,10 @@ function addNote(){
 async function updateNotes(){
     let pageTitle = document.getElementById("inputTitle").value
     let imageURL = document.getElementById("inputImageURL").value
+
+    // Update image to show on this page
+    let flower = document.getElementById("flower");
+    flower.src = imageURL == null || imageURL == "" ? defaultImgSrc : imageURL
 
     let currentNotes = getCurrentNotes()
 
@@ -268,16 +273,20 @@ function loadNotes(){
 function loadAttributes(){
     // Load title
     dbGetVariable(currentCode, dbVarPageTitle).then(title => {
-        if (title == undefined) return;
+        if (title == null || title == "") return;
         let titleElm = document.getElementById("inputTitle")
         titleElm.value = title
     })
 
     // Load IMG URL
     dbGetVariable(currentCode, dbVarImageURL).then(url => {
-        if (url == undefined) return;
+        if (url == null || url == "") return;
         let urlElm = document.getElementById("inputImageURL")
         urlElm.value = url
+
+        // Update image on this page
+        let flower = document.getElementById("flower");
+        flower.src = url
     })
 
 }
@@ -326,6 +335,7 @@ async function signUp(){
         dbSetVariable(usernameIn, dbVarPassword, window.btoa( passwordIn ))
         dbSetVariable(usernameIn, dbVarUsername, window.btoa( usernameIn ))
         // Store edit url as backup
+        let currentHost = window.location.host;
         let url = currentHost + "/index.html" + "?username=" + window.btoa(usernameIn) + "&password=" + window.btoa(passwordIn);
         dbSetVariable(usernameIn, "EditURL", url)
     }
@@ -338,7 +348,7 @@ async function signUp(){
 }
 
 function help(){
-    utilityObj.Toast("Set a title and write some notes, press save.\nTo access this page again press Edit Page URL to copy your unique edit URL.\nTo see the display page press Display Page URL to copy your unique display URL.", 10)
+    utilityObj.Toast("Set a title and write some notes, press save. Make sure to save your edit URL to access this page again or your data will be lost. If a note is highlighted it means it has been read.", 10)
 }
 
 /* ==== DISPLAY PAGE ====*/ 
@@ -362,24 +372,20 @@ function displayLoadNotes(){
 
         // Store notes
         noteList = notes
+        // Start timer
+        displayLoadTimer()
     })
 }
 
 function displayNote(note){
     let noteTarget = document.getElementById("noteTarget");
-    let fadeTimer = 1000
+    let fadeTimer = 500
 
-    if (noteTarget.innerHTML != ""){
-        utilityObj.PlayAnimation(noteTarget, "fadeOut", "1", "ease-in-out")
-    }else
-        fadeTimer = 0
+    utilityObj.PlayAnimation(noteTarget, "fadeOut", "0.5", "ease-in-out")
             
     setTimeout(() => {
         noteTarget.innerHTML = note;
-        noteTarget.style.opacity = 0;
-        setTimeout(() => {
-            noteTarget.style.opacity = 1;
-        }, 100)
+        utilityObj.PlayAnimation(noteTarget, "fadeIn", "0.1", "ease-in-out")
 
         var textWrapper = document.querySelector('.ml6 .letters');
         textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
@@ -393,6 +399,7 @@ function displayNote(note){
                 opacity: [0,1],
                 delay: (el, i) => 50 * i
             })
+        
     }, fadeTimer)
 }
 
@@ -411,6 +418,27 @@ function displayLoadImage(){
         let imageElm = document.getElementById("flower")
         imageElm.src = url
     })
+}
+
+function displayLoadTimer(){
+    let timerElm = document.getElementById("liveTimer");
+    let countDownDate = new Date(noteList[lastReadNoteIndex].readOn).getTime();
+
+    let intervalID = setInterval(() => {
+        let now = new Date().getTime();
+        let timeleft = countDownDate - now;
+
+        let hours = Math.floor((timeleft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        let minutes = Math.floor((timeleft % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((timeleft % (1000 * 60)) / 1000);
+
+        timerElm.innerHTML = "New note in " + hours + ":" + minutes + ":" + seconds
+
+        if (timeleft <= 0){
+            timerElm.innerHTML = "New note available"
+            clearInterval(intervalID)
+        }
+    }, 1000)
 }
 
 function leftArrowClick(){
@@ -451,20 +479,21 @@ function rightArrowClick(){
         return
     }
 
-    let lastReadNote = noteList[lastReadNoteIndex]
+    let now = new Date().getTime();
+    let timeleft = new Date(noteList[lastReadNoteIndex].readOn).getTime() - now;
     // If next note has not been read
     // Check if it has been a day since reading most recently read note
-    if (((lastReadNote.readOn / 1000) + 86400) < getCurrentDate() / 1000){
-        displayNote(noteList[lastReadNoteIndex+1].note)
-        dbReadNote(currentCode, noteList[lastReadNoteIndex+1].id)
+    if (timeleft <= 0){
         currentNoteIndex++
+        lastReadNoteIndex++
+
+        // Update note, set as read in db, and update timer
+        displayNote(noteList[currentNoteIndex].note)
+        dbReadNote(currentCode, noteList[currentNoteIndex].id)
+        displayLoadTimer()
 
         // Play animation on new note revealed
         utilityObj.PlayAnimation(document.getElementById("msgBackgroundEffect"), "fadeInOut", "5", "ease-in-out")
-    }else{
-        // Get time to wait in hours
-        let timeLeft = ((((lastReadNote.readOn / 1000) + 86400) - (getCurrentDate() / 1000)) / 60) / 60
-        utilityObj.Toast("New note available in " + Math.floor(timeLeft) + " hours", 4)
     }
 }
 
@@ -484,19 +513,6 @@ function createRandomStr(length) {
  charactersLength));
    }
    return result;
-}
-
-// Hide / Unhide all elements with a class
-function hideElements(className, isHidden){
-    let elements = document.getElementsByClassName(className)
-
-    for (let i = 0; i < elements.length; i++){
-        if (isHidden){
-            elements[i].style.display = "none"
-        }else{
-            elements[i].style.display = ""
-        }
-    }
 }
 
 // Return list of notes in note container
