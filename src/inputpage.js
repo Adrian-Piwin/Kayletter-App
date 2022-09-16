@@ -7,8 +7,10 @@ var currentCode = null
 var dbVarPassword = "password"
 var dbVarPageTitle = "pageTitle"
 var dbVarImageURL = "imageURL"
-var dbVarUsername = "displayPageId"
+var dbVarDisplayId = "displayPageId"
 var dbVarFavorite = "favoriteNote"
+
+var defaultImgSrc = "/dist/flowers/sunflower.gif"
 
 export function InputInit(){
     let btnSaveChanges = document.getElementById("btnSaveChanges")
@@ -29,11 +31,11 @@ export function InputInit(){
     // Get user from URL
     let params = location.search
     params = new URLSearchParams(params);
-    let username = params.get('username')
+    let displayId = params.get('displayId')
     let password = params.get('password')
 
-    if (username != undefined && password != undefined){
-        signIn(username, password)
+    if (displayId != undefined && password != undefined){
+        signIn(displayId, password)
     }
 }
 
@@ -63,8 +65,8 @@ async function updateNotes(){
     let imageURL = document.getElementById("inputImageURL").value
 
     // Update image to show on this page
-    let flower = document.getElementById("flower");
-    flower.src = imageURL == null || imageURL == "" ? defaultImgSrc : imageURL
+    let displayImg = document.getElementById("displayImg");
+    displayImg.src = imageURL == null || imageURL == "" ? defaultImgSrc : imageURL
 
     let currentNotes = getCurrentNotes()
 
@@ -117,7 +119,6 @@ async function updateNotes(){
 // Loads notes
 async function loadNotes(){
     let notes = await dbGetNotes(currentCode)
-    let favNote = await dbGetVariable(currentCode, dbVarFavorite)
 
     if (notes.length == 0){
         return
@@ -141,12 +142,12 @@ async function loadNotes(){
         noteContainer[i].value = notes[i].note
 
         // Show what notes have been read
-        if (notes[i].read == true){
+        if (notes[i].read){
             noteContainer[i].style.backgroundColor = "#fdfd96";
         }
 
         // Show favorite note
-        if ((favNote != null || favNote != "") && favNote == i){
+        if (notes[i].isFavorite){
             noteContainer[i].style.backgroundColor = "#FF748C";
         }
     }
@@ -182,27 +183,25 @@ function copyURLClipboard(urlOpt){
         return;
     }
 
-    dbGetVariable(currentCode, dbVarUsername).then(username => {
-        dbGetVariable(currentCode, dbVarPassword).then(password => {
-            let currentHost = window.location.host;
-            let url = urlOpt == "display" ? currentHost + "/display.html" + "?displayId=" + username :
-            currentHost + "/index.html" + "?username=" + window.btoa(currentCode) + "&password=" + window.btoa(password);
-            
-            navigator.clipboard.writeText(url)
-            Toast("Copied to clipboard", 2);
-        })
+    dbGetVariable(currentCode, dbVarPassword).then(password => {
+        let currentHost = window.location.host;
+        let url = urlOpt == "display" ? currentHost + "/display.html" + "?displayId=" + currentCode :
+        currentHost + "/index.html" + "?displayId=" + currentCode + "&password=" + password;
+        
+        navigator.clipboard.writeText(url)
+        Toast("Copied to clipboard", 2);
     })
 }
 
 // Attempts user sign in to retrieve data from db
-function signIn(usernameIn, passwordIn){
-    usernameIn = window.atob(usernameIn);
-    passwordIn = window.atob(passwordIn);
+function signIn(displayIdIn, passwordIn){
+    dbGetVariable(displayIdIn, dbVarPassword).then(password => {
+        if (passwordIn != password) {  
+            Toast("User not found", 2);
+            return;
+        }
 
-    dbGetVariable(usernameIn, dbVarPassword).then(password => {
-        if (passwordIn != password) return;
-
-        currentCode = usernameIn
+        currentCode = displayIdIn
         loadNotes()
         loadAttributes()
     })
@@ -210,24 +209,23 @@ function signIn(usernameIn, passwordIn){
 
 // Signs user up to db if username does not already exist
 async function signUp(){
-    let usernameIn = createRandomStr(8)
+    let displayIdIn = createRandomStr(8)
     let passwordIn = createRandomStr(8)
 
-    let password = await dbGetVariable(usernameIn, dbVarPassword)
+    let password = await dbGetVariable(displayIdIn, dbVarPassword)
     // If there is no account for this username, create one
     if (password == ""){
-        dbSetVariable(usernameIn, dbVarPassword, window.btoa( passwordIn ))
-        dbSetVariable(usernameIn, dbVarUsername, window.btoa( usernameIn ))
+        dbSetVariable(displayIdIn, dbVarPassword, passwordIn)
         // Store edit url as backup
         let currentHost = window.location.host;
-        let url = currentHost + "/index.html" + "?username=" + window.btoa(usernameIn) + "&password=" + window.btoa(passwordIn);
-        dbSetVariable(usernameIn, "EditURL", url)
+        let url = currentHost + "/index.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
+        dbSetVariable(displayIdIn, "EditURL", url)
     }
     else{
         return
     }
 
-    currentCode = usernameIn
+    currentCode = displayIdIn
     loadAttributes()
 }
 

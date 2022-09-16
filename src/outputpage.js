@@ -1,4 +1,4 @@
-import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote } from './database'
+import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
 
 var currentCode = null
@@ -15,6 +15,9 @@ var dbVarImageURL = "imageURL"
 var dbVarUsername = "displayPageId"
 var dbVarFavorite = "favoriteNote"
 
+var favNoteStyle = '-1px -1px 0 #ffe28a, 1px -1px 0 #ffe28a, -1px 1px 0 #ffe28a, 1px 1px 0 #ffe28a'
+var currentFavNoteIndex = -1
+
 export function OutputInit(){
     let leftArrow = document.getElementById("leftArrow")
     let rightArrow = document.getElementById("rightArrow")
@@ -27,12 +30,11 @@ export function OutputInit(){
     rightArrow.addEventListener('click', rightArrowClick)
     rightArrow.addEventListener('dblclick', rightArrowDblClick)
 
-    displayImg.addEventListener('dblclick', displayImgDblClick)
-    displayImg.addEventListener('click', function (evt) {
-        if (evt.detail === 3) {
-            displayFavNote()
-        }
+    displayImg.addEventListener('dblclick', () => {
+        displayImgDblClick()
+        displayFavNote()
     })
+
     noteTarget.addEventListener('dblclick', displaySetFavNote)
 
     // Get display id from URL
@@ -43,7 +45,7 @@ export function OutputInit(){
     if (params == undefined){
         Toast("Page does not exist",4)
     }else{
-        currentCode = window.atob( params );
+        currentCode = params;
         displayLoadImage()
         displayLoadTitle()
 
@@ -63,7 +65,7 @@ function displayLoadNotes(){
         // Display last read note
         for (let i = 0; i < notes.length; i++){
             if (notes[i].read == true && notes[i+1] != undefined ? notes[i+1].read == false : true){
-                displayNote(notes[i].note)
+                displayNote(notes[i])
                 currentNoteIndex = i
                 lastReadNoteIndex = i
                 break
@@ -84,7 +86,8 @@ function displayNote(note){
     PlayAnimation(noteTarget, "fadeOut", "0.5", "ease-in-out")
             
     setTimeout(() => {
-        noteTarget.innerHTML = note;
+        noteTarget.style.textShadow = note.isFavorite ? favNoteStyle : 'none'
+        noteTarget.innerHTML = note.note;
         PlayAnimation(noteTarget, "fadeIn2", "0.2", "ease-in-out")
 
         var textWrapper = document.querySelector('.ml6 .letters');
@@ -144,14 +147,14 @@ function displayLoadTimer(){
 function leftArrowClick(){
     // Display previous note if exists
     if (noteList[currentNoteIndex-1] != undefined){
-        displayNote(noteList[currentNoteIndex-1].note)
+        displayNote(noteList[currentNoteIndex-1])
         currentNoteIndex--
     }
 }
 
 function leftArrowDblClick(){
     // Display first note
-    displayNote(noteList[0].note)
+    displayNote(noteList[0])
     currentNoteIndex = 0
 }
 
@@ -164,7 +167,7 @@ function rightArrowClick(){
 
     // Check if next note has been read already, allowing to see it
     if (noteList[currentNoteIndex+1].read == true){
-        displayNote(noteList[currentNoteIndex+1].note)
+        displayNote(noteList[currentNoteIndex+1])
         currentNoteIndex++
         return
     }
@@ -178,7 +181,7 @@ function rightArrowClick(){
         lastReadNoteIndex++
 
         // Update note, set as read in db, and update timer
-        displayNote(noteList[currentNoteIndex].note)
+        displayNote(noteList[currentNoteIndex])
         dbReadNote(currentCode, noteList[currentNoteIndex].id)
         displayLoadTimer()
 
@@ -187,9 +190,9 @@ function rightArrowClick(){
     }
 }
 
+// Display last note
 function rightArrowDblClick(){
-    // Display last note
-    displayNote(noteList[lastReadNoteIndex].note)
+    displayNote(noteList[lastReadNoteIndex])
     currentNoteIndex = lastReadNoteIndex
 }
 
@@ -198,18 +201,30 @@ function displayImgDblClick(){
     PlayAnimation(document.getElementById("msgBackgroundEffect"), "fadeInOut", "5", "ease-in-out")
 }
 
-// Set note as favorite on triple click
+// Set note as favorite on double click
 function displaySetFavNote(){
-    dbSetVariable(currentCode, dbVarFavorite, currentNoteIndex)
-    Toast('Set as favorite note', 2)
+    noteList[currentNoteIndex].isFavorite = !noteList[currentNoteIndex].isFavorite == null ? true : !noteList[currentNoteIndex].isFavorite
+    dbFavoriteNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].isFavorite)
+    let noteTarget = document.getElementById("noteTarget");
+    noteTarget.style.textShadow = noteList[currentNoteIndex].isFavorite ? favNoteStyle : 'none'
+    Toast(noteList[currentNoteIndex].isFavorite ? 'Added to favorites' : 'Removed from favorites', 2)
 }
 
 // Display favorite note on double click
 function displayFavNote(){
-    dbGetVariable(currentCode, dbVarFavorite).then(favIndex => {
-        if (favIndex == null || favIndex == "") return
+    let favList = []
+    let favIndexList = []
 
-        displayNote(noteList[favIndex].note)
-        currentNoteIndex = favIndex
-    })
+    for (let i = 0; i < noteList.length; i++){
+        if (noteList[i].isFavorite){
+            favList.push(noteList[i])
+            favIndexList.push(i)
+        }
+    }
+
+    if (favList.length == 0) return
+
+    currentFavNoteIndex = currentFavNoteIndex + 1 >= favList.length ? 0 : currentFavNoteIndex+1
+    displayNote(favList[currentFavNoteIndex])
+    currentNoteIndex = favIndexList[currentFavNoteIndex]
 }

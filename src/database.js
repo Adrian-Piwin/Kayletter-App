@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query, getDoc, orderBy, doc, setDoc } from 'firebase/firestore'
+import { getCurrentDate } from './utility';
 
 /* ==== DATABASE ====*/ 
 
@@ -38,7 +39,8 @@ export function dbAddNote(code, val){
         note: val,
         createdOn: getCurrentDate(),
         readOn: null,
-        read: false
+        read: false,
+        isFavorite: false
     });
 }
 
@@ -65,6 +67,15 @@ export function dbUpdateNote(code, noteId, newNote){
 
     updateDoc(docRef, {
         note: newNote
+    });
+}
+
+// Set note as favorite
+export function dbFavoriteNote(code, noteId, isFav){
+    const docRef = doc(db, code, noteId);
+
+    updateDoc(docRef, {
+        isFavorite: isFav
     });
 }
 
