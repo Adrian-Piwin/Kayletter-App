@@ -56,7 +56,6 @@ body{
     width: 100%;
     font-size: 60px;
     text-align: center;
-    padding-top: 50px;
     font-family: 'Indie Flower', cursive;
 }
 
@@ -69,19 +68,19 @@ body{
     gap: 5px;
 }
 
-#flowerContainer{
+#imgContainer{
     border: 3px black solid;
     border-radius: 15px;
 }
 
-#flowerContainer img{
+#imgContainer img{
     padding: 10px;
     width: 150px;
 }
 
 #noteContainer{
-    width: 60%;
-    height: 300px;
+    width: 70%;
+    height: 60%;
     border: 3px black solid;
     margin-top: 25px;
     font-size: 30px;
@@ -116,7 +115,7 @@ input{
 }
 
 @media only screen and (max-width: 600px) {
-    #flowerContainer{
+    #imgContainer{
         display: none;
     }
 
@@ -128,5 +127,9 @@ input{
         font-size: 22px;
         width: 35px;
         height: 35px;
+    }
+
+    #noteContainer{
+        font-size: 20px;
     }
 }
