@@ -1,7 +1,7 @@
 import { InputInit } from './inputpage.js'
 import { OutputInit } from './outputpage.js'
 
-var defaultImgSrc = "/dist/flowers/sunflower.gif"
+var defaultImgSrc = "/flowers/sunflower.gif"
 
 window.addEventListener("load", function(event) {
 

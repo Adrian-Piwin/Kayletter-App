@@ -11,7 +11,7 @@ var dbVarImageURL = "imageURL"
 var dbVarDisplayId = "displayPageId"
 var dbVarFavorite = "favoriteNote"
 
-var defaultImgSrc = "/dist/flowers/sunflower.gif"
+var defaultImgSrc = "/flowers/sunflower.gif"
 
 export function InputInit(){
     let btnSaveChanges = document.getElementById("btnSaveChanges")
