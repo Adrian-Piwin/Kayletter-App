@@ -1,7 +1,8 @@
-import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote } from './database'
+import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
 
 var currentCode = null
+var currentPassword = null
 
 // Strings to access variables from db
 var dbVarPassword = "password"
@@ -18,7 +19,6 @@ export function InputInit(){
     let btnGetDisplayURL = document.getElementById("btnGetDisplayURL")
     let btnGetEditURL = document.getElementById("btnGetEditURL")
 
-
     btnSaveChanges.addEventListener('click', updateNotes)
     btnHelp.addEventListener('click', help)
     btnGetDisplayURL.addEventListener('click', function(){
@@ -27,6 +27,9 @@ export function InputInit(){
     btnGetEditURL.addEventListener('click', function(){
         copyURLClipboard("edit");
     })
+
+    // Set up auto note
+    autoAddNote()
 
     // Get user from URL
     let params = location.search
@@ -76,6 +79,7 @@ async function updateNotes(){
         if (currentNotes[i].length > 0) actNoteCount++;
     }
 
+    let newUser = false
     // Create user if does not exist
     if (currentCode == null || currentCode == ""){
         if (pageTitle == ""){
@@ -88,6 +92,7 @@ async function updateNotes(){
         }
         else{
             await signUp()
+            newUser = true
         }
     }
 
@@ -96,22 +101,34 @@ async function updateNotes(){
     for (let i = 0; i < notes.length; i++){
         if (currentNotes[i] == '')
             dbDeleteNote(currentCode, notes[i].id)
-        else
+        else if (notes[i].note != currentNotes[i])
             dbUpdateNote(currentCode, notes[i].id, currentNotes[i])
     }
 
     // Create note if does not exist
     if (currentNotes.length > notes.length){
         for (let i = notes.length; i < currentNotes.length; i++){
-            if (currentNotes[i] != '')
-                setTimeout(dbAddNote, 100, currentCode, currentNotes[i])
+            if (currentNotes[i] != ''){
+
+                // Make first note read if new user
+                if (newUser){
+                    dbAddReadNote(currentCode, currentNotes[i])
+                    newUser = false
+                }
+                // Add normal unread note
+                else
+                    dbAddNote(currentCode, currentNotes[i])
+                    
+                await new Promise(r => setTimeout(r, 50))
+            }
         }
     }
 
     // Store title
     dbSetVariable(currentCode, dbVarPageTitle, pageTitle)
     // Store image url
-    dbSetVariable(currentCode, dbVarImageURL, imageURL)
+    if (imageURL != null || imageURL != "")
+        dbSetVariable(currentCode, dbVarImageURL, imageURL)
 
     Toast("Notes updated", 2)
 }
@@ -124,7 +141,6 @@ async function loadNotes(){
         return
     }
 
-    clearNotes()
     let noteContainer = document.getElementById("noteContainer").children
 
     // Create as many notes as needed
@@ -133,8 +149,6 @@ async function loadNotes(){
         for (let i = -1; i < diff*-1; i++){
             autoAddNote()
         }
-    }else{
-        autoAddNote()
     }
 
     // Fill notes with notes found in database
@@ -150,8 +164,10 @@ async function loadNotes(){
         if (notes[i].isFavorite){
             noteContainer[i].style.backgroundColor = "#FF748C";
         }
+
+        // Load animation
+        await new Promise(r => setTimeout(r, 10))
     }
- 
 }
 
 // Loads title 
@@ -173,7 +189,6 @@ function loadAttributes(){
         let flower = document.getElementById("flower");
         flower.src = url
     })
-
 }
 
 // Copy URL to clipboard
@@ -183,14 +198,12 @@ function copyURLClipboard(urlOpt){
         return;
     }
 
-    dbGetVariable(currentCode, dbVarPassword).then(password => {
-        let currentHost = window.location.host;
-        let url = urlOpt == "display" ? currentHost + "/display.html" + "?displayId=" + currentCode :
-        currentHost + "/index.html" + "?displayId=" + currentCode + "&password=" + password;
-        
-        navigator.clipboard.writeText(url)
-        Toast("Copied to clipboard", 2);
-    })
+    let currentHost = window.location.host;
+    let url = urlOpt == "display" ? currentHost + "/display.html" + "?displayId=" + currentCode :
+    currentHost + "/index.html" + "?displayId=" + currentCode + "&password=" + currentPassword;
+    
+    navigator.clipboard.writeText(url)
+    Toast("Copied to clipboard", 2);
 }
 
 // Attempts user sign in to retrieve data from db
@@ -202,6 +215,7 @@ function signIn(displayIdIn, passwordIn){
         }
 
         currentCode = displayIdIn
+        currentPassword = password
         loadNotes()
         loadAttributes()
     })
@@ -218,17 +232,20 @@ async function signUp(){
         dbSetVariable(displayIdIn, dbVarPassword, passwordIn)
         // Store edit url as backup
         let currentHost = window.location.host;
-        let url = currentHost + "/index.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
-        dbSetVariable(displayIdIn, "EditURL", url)
+        let url = "/index.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
+        dbSetVariable(displayIdIn, "EditURL", currentHost + url)
+        // Change current url
+        window.history.pushState('Kayletter', 'Kayletter', url);
     }
     else{
         return
     }
 
     currentCode = displayIdIn
+    currentPassword = passwordIn
     loadAttributes()
 }
 
 function help(){
-    Toast("Set a title and write some notes, press save. Make sure to save your edit URL to access this page again or your data will be lost. If a note is highlighted it means it has been read.", 10)
+    Toast("Set a title and write some notes, press save. Make sure to save your edit URL to access this page again or your data will be lost. Send the display URL to the reciever.", 10)
 }

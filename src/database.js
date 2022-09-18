@@ -44,6 +44,19 @@ export function dbAddNote(code, val){
     });
 }
 
+// Add read note to db
+export function dbAddReadNote(code, val){
+    const colRef = collection(db, code)
+
+    addDoc(colRef, {
+        note: val,
+        createdOn: getCurrentDate(),
+        readOn: getCurrentDate(),
+        read: true,
+        isFavorite: false
+    });
+}
+
 // Store a variable associated with this code to db
 export function dbSetVariable(code, varName, value){
     const docRef = doc(db, code, "variables")

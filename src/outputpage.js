@@ -18,17 +18,31 @@ var dbVarFavorite = "favoriteNote"
 var favNoteStyle = '-1px -1px 0 #ffe28a, 1px -1px 0 #ffe28a, -1px 1px 0 #ffe28a, 1px 1px 0 #ffe28a'
 var currentFavNoteIndex = -1
 
+var clickTimerId = null
+
 export function OutputInit(){
     let leftArrow = document.getElementById("leftArrow")
     let rightArrow = document.getElementById("rightArrow")
     let displayImg = document.getElementById("displayImg")
     let noteTarget = document.getElementById("noteTarget")
 
-    leftArrow.addEventListener('click', leftArrowClick)
-    leftArrow.addEventListener('dblclick', leftArrowDblClick)
+    leftArrow.onclick = event => {
+        if (event.detail === 1) {
+            clickTimerId = setTimeout(leftArrowClick, 100)
+        } else if (event.detail === 2) {
+            clearInterval(clickTimerId)
+            leftArrowDblClick()
+        }
+    };
 
-    rightArrow.addEventListener('click', rightArrowClick)
-    rightArrow.addEventListener('dblclick', rightArrowDblClick)
+    rightArrow.onclick = event => {
+        if (event.detail === 1) {
+            clickTimerId = setTimeout(rightArrowClick, 100)
+        } else if (event.detail === 2) {
+            clearInterval(clickTimerId)
+            rightArrowDblClick()
+        }
+    };
 
     displayImg.addEventListener('dblclick', () => {
         displayImgDblClick()
@@ -58,10 +72,6 @@ export function OutputInit(){
 function displayLoadNotes(){
     // Load notes and display
     dbGetNotes(currentCode).then(notes => {
-        // Set first note as read if not done
-        if (notes[0].read == false)
-            dbReadNote(currentCode, notes[0].id)
-
         // Display last read note
         for (let i = 0; i < notes.length; i++){
             if (notes[i].read == true && notes[i+1] != undefined ? notes[i+1].read == false : true){
@@ -102,6 +112,7 @@ function displayNote(note){
                 opacity: [0,1],
                 delay: (el, i) => 50 * i
             })
+            
         
     }, fadeTimer)
 }
@@ -125,7 +136,9 @@ function displayLoadImage(){
 
 function displayLoadTimer(){
     let timerElm = document.getElementById("liveTimer");
-    let countDownDate = new Date(noteList[lastReadNoteIndex].readOn).getTime();
+    let countDownDate = new Date(noteList[lastReadNoteIndex].readOn)
+    countDownDate.setDate(countDownDate.getDate() + 1);
+    countDownDate = countDownDate.getTime();
 
     let intervalID = setInterval(() => {
         let now = new Date().getTime();
@@ -173,7 +186,9 @@ function rightArrowClick(){
     }
 
     let now = new Date().getTime();
-    let timeleft = new Date(noteList[lastReadNoteIndex].readOn).getTime() - now;
+    let targetDate = new Date(noteList[lastReadNoteIndex].readOn)
+    targetDate.setDate(targetDate.getDate() + 1);
+    let timeleft = targetDate.getTime() - now;
     // If next note has not been read
     // Check if it has been a day since reading most recently read note
     if (timeleft <= 0){
