@@ -28,7 +28,7 @@ export function OutputInit(){
 
     leftArrow.onclick = event => {
         if (event.detail === 1) {
-            clickTimerId = setTimeout(leftArrowClick, 100)
+            clickTimerId = setTimeout(leftArrowClick, 500)
         } else if (event.detail === 2) {
             clearInterval(clickTimerId)
             leftArrowDblClick()
@@ -37,7 +37,7 @@ export function OutputInit(){
 
     rightArrow.onclick = event => {
         if (event.detail === 1) {
-            clickTimerId = setTimeout(rightArrowClick, 100)
+            clickTimerId = setTimeout(rightArrowClick, 500)
         } else if (event.detail === 2) {
             clearInterval(clickTimerId)
             rightArrowDblClick()
@@ -75,9 +75,9 @@ function displayLoadNotes(){
         // Display last read note
         for (let i = 0; i < notes.length; i++){
             if (notes[i].read == true && notes[i+1] != undefined ? notes[i+1].read == false : true){
-                displayNote(notes[i])
                 currentNoteIndex = i
                 lastReadNoteIndex = i
+                displayNote(notes[i])
                 break
             }
         }
@@ -86,6 +86,8 @@ function displayLoadNotes(){
         noteList = notes
         // Start timer
         displayLoadTimer()
+        // Update not info
+        displayNoteInfo()
     })
 }
 
@@ -98,7 +100,7 @@ function displayNote(note){
     setTimeout(() => {
         noteTarget.style.textShadow = note.isFavorite ? favNoteStyle : 'none'
         noteTarget.innerHTML = note.note;
-        PlayAnimation(noteTarget, "fadeIn2", "0.2", "ease-in-out")
+        PlayAnimation(noteTarget, "fadeIn2", "0.3", "ease-in-out")
 
         var textWrapper = document.querySelector('.ml6 .letters');
         textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
@@ -112,8 +114,6 @@ function displayNote(note){
                 opacity: [0,1],
                 delay: (el, i) => 50 * i
             })
-            
-        
     }, fadeTimer)
 }
 
@@ -157,18 +157,32 @@ function displayLoadTimer(){
     }, 1000)
 }
 
+function displayNoteInfo(){
+    // Update info for current note
+    let noteDateElm = document.getElementById("noteDate")
+    let notePosElm = document.getElementById("notePosition")
+
+    let date = new Date(noteList[currentNoteIndex].readOn)
+    let pos = (currentNoteIndex+1) + " / " + (lastReadNoteIndex+1)
+
+    notePosElm.innerHTML = pos
+    noteDateElm.innerHTML = date.getDate() + " / " + (date.getMonth()+1) + " / " + date.getFullYear()
+}
+
 function leftArrowClick(){
     // Display previous note if exists
     if (noteList[currentNoteIndex-1] != undefined){
-        displayNote(noteList[currentNoteIndex-1])
         currentNoteIndex--
+        displayNote(noteList[currentNoteIndex])
+        displayNoteInfo()
     }
 }
 
 function leftArrowDblClick(){
     // Display first note
-    displayNote(noteList[0])
     currentNoteIndex = 0
+    displayNote(noteList[currentNoteIndex])
+    displayNoteInfo()
 }
 
 function rightArrowClick(){
@@ -180,8 +194,9 @@ function rightArrowClick(){
 
     // Check if next note has been read already, allowing to see it
     if (noteList[currentNoteIndex+1].read == true){
-        displayNote(noteList[currentNoteIndex+1])
         currentNoteIndex++
+        displayNote(noteList[currentNoteIndex])
+        displayNoteInfo()
         return
     }
 
@@ -195,9 +210,16 @@ function rightArrowClick(){
         currentNoteIndex++
         lastReadNoteIndex++
 
-        // Update note, set as read in db, and update timer
+        // Show new note
         displayNote(noteList[currentNoteIndex])
+        displayNoteInfo()
+        // Update note in db to read
         dbReadNote(currentCode, noteList[currentNoteIndex].id)
+        // Update local note to read
+        noteList[currentFavNoteIndex].read = true
+        noteList[currentFavNoteIndex].readOn = getCurrentDate()
+
+        // Update timer
         displayLoadTimer()
 
         // Play animation on new note revealed
@@ -207,8 +229,9 @@ function rightArrowClick(){
 
 // Display last note
 function rightArrowDblClick(){
-    displayNote(noteList[lastReadNoteIndex])
     currentNoteIndex = lastReadNoteIndex
+    displayNote(noteList[currentNoteIndex])
+    displayNoteInfo()
 }
 
 // Show hearts on double click
@@ -240,6 +263,7 @@ function displayFavNote(){
     if (favList.length == 0) return
 
     currentFavNoteIndex = currentFavNoteIndex + 1 >= favList.length ? 0 : currentFavNoteIndex+1
-    displayNote(favList[currentFavNoteIndex])
     currentNoteIndex = favIndexList[currentFavNoteIndex]
+    displayNote(noteList[currentNoteIndex])
+    displayNoteInfo()
 }

@@ -66,11 +66,13 @@ body{
     display: flex;
     align-items: center;
     width: 70%;
-    height: 20%;
+    height: 16%;
     margin-top: auto;
     margin-bottom: 10px;
+    border-bottom: black 1px solid;
+    border-top: black 1px solid;
 
-    animation: fadeIn2 ease-in-out 2s;
+    animation: fadeIn2 ease-in-out 3s;
     animation-iteration-count: 1;
     animation-fill-mode: forwards;
 }
@@ -116,7 +118,7 @@ body{
 .ml6 {
     font-family: 'Indie Flower', cursive;
     position: relative;
-    font-size: 32px;
+    font-size: 28px;
     width: 80%;
     text-align: center;
     margin: 0 auto;
@@ -136,21 +138,36 @@ body{
     line-height: 1em;
 }
 
+.noteInfo{
+    font-family: 'Indie Flower', cursive;
+    font-size: 14px;
+    position: absolute;
+    bottom: 0;
+}
+
+#noteDate{
+    left: 0;
+}
+
+#notePosition{
+    right: 0;
+}
+
 #liveTimer{
     font-family: 'Indie Flower', cursive;
-    font-size: 26px;
+    font-size: 20px;
     padding: 0 0 10px 0;
     width: 100%;
     text-align: center;
 
-    animation: fadeIn2 ease-in-out 4s;
+    animation: fadeIn2 ease-in-out 5s;
     animation-iteration-count: 1;
     animation-fill-mode: forwards;
 }
 
 /* ==== Mobile Styles ====*/
 
-@media only screen and (max-width: 600px) {
+@media only screen and (max-width: 600px){
     .arrow{
         font-size: 30px
     }
@@ -175,6 +192,39 @@ body{
     }
 
     #liveTimer{
+        font-size: 14px;
+    }
+
+    .noteInfo{
+        font-size: 10px;
+    }
+}
+
+/* ==== Tablet Styles ====*/
+
+@media only screen and (max-width: 1000px) and (min-width: 600px) {
+    .arrow{
+        font-size: 40px
+    }
+
+    #displayTitle{
+        font-size: 50px;
+        margin-top: 10px;
+    }
+
+    #msgContainer{
+        width: 80%;
+    }
+
+    .ml6{
+        font-size: 20px;
+    }
+
+    #liveTimer{
+        font-size: 16px;
+    }
+
+    .noteInfo{
         font-size: 12px;
     }
 }
