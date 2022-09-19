@@ -19,6 +19,7 @@ var favNoteStyle = '-1px -1px 0 #ffe28a, 1px -1px 0 #ffe28a, -1px 1px 0 #ffe28a,
 var currentFavNoteIndex = -1
 
 var clickTimerId = null
+var canChangeNote = true
 
 export function OutputInit(){
     let leftArrow = document.getElementById("leftArrow")
@@ -26,23 +27,27 @@ export function OutputInit(){
     let displayImg = document.getElementById("displayImg")
     let noteTarget = document.getElementById("noteTarget")
 
-    leftArrow.onclick = event => {
-        if (event.detail === 1) {
-            clickTimerId = setTimeout(leftArrowClick, 500)
-        } else if (event.detail === 2) {
-            clearInterval(clickTimerId)
-            leftArrowDblClick()
-        }
-    };
+    leftArrow.addEventListener('click', () => {
+        if (!canChangeNote) return;
+        clickTimerId = setTimeout(leftArrowClick, 500)
+    })
 
-    rightArrow.onclick = event => {
-        if (event.detail === 1) {
-            clickTimerId = setTimeout(rightArrowClick, 500)
-        } else if (event.detail === 2) {
-            clearInterval(clickTimerId)
-            rightArrowDblClick()
-        }
-    };
+    leftArrow.addEventListener('dblclick', () => {
+        if (!canChangeNote) return;
+        clearInterval(clickTimerId)
+        leftArrowDblClick()
+    })
+
+    rightArrow.addEventListener('click', () => {
+        if (!canChangeNote) return;
+        clickTimerId = setTimeout(rightArrowClick, 500)
+    })
+
+    rightArrow.addEventListener('dblclick', () => {
+        if (!canChangeNote) return;
+        clearInterval(clickTimerId)
+        rightArrowDblClick()
+    })
 
     displayImg.addEventListener('dblclick', () => {
         displayImgDblClick()
@@ -94,6 +99,7 @@ function displayLoadNotes(){
 function displayNote(note){
     let noteTarget = document.getElementById("noteTarget");
     let fadeTimer = 500
+    canChangeNote = false
 
     PlayAnimation(noteTarget, "fadeOut", "0.5", "ease-in-out")
             
@@ -114,6 +120,8 @@ function displayNote(note){
                 opacity: [0,1],
                 delay: (el, i) => 50 * i
             })
+        
+        canChangeNote = true
     }, fadeTimer)
 }
 
@@ -166,7 +174,7 @@ function displayNoteInfo(){
     let pos = (currentNoteIndex+1) + " / " + (lastReadNoteIndex+1)
 
     notePosElm.innerHTML = pos
-    noteDateElm.innerHTML = date.getDate() + " / " + (date.getMonth()+1) + " / " + date.getFullYear()
+    noteDateElm.innerHTML = (date.getMonth()+1) + " / " + date.getDate() + " / " + date.getFullYear()
 }
 
 function leftArrowClick(){
