@@ -1,23 +1,22 @@
-import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote } from './database'
+import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote, dbDoesExist } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
+import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite } from './staticvariables'
 
+// Data to load
 var currentCode = null
+var displayTitle
+var displayImage
 var noteList = []
 
-// Display
+// Note indexes
 var currentNoteIndex = 0
 var lastReadNoteIndex = 0
 
-// Strings to access variables from db
-var dbVarPassword = "password"
-var dbVarPageTitle = "pageTitle"
-var dbVarImageURL = "imageURL"
-var dbVarUsername = "displayPageId"
-var dbVarFavorite = "favoriteNote"
-
+// Fav note
 var favNoteStyle = '-1px -1px 0 #ffe28a, 1px -1px 0 #ffe28a, -1px 1px 0 #ffe28a, 1px 1px 0 #ffe28a'
 var currentFavNoteIndex = -1
 
+// Changing note arrows
 var clickTimerId = null
 var canChangeNote = true
 
@@ -27,6 +26,7 @@ export function OutputInit(){
     let displayImg = document.getElementById("displayImg")
     let noteTarget = document.getElementById("noteTarget")
 
+    // Left arrow click & double click
     leftArrow.addEventListener('click', () => {
         if (!canChangeNote) return;
         clickTimerId = setTimeout(leftArrowClick, 500)
@@ -37,7 +37,8 @@ export function OutputInit(){
         clearInterval(clickTimerId)
         leftArrowDblClick()
     })
-
+    
+    // Right arrow click & double click
     rightArrow.addEventListener('click', () => {
         if (!canChangeNote) return;
         clickTimerId = setTimeout(rightArrowClick, 500)
@@ -49,11 +50,13 @@ export function OutputInit(){
         rightArrowDblClick()
     })
 
+    // Image double click
     displayImg.addEventListener('dblclick', () => {
         displayImgDblClick()
         displayFavNote()
     })
 
+    // Note double click
     noteTarget.addEventListener('dblclick', displaySetFavNote)
 
     // Get display id from URL
@@ -62,40 +65,147 @@ export function OutputInit(){
     params = params.get('displayId')
 
     if (params == undefined){
+        // No display id found
         Toast("Page does not exist",4)
     }else{
-        currentCode = params;
-        displayLoadImage()
-        displayLoadTitle()
-
-        setTimeout(displayLoadNotes, 1500)
+        // Attempt load of display id
+        loadData(params)
     }
 }
 
 /* ==== DISPLAY PAGE ====*/ 
 
-function displayLoadNotes(){
-    // Load notes and display
-    dbGetNotes(currentCode).then(notes => {
-        // Display last read note
-        for (let i = 0; i < notes.length; i++){
-            if (notes[i].read == true && notes[i+1] != undefined ? notes[i+1].read == false : true){
-                currentNoteIndex = i
-                lastReadNoteIndex = i
-                displayNote(notes[i])
-                break
-            }
+async function loadData(code){
+    let canReloadData = false;
+
+    // Allow to load data if code does not match local code, but code exists
+    if (localStorage.currentCode){
+        if (localStorage.currentCode != code){
+            if (await dbDoesExist(code))
+                canReloadData = true
+            else
+                return
+        }
+    }
+
+    // Find out if its been a day or first time setup
+    // to see if we can load data from database
+    if (localStorage.timeSinceLastUpdate){
+        let timeSinceLastUpdate = new Date(localStorage.timeSinceLastUpdate)
+        timeSinceLastUpdate.setDate(timeSinceLastUpdate.getDate() + 1)
+    
+        let now = new Date().getTime()
+        let timeleft = timeSinceLastUpdate.getTime() - now
+        if (timeleft <= 0)
+            canReloadData = true
+    }else
+        canReloadData = true
+
+    // Load data from database to local
+    if (canReloadData){
+        let notes = []
+        // Update read and fav notes to db
+        if (localStorage.noteList){
+            notes = await dbGetNotes(code)
+            setData(notes, localStorage.noteList)
+            // Wait so db can catchup
+            await new Promise(r => setTimeout(r, 100))
         }
 
-        // Store notes
-        noteList = notes
-        // Start timer
-        displayLoadTimer()
-        // Update not info
-        displayNoteInfo()
-    })
+        // Get updated notes from db
+        notes = await dbGetNotes(code)
+
+        // Store all variables in local storage
+        localStorage.noteList = JSON.stringify(notes)
+        localStorage.displayTitle = await dbGetVariable(code, dbVarPageTitle)
+        localStorage.displayImage = await dbGetVariable(code, dbVarImageURL)
+        localStorage.timeSinceLastUpdate = getCurrentDate()
+        localStorage.currentCode = code
+    }
+
+    // Load data from storage
+    noteList = JSON.parse(localStorage.noteList)
+    displayTitle = localStorage.displayTitle
+    displayImage = localStorage.displayImage
+    currentCode = code
+
+    // Load page
+    displayLoadAttributes()
+    displayLoadNotes()
+    displayLoadTimer()
 }
 
+function setData(databaseNoteList, localNoteList){
+    // Updates database data with local data
+    for (let i = 0; i < localNoteList.length; i++){
+        // Set read in db if not already
+        if (localNoteList[i].read != databaseNoteList[i].read){
+            dbReadNote(currentCode, localNoteList[i].id)
+        }
+
+        // Set favorite in db if not already
+        if (localNoteList[i].isFavorite != databaseNoteList[i].isFavorite){
+            dbFavoriteNote(currentCode, localNoteList[i].id, localNoteList[i].isFavorite)
+        }
+    }
+}
+
+function displayLoadNotes(){
+    // Load notes and display
+    for (let i = 0; i < noteList.length; i++){
+        // Display last read note
+        if (noteList[i].read == true && noteList[i+1] != undefined ? noteList[i+1].read == false : true){
+            currentNoteIndex = i
+            lastReadNoteIndex = i
+
+            // Display note on a delay
+            setTimeout(displayNote, 1500, noteList[i])
+            displayNoteInfo()
+            break
+        }
+    }
+}
+
+function displayLoadAttributes(){
+    // Load title and image url
+    let titleElm = document.getElementById("displayTitle")
+    titleElm.innerHTML = displayTitle
+
+    if (displayImage != null && displayImage != ""){
+        let imageElm = document.getElementById("displayImg")
+        imageElm.src = displayImage
+    }
+}
+
+// Load the timer 
+function displayLoadTimer(){
+    // Do not load timer if a new note does not exist
+    if (noteList[lastReadNoteIndex+1] == undefined) return
+
+    let timerElm = document.getElementById("liveTimer");
+    let countDownDate = new Date(noteList[lastReadNoteIndex].readOn)
+    countDownDate.setDate(countDownDate.getDate() + 1);
+    countDownDate = countDownDate.getTime();
+
+    // Interval for timer
+    let intervalID = setInterval(() => {
+        let now = new Date().getTime();
+        let timeleft = countDownDate - now;
+
+        let hours = Math.floor((timeleft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        let minutes = Math.floor((timeleft % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((timeleft % (1000 * 60)) / 1000);
+
+        timerElm.innerHTML = "New note in " + (hours.toString().length == 1 ? "0" : "") + hours + " : " + (minutes.toString().length == 1 ? "0" : "") + minutes + " : " + (seconds.toString().length == 1 ? "0" : "") + seconds
+
+        if (timeleft <= 0){
+            timerElm.innerHTML = "New note available"
+            clearInterval(intervalID)
+        }
+    }, 1000)
+}
+
+// Animate displaying a new note
 function displayNote(note){
     let noteTarget = document.getElementById("noteTarget");
     let fadeTimer = 500
@@ -123,46 +233,6 @@ function displayNote(note){
         
         canChangeNote = true
     }, fadeTimer)
-}
-
-function displayLoadTitle(){
-    // Load title and display
-    dbGetVariable(currentCode, dbVarPageTitle).then(title => {
-        let titleElm = document.getElementById("displayTitle")
-        titleElm.innerHTML = title
-    })
-}
-
-function displayLoadImage(){
-    // Load title and display
-    dbGetVariable(currentCode, dbVarImageURL).then(url => {
-        if (url == "" || url == undefined) return;
-        let imageElm = document.getElementById("displayImg")
-        imageElm.src = url
-    })
-}
-
-function displayLoadTimer(){
-    let timerElm = document.getElementById("liveTimer");
-    let countDownDate = new Date(noteList[lastReadNoteIndex].readOn)
-    countDownDate.setDate(countDownDate.getDate() + 1);
-    countDownDate = countDownDate.getTime();
-
-    let intervalID = setInterval(() => {
-        let now = new Date().getTime();
-        let timeleft = countDownDate - now;
-
-        let hours = Math.floor((timeleft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        let minutes = Math.floor((timeleft % (1000 * 60 * 60)) / (1000 * 60));
-        let seconds = Math.floor((timeleft % (1000 * 60)) / 1000);
-
-        timerElm.innerHTML = "New note in " + (hours.toString().length == 1 ? "0" : "") + hours + " : " + (minutes.toString().length == 1 ? "0" : "") + minutes + " : " + (seconds.toString().length == 1 ? "0" : "") + seconds
-
-        if (timeleft <= 0){
-            timerElm.innerHTML = "New note available"
-            clearInterval(intervalID)
-        }
-    }, 1000)
 }
 
 function displayNoteInfo(){
@@ -221,11 +291,11 @@ function rightArrowClick(){
         // Show new note
         displayNote(noteList[currentNoteIndex])
         displayNoteInfo()
-        // Update note in db to read
-        dbReadNote(currentCode, noteList[currentNoteIndex].id)
+
         // Update local note to read
-        noteList[currentFavNoteIndex].read = true
-        noteList[currentFavNoteIndex].readOn = getCurrentDate()
+        noteList[currentNoteIndex].read = true
+        noteList[currentNoteIndex].readOn = getCurrentDate()
+        localStorage.noteList = JSON.stringify(notes)
 
         // Update timer
         displayLoadTimer()
@@ -250,7 +320,8 @@ function displayImgDblClick(){
 // Set note as favorite on double click
 function displaySetFavNote(){
     noteList[currentNoteIndex].isFavorite = !noteList[currentNoteIndex].isFavorite == null ? true : !noteList[currentNoteIndex].isFavorite
-    dbFavoriteNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].isFavorite)
+    localStorage.noteList = JSON.stringify(notes)
+
     let noteTarget = document.getElementById("noteTarget");
     noteTarget.style.textShadow = noteList[currentNoteIndex].isFavorite ? favNoteStyle : 'none'
     Toast(noteList[currentNoteIndex].isFavorite ? 'Added to favorites' : 'Removed from favorites', 2)

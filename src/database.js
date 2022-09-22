@@ -17,6 +17,14 @@ const firebaseApp = initializeApp({
 
 const db = getFirestore();
 
+// Return if code exists
+export async function dbDoesExist(code){
+    const docRef = doc(db, code, "variables")
+    const snapshot = await getDoc(docRef)
+
+    return snapshot.exists()
+}
+
 // Return list of notes from db 
 export async function dbGetNotes(code){
     const colRef = collection(db, code)

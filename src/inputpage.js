@@ -1,17 +1,9 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
+import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc } from './staticvariables'
 
 var currentCode = null
 var currentPassword = null
-
-// Strings to access variables from db
-var dbVarPassword = "password"
-var dbVarPageTitle = "pageTitle"
-var dbVarImageURL = "imageURL"
-var dbVarDisplayId = "displayPageId"
-var dbVarFavorite = "favoriteNote"
-
-var defaultImgSrc = "/flowers/sunflower.gif"
 
 export function InputInit(){
     let btnSaveChanges = document.getElementById("btnSaveChanges")

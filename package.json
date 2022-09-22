@@ -8,7 +8,7 @@
     "build": "webpack",
     "watch": "webpack --watch",
     "start": "node server.js",
-    "start2": "webpack serve --open"
+    "devstart": "webpack serve --open"
   },
   "repository": {
     "type": "git",
