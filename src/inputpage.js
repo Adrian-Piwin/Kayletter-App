@@ -34,8 +34,6 @@ export function InputInit(){
     }
 }
 
-/* ==== INDEX PAGE ====*/ 
-
 // Automatically add note element
 function autoAddNote(){
     let noteContainer = document.getElementById("noteContainer");

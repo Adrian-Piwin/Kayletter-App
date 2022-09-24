@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query, getDoc, orderBy, doc, setDoc } from 'firebase/firestore'
+import { Toast } from './utility';
 import { getCurrentDate } from './utility';
 
 /* ==== DATABASE ====*/ 
@@ -19,10 +20,14 @@ const db = getFirestore();
 
 // Return if code exists
 export async function dbDoesExist(code){
-    const docRef = doc(db, code, "variables")
-    const snapshot = await getDoc(docRef)
+    try{
+        const docRef = doc(db, code, "variables")
+        const snapshot = await getDoc(docRef)
 
-    return snapshot.exists()
+        return snapshot.exists()
+    }catch(err){
+        Toast("Having trouble connecting to internet...", 4)
+    }
 }
 
 // Return list of notes from db 

@@ -7,3 +7,5 @@ export const dbVarUsername = "displayPageId"
 export const dbVarFavorite = "favoriteNote"
 
 export const defaultImgSrc = "/flowers/sunflower.gif"
+
+export const revealAudio = new Audio('/assets/piano1.wav')

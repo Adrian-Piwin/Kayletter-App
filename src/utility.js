@@ -7,6 +7,7 @@ export function PlayAnimation(element, animName, time, animSetting=''){
     element.style.animation = '';
     element.offsetWidth;
     element.style.animation = animName + ' ' + ( animSetting == '' ? '' : (animSetting + ' ')) + time + 's';
+    element.style.animationFillMode = "forwards"
 }
 
 export function Toast(str, timeToShow){
@@ -51,7 +52,30 @@ export function getCurrentDate(){
     let cDay = currentDate.getDate()
     let cMonth = currentDate.getMonth()
     let cYear = currentDate.getFullYear()
-    return Date.UTC(cYear, cMonth, cDay, currentDate.getHours(), currentDate.getMinutes(), currentDate.getSeconds(), currentDate.getMilliseconds())
+    return Date.UTC(cYear, cMonth, cDay, currentDate.getHours() + 4, currentDate.getMinutes(), currentDate.getSeconds(), currentDate.getMilliseconds())
+}
+
+// Set countdown with a key, return time left till day has passed
+export function checkDayPassed(key){
+    // Set key value if not present and return
+    if (!localStorage.getItem(key)){
+        localStorage.setItem(key, getCurrentDate())
+    }
+
+    // Add day to original time and see if now is greater
+    let countdownTime = localStorage.getItem(key)
+    countdownTime = new Date(parseInt(countdownTime))
+    countdownTime.setDate(countdownTime.getDate() + 1);
+    countdownTime = countdownTime.getTime()
+
+    let now = new Date().getTime();
+    // If time has passed a day, reset timer for this key
+    if (now > countdownTime){
+        localStorage.setItem(key, getCurrentDate())
+        return 0
+    // Return time left
+    }else
+        return countdownTime - now
 }
 
 // Clear notes on page

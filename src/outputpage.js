@@ -1,6 +1,6 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote, dbDoesExist } from './database'
-import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
-import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite } from './staticvariables'
+import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, checkDayPassed } from './utility'
+import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, revealAudio } from './staticvariables'
 
 // Data to load
 var currentCode = null
@@ -16,8 +16,8 @@ var lastReadNoteIndex = 0
 var favNoteStyle = '-1px -1px 0 #ffe28a, 1px -1px 0 #ffe28a, -1px 1px 0 #ffe28a, 1px 1px 0 #ffe28a'
 var currentFavNoteIndex = -1
 
-// Changing note arrows
-var clickTimerId = null
+// Changing note arrow timer
+var clickTimer = null
 var canChangeNote = true
 
 export function OutputInit(){
@@ -26,38 +26,42 @@ export function OutputInit(){
     let displayImg = document.getElementById("displayImg")
     let noteTarget = document.getElementById("noteTarget")
 
-    // Left arrow click & double click
-    leftArrow.addEventListener('click', () => {
+    // Left arrow click vs long press detection
+    leftArrow.addEventListener('mousedown', () => {
         if (!canChangeNote) return;
-        clickTimerId = setTimeout(leftArrowClick, 500)
+        clickTimer = new Date().getTime();
     })
 
-    leftArrow.addEventListener('dblclick', () => {
+    leftArrow.addEventListener('mouseup', () => {
         if (!canChangeNote) return;
-        clearInterval(clickTimerId)
-        leftArrowDblClick()
-    })
-    
-    // Right arrow click & double click
-    rightArrow.addEventListener('click', () => {
-        if (!canChangeNote) return;
-        clickTimerId = setTimeout(rightArrowClick, 500)
+        if (new Date().getTime() - clickTimer < 500)
+            leftArrowClick()
+        else
+            leftArrowLongPress()
     })
 
-    rightArrow.addEventListener('dblclick', () => {
+    // Right arrow click vs long press detection
+    rightArrow.addEventListener('mousedown', () => {
         if (!canChangeNote) return;
-        clearInterval(clickTimerId)
-        rightArrowDblClick()
+        clickTimer = new Date().getTime();
+    })
+
+    rightArrow.addEventListener('mouseup', () => {
+        if (!canChangeNote) return;
+        if (new Date().getTime() - clickTimer < 500)
+            rightArrowClick()
+        else
+            rightArrowLongPress()
     })
 
     // Image double click
-    displayImg.addEventListener('dblclick', () => {
-        displayImgDblClick()
-        displayFavNote()
-    })
+    displayImg.addEventListener('dblclick', displayImgDblClick)
 
     // Note double click
     noteTarget.addEventListener('dblclick', displaySetFavNote)
+
+    // Update database on page unload
+    window.onbeforeunload = updateDatabase;
 
     // Get display id from URL
     let params = location.search
@@ -65,61 +69,42 @@ export function OutputInit(){
     params = params.get('displayId')
 
     if (params == undefined){
-        // No display id found
-        Toast("Page does not exist",4)
+        // No display id, display current code if exists
+        if (localStorage.currentCode)
+            loadData(localStorage.currentCode)
+        else
+            Toast("Page does not exist", 2)
     }else{
         // Attempt load of display id
         loadData(params)
     }
 }
 
-/* ==== DISPLAY PAGE ====*/ 
-
+// Loads data from database or local storage
 async function loadData(code){
     let canReloadData = false;
 
-    // Allow to load data if code does not match local code, but code exists
+    // If code trying to access does not match local code, check if code exists
+    // to display new data or display nothing, if code does match local, check if day passed
     if (localStorage.currentCode){
-        if (localStorage.currentCode != code){
-            if (await dbDoesExist(code))
-                canReloadData = true
-            else
-                return
-        }
-    }
-
-    // Find out if its been a day or first time setup
-    // to see if we can load data from database
-    if (localStorage.timeSinceLastUpdate){
-        let timeSinceLastUpdate = new Date(localStorage.timeSinceLastUpdate)
-        timeSinceLastUpdate.setDate(timeSinceLastUpdate.getDate() + 1)
-    
-        let now = new Date().getTime()
-        let timeleft = timeSinceLastUpdate.getTime() - now
-        if (timeleft <= 0)
+        if (localStorage.currentCode == code)
+            canReloadData = checkDayPassed(code + "databaseUpdate") == 0
+        else if (localStorage.currentCode != code && await dbDoesExist(code)){
             canReloadData = true
+        }
+        else{
+            Toast("Page does not exist", 2)
+            return
+        }
     }else
         canReloadData = true
 
     // Load data from database to local
     if (canReloadData){
-        let notes = []
-        // Update read and fav notes to db
-        if (localStorage.noteList){
-            notes = await dbGetNotes(code)
-            setData(notes, localStorage.noteList)
-            // Wait so db can catchup
-            await new Promise(r => setTimeout(r, 100))
-        }
-
-        // Get updated notes from db
-        notes = await dbGetNotes(code)
-
         // Store all variables in local storage
-        localStorage.noteList = JSON.stringify(notes)
+        localStorage.noteList = JSON.stringify(await dbGetNotes(code))
         localStorage.displayTitle = await dbGetVariable(code, dbVarPageTitle)
         localStorage.displayImage = await dbGetVariable(code, dbVarImageURL)
-        localStorage.timeSinceLastUpdate = getCurrentDate()
         localStorage.currentCode = code
     }
 
@@ -135,23 +120,26 @@ async function loadData(code){
     displayLoadTimer()
 }
 
-function setData(databaseNoteList, localNoteList){
-    // Updates database data with local data
-    for (let i = 0; i < localNoteList.length; i++){
+// Updates database data with local data
+async function updateDatabase(){
+    if (!currentCode) return
+
+    let databaseNoteList = await dbGetNotes(currentCode)
+    for (let i = 0; i < noteList.length; i++){
         // Set read in db if not already
-        if (localNoteList[i].read != databaseNoteList[i].read){
-            dbReadNote(currentCode, localNoteList[i].id)
+        if (noteList[i].read != databaseNoteList[i].read){
+            dbReadNote(code, noteList[i].id)
         }
 
         // Set favorite in db if not already
-        if (localNoteList[i].isFavorite != databaseNoteList[i].isFavorite){
-            dbFavoriteNote(currentCode, localNoteList[i].id, localNoteList[i].isFavorite)
+        if (noteList[i].isFavorite != databaseNoteList[i].isFavorite){
+            dbFavoriteNote(code, noteList[i].id, noteList[i].isFavorite)
         }
     }
 }
 
+// On load first time note setup
 function displayLoadNotes(){
-    // Load notes and display
     for (let i = 0; i < noteList.length; i++){
         // Display last read note
         if (noteList[i].read == true && noteList[i+1] != undefined ? noteList[i+1].read == false : true){
@@ -166,8 +154,8 @@ function displayLoadNotes(){
     }
 }
 
+// On load, first time title and image setup
 function displayLoadAttributes(){
-    // Load title and image url
     let titleElm = document.getElementById("displayTitle")
     titleElm.innerHTML = displayTitle
 
@@ -177,46 +165,52 @@ function displayLoadAttributes(){
     }
 }
 
-// Load the timer 
+// Load the timer for new note countdown
 function displayLoadTimer(){
-    // Do not load timer if a new note does not exist
-    if (noteList[lastReadNoteIndex+1] == undefined) return
+    // Check if day has passed and if a new note is available
+    if (checkDayPassed(currentCode + "newNote") == 0){
+        if (noteList[lastReadNoteIndex+1] != undefined && !noteList[lastReadNoteIndex+1].read){
+            timerElm.innerHTML = "New note available"
+            return
+        }else
+            return
+    }
 
     let timerElm = document.getElementById("liveTimer");
-    let countDownDate = new Date(noteList[lastReadNoteIndex].readOn)
-    countDownDate.setDate(countDownDate.getDate() + 1);
-    countDownDate = countDownDate.getTime();
-
-    // Interval for timer
+    let timeleft = checkDayPassed(currentCode + "newNote")
+    // Countdown timer to new note
     let intervalID = setInterval(() => {
-        let now = new Date().getTime();
-        let timeleft = countDownDate - now;
+        // Subtract 1 second every second
+        timeleft -= 1000
+        
+        // Check if day passed
+        if (timeleft <= 0){
+            timerElm.innerHTML = "New note available"
+            clearInterval(intervalID)
+            return
+        }
 
+        // Set timer
         let hours = Math.floor((timeleft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         let minutes = Math.floor((timeleft % (1000 * 60 * 60)) / (1000 * 60));
         let seconds = Math.floor((timeleft % (1000 * 60)) / 1000);
 
         timerElm.innerHTML = "New note in " + (hours.toString().length == 1 ? "0" : "") + hours + " : " + (minutes.toString().length == 1 ? "0" : "") + minutes + " : " + (seconds.toString().length == 1 ? "0" : "") + seconds
-
-        if (timeleft <= 0){
-            timerElm.innerHTML = "New note available"
-            clearInterval(intervalID)
-        }
     }, 1000)
 }
 
 // Animate displaying a new note
 function displayNote(note){
     let noteTarget = document.getElementById("noteTarget");
-    let fadeTimer = 500
+    let fadeTimer = 400
     canChangeNote = false
 
-    PlayAnimation(noteTarget, "fadeOut", "0.5", "ease-in-out")
+    PlayAnimation(noteTarget, "fadeOut", "0.4", "ease-in-out")
             
     setTimeout(() => {
         noteTarget.style.textShadow = note.isFavorite ? favNoteStyle : 'none'
         noteTarget.innerHTML = note.note;
-        PlayAnimation(noteTarget, "fadeIn2", "0.3", "ease-in-out")
+        PlayAnimation(noteTarget, "fadeIn2", "0.1", "ease-in-out")
 
         var textWrapper = document.querySelector('.ml6 .letters');
         textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
@@ -235,6 +229,7 @@ function displayNote(note){
     }, fadeTimer)
 }
 
+// Display current note date and index
 function displayNoteInfo(){
     // Update info for current note
     let noteDateElm = document.getElementById("noteDate")
@@ -247,22 +242,26 @@ function displayNoteInfo(){
     noteDateElm.innerHTML = (date.getMonth()+1) + " / " + date.getDate() + " / " + date.getFullYear()
 }
 
+// Left arrow click
 function leftArrowClick(){
     // Display previous note if exists
     if (noteList[currentNoteIndex-1] != undefined){
         currentNoteIndex--
+
         displayNote(noteList[currentNoteIndex])
         displayNoteInfo()
     }
 }
 
-function leftArrowDblClick(){
+// Left arrow long press
+function leftArrowLongPress(){
     // Display first note
     currentNoteIndex = 0
     displayNote(noteList[currentNoteIndex])
     displayNoteInfo()
 }
 
+// Right arrow click
 function rightArrowClick(){
     // Check if a new note exists
     if (noteList[currentNoteIndex+1] == undefined){
@@ -278,24 +277,23 @@ function rightArrowClick(){
         return
     }
 
-    let now = new Date().getTime();
-    let targetDate = new Date(noteList[lastReadNoteIndex].readOn)
-    targetDate.setDate(targetDate.getDate() + 1);
-    let timeleft = targetDate.getTime() - now;
     // If next note has not been read
     // Check if it has been a day since reading most recently read note
-    if (timeleft <= 0){
+    if (checkDayPassed(currentCode + "newNote") == 0){
         currentNoteIndex++
         lastReadNoteIndex++
 
         // Show new note
         displayNote(noteList[currentNoteIndex])
         displayNoteInfo()
+        // Play sound
+        revealAudio.play()
+
 
         // Update local note to read
         noteList[currentNoteIndex].read = true
         noteList[currentNoteIndex].readOn = getCurrentDate()
-        localStorage.noteList = JSON.stringify(notes)
+        localStorage.noteList = JSON.stringify(noteList)
 
         // Update timer
         displayLoadTimer()
@@ -305,29 +303,31 @@ function rightArrowClick(){
     }
 }
 
-// Display last note
-function rightArrowDblClick(){
+// Right arrow long press
+function rightArrowLongPress(){
+    // Display last read note
     currentNoteIndex = lastReadNoteIndex
     displayNote(noteList[currentNoteIndex])
     displayNoteInfo()
 }
 
-// Show hearts on double click
+// Show hearts on double click and cycle fav notes
 function displayImgDblClick(){
     PlayAnimation(document.getElementById("msgBackgroundEffect"), "fadeInOut", "5", "ease-in-out")
+    displayFavNote()
 }
 
-// Set note as favorite on double click
+// Set note as favorite 
 function displaySetFavNote(){
     noteList[currentNoteIndex].isFavorite = !noteList[currentNoteIndex].isFavorite == null ? true : !noteList[currentNoteIndex].isFavorite
-    localStorage.noteList = JSON.stringify(notes)
+    localStorage.noteList = JSON.stringify(noteList)
 
     let noteTarget = document.getElementById("noteTarget");
     noteTarget.style.textShadow = noteList[currentNoteIndex].isFavorite ? favNoteStyle : 'none'
     Toast(noteList[currentNoteIndex].isFavorite ? 'Added to favorites' : 'Removed from favorites', 2)
 }
 
-// Display favorite note on double click
+// Display favorite note 
 function displayFavNote(){
     let favList = []
     let favIndexList = []
