@@ -263,9 +263,9 @@ function leftArrowLongPress(){
 
 // Right arrow click
 function rightArrowClick(){
+    console.log(noteList)
     // Check if a new note exists
     if (noteList[currentNoteIndex+1] == undefined){
-        Toast("No more notes for now!", 4)
         return
     }
 
