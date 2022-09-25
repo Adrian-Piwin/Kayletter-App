@@ -55,27 +55,30 @@ export function getCurrentDate(){
     return Date.UTC(cYear, cMonth, cDay, currentDate.getHours() + 4, currentDate.getMinutes(), currentDate.getSeconds(), currentDate.getMilliseconds())
 }
 
-// Set countdown with a key, return time left till day has passed
-export function checkDayPassed(key){
+// Given a date, return time left till a day has passed
+export function checkDayPassed(date){
+    // Add day to original time
+    let countdownTime = new Date(parseInt(date))
+    countdownTime.setDate(countdownTime.getDate() + 1);
+    countdownTime = countdownTime.getTime()
+
+    let now = new Date().getTime();
+    return countdownTime - now
+}
+
+// Set a repeated day counter, return time left till day passed
+export function waitDayPassed(key){
     // Set key value if not present and return
     if (!localStorage.getItem(key)){
         localStorage.setItem(key, getCurrentDate())
     }
 
-    // Add day to original time and see if now is greater
-    let countdownTime = localStorage.getItem(key)
-    countdownTime = new Date(parseInt(countdownTime))
-    countdownTime.setDate(countdownTime.getDate() + 1);
-    countdownTime = countdownTime.getTime()
-
-    let now = new Date().getTime();
+    let timeLeft = checkDayPassed(localStorage.getItem(key))
     // If time has passed a day, reset timer for this key
-    if (now > countdownTime){
+    if (timeLeft <= 0)
         localStorage.setItem(key, getCurrentDate())
-        return 0
-    // Return time left
-    }else
-        return countdownTime - now
+    
+    return timeLeft
 }
 
 // Clear notes on page
