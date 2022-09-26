@@ -79,11 +79,7 @@ export function OutputInit(){
     params = params.get('displayId')
 
     if (params == undefined){
-        // No display id, display current code if exists
-        if (localStorage.currentCode)
-            loadData(localStorage.currentCode)
-        else
-            Toast("Page does not exist", 2)
+        Toast("Page does not exist", 2)
     }else{
         // Attempt load of display id
         loadData(params)
@@ -92,63 +88,17 @@ export function OutputInit(){
 
 // Loads data from database or local storage
 async function loadData(code){
-    // Code exists already
-    if (localStorage.currentCode){
-        let doesCodeExist = await dbDoesExist(code)
-        // Existed code does not match target code but target code exists
-        if (localStorage.currentCode != code && doesCodeExist){
-            reloadData(code)
-        }
-        // Target code does not exist
-        else if(!doesCodeExist){
-            Toast("Page does not exist", 2)
-            return
-        }
-    }else{
-        reloadData(code)
-    }
+    if (!await dbDoesExist(code)) return
 
-    // Load data from storage
-    noteList = JSON.parse(localStorage.noteList)
-    displayTitle = localStorage.displayTitle
-    displayImage = localStorage.displayImage
+    noteList = await dbGetNotes(code)
+    displayTitle = await dbGetVariable(code, dbVarPageTitle)
+    displayImage = await dbGetVariable(code, dbVarImageURL)
     currentCode = code
 
     // Load page
     displayLoadAttributes()
     displayLoadNotes()
     displayLoadTimer()
-}
-
-// Syncs with database then reloads local data
-async function reloadData(code){
-    // Update db with what has been read/fav
-    updateDatabase()
-    await new Promise(r => setTimeout(r, 200))
-
-    // Store all variables in local storage
-    localStorage.noteList = JSON.stringify(await dbGetNotes(code))
-    localStorage.displayTitle = await dbGetVariable(code, dbVarPageTitle)
-    localStorage.displayImage = await dbGetVariable(code, dbVarImageURL)
-    localStorage.currentCode = code
-}
-
-// Updates database data with local data
-async function updateDatabase(){
-    if (!localStorage.currentCode) return
-
-    let databaseNoteList = await dbGetNotes(localStorage.currentCode)
-    for (let i = 0; i < noteList.length; i++){
-        // Set read in db if not already
-        if (noteList[i].read != databaseNoteList[i].read){
-            dbReadNote(localStorage.currentCode, noteList[i].id)
-        }
-
-        // Set favorite in db if not already
-        if (noteList[i].isFavorite != databaseNoteList[i].isFavorite){
-            dbFavoriteNote(localStorage.currentCode, noteList[i].id, noteList[i].isFavorite)
-        }
-    }
 }
 
 // On load first time note setup
@@ -180,6 +130,9 @@ function displayLoadAttributes(){
 
 // Load the timer for new note countdown
 function displayLoadTimer(){
+    // Don't display timer if there is no new note
+    if (noteList[lastReadNoteIndex+1] == undefined) return
+
     let timerElm = document.getElementById("liveTimer");
 
     // Check if day has passed and if a new note is available
@@ -277,7 +230,6 @@ function leftArrowDblClick(){
 
 // Right arrow click
 function rightArrowClick(){
-    console.log(noteList)
     // Check if a new note exists
     if (noteList[currentNoteIndex+1] == undefined){
         return
@@ -293,7 +245,7 @@ function rightArrowClick(){
 
     // If next note has not been read
     // Check if it has been a day since reading most recently read note
-    if (checkDayPassed(noteList[lastReadNoteIndex].readOn) <= 0){
+    if (checkDayPassed(noteList[currentNoteIndex+1].readOn) <= 0){
         currentNoteIndex++
         lastReadNoteIndex++
 
@@ -303,14 +255,10 @@ function rightArrowClick(){
         // Play sound
         revealAudio.play()
 
-        // Update local note to read
-        noteList[currentNoteIndex].read = true
+        // Update local storage list
+        noteList[currentNoteIndex].isRead = true
         noteList[currentNoteIndex].readOn = getCurrentDate()
-        localStorage.noteList = JSON.stringify(noteList)
-
-        // Sync with database
-        reloadData(currentCode)
-        noteList = JSON.parse(localStorage.noteList)
+        dbReadNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].readOn)
 
         // Update timer
         displayLoadTimer()
@@ -337,14 +285,14 @@ function displayImgDblClick(){
 // Set note as favorite 
 function displaySetFavNote(){
     noteList[currentNoteIndex].isFavorite = !noteList[currentNoteIndex].isFavorite == null ? true : !noteList[currentNoteIndex].isFavorite
-    localStorage.noteList = JSON.stringify(noteList)
+    dbFavoriteNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].isFavorite)
 
     let noteTarget = document.getElementById("noteTarget");
     noteTarget.style.textShadow = noteList[currentNoteIndex].isFavorite ? favNoteStyle : 'none'
     Toast(noteList[currentNoteIndex].isFavorite ? 'Added to favorites' : 'Removed from favorites', 2)
 }
 
-// Display favorite note 
+// Display favorite notes
 function displayFavNote(){
     let favList = []
     let favIndexList = []

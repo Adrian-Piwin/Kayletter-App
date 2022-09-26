@@ -38,56 +38,26 @@ export function InputInit(){
 }
 
 async function loadData(code, password){
-    // Code exists already
-    if (localStorage.inputCurrentCode){
-        let doesCodeExist = await dbDoesExist(code)
-        if (localStorage.inputCurrentCode != code && doesCodeExist){
-            // Attempt sign in
-            if (signIn(code, password))
-                reloadData(code)
-            else{
-                Toast("User does not exist", 2)
-                return
-            }
-        }
-        // Target code does not exist
-        else if(!doesCodeExist){
-            Toast("User does not exist", 2)
+    // If code exists, attempt sign in
+    if (dbDoesExist(code)){
+        if (signIn(code,password))
+            await reloadData(code)
+        else
             return
-        }
-    }else{
-        // Attempt sign in
-        if (signIn(code, password))
-            reloadData(code)
-        else{
-            Toast("User does not exist", 2)
-            return
-        }
     }
-    
-    // Reload data if day has passed
-    if (waitDayPassed(localStorage.inputCurrentCode + "indexReload") <= 0)
-        reloadData(localStorage.inputCurrentCode)
-
-    // Load data from storage
-    noteList = JSON.parse(localStorage.inputNoteList)
-    displayTitle = localStorage.inputTitle
-    displayImage = localStorage.inputImage
-    currentCode = localStorage.inputCurrentCode
-    currentPassword = localStorage.inputCurrentPassword
 
     loadNotes()
     loadAttributes()
 }
 
-// Syncs with database then reloads local data
+// Gets data from datbase
 async function reloadData(code){
-    // Store all variables in local storage
-    localStorage.inputNoteList = JSON.stringify(await dbGetNotes(code))
-    localStorage.inputTitle = await dbGetVariable(code, dbVarPageTitle)
-    localStorage.inputImage = await dbGetVariable(code, dbVarImageURL)
-    localStorage.inputCurrentPassword = await dbGetVariable(code, dbVarPassword)
-    localStorage.inputCurrentCode = code
+    // Load variables from database
+    noteList = await dbGetNotes(code)
+    displayTitle = await dbGetVariable(code, dbVarPageTitle)
+    displayImage = await dbGetVariable(code, dbVarImageURL)
+    currentPassword = await dbGetVariable(code, dbVarPassword)
+    currentCode = code
 }
 
 // Attempts user sign in to retrieve data from db
@@ -128,12 +98,23 @@ async function signUp(){
 
 // Apply changes for the current code
 async function updateNotes(){
+
+    // ========= UPDATE VARIABLES ========= 
+
     let pageTitle = document.getElementById("inputTitle").value
     let imageURL = document.getElementById("inputImageURL").value
 
     // Update image to show on this page
     let displayImg = document.getElementById("displayImg");
     displayImg.src = imageURL == null || imageURL == "" ? defaultImgSrc : imageURL
+
+    // Store title
+    dbSetVariable(currentCode, dbVarPageTitle, pageTitle)
+    // Store image url
+    if (imageURL != null || imageURL != "")
+        dbSetVariable(currentCode, dbVarImageURL, imageURL)
+
+    // ========= SIGN UP IF NOT SIGNED IN ========= 
 
     // Get notes from list
     let currentNotes = getCurrentNotes()
@@ -161,13 +142,17 @@ async function updateNotes(){
         }
     }
 
-    // Update note if text is on notes line, otherwise delete note
+    // ========= UPDATE NOTES ========= 
+
+    // Update note if text is on notes line
     for (let i = 0; i < noteList.length; i++){
         if (noteList[i].note != currentNotes[i]){
             dbUpdateNote(currentCode, noteList[i].id, currentNotes[i])
             noteList[i].note = currentNotes[i]
         }
     }
+
+    // ========= CREATE NOTES ========= 
 
     // Create note if does not exist
     if (currentNotes.length > noteList.length){
@@ -189,17 +174,6 @@ async function updateNotes(){
             }
         }
     }
-
-    // Store title
-    dbSetVariable(currentCode, dbVarPageTitle, pageTitle)
-    // Store image url
-    if (imageURL != null || imageURL != "")
-        dbSetVariable(currentCode, dbVarImageURL, imageURL)
-    
-    // Save locally
-    localStorage.inputNoteList = JSON.stringify(noteList)
-    localStorage.inputTitle = pageTitle
-    localStorage.inputImage = imageURL
 
     Toast("Notes updated", 2)
 }

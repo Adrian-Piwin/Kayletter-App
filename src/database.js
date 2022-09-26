@@ -106,11 +106,11 @@ export function dbFavoriteNote(code, noteId, isFav){
 }
 
 // Set a note as read
-export function dbReadNote(code, noteId){
+export function dbReadNote(code, noteId, date){
     const docRef = doc(db, code, noteId);
 
     updateDoc(docRef, {
-        readOn: getCurrentDate(),
+        readOn: date,
         read: true
     });
 }
