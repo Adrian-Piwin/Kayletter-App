@@ -1,9 +1,12 @@
-import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote } from './database'
-import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
+import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote, dbDoesExist } from './database'
+import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, waitDayPassed } from './utility'
 import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc } from './staticvariables'
 
 var currentCode = null
 var currentPassword = null
+var displayTitle
+var displayImage
+var noteList = []
 
 export function InputInit(){
     let btnSaveChanges = document.getElementById("btnSaveChanges")
@@ -30,26 +33,97 @@ export function InputInit(){
     let password = params.get('password')
 
     if (displayId != undefined && password != undefined){
-        signIn(displayId, password)
+        loadData(displayId, password)
     }
 }
 
-// Automatically add note element
-function autoAddNote(){
-    let noteContainer = document.getElementById("noteContainer");
+async function loadData(code, password){
+    // Code exists already
+    if (localStorage.inputCurrentCode){
+        let doesCodeExist = await dbDoesExist(code)
+        if (localStorage.inputCurrentCode != code && doesCodeExist){
+            // Attempt sign in
+            if (signIn(code, password))
+                reloadData(code)
+            else{
+                Toast("User does not exist", 2)
+                return
+            }
+        }
+        // Target code does not exist
+        else if(!doesCodeExist){
+            Toast("User does not exist", 2)
+            return
+        }
+    }else{
+        // Attempt sign in
+        if (signIn(code, password))
+            reloadData(code)
+        else{
+            Toast("User does not exist", 2)
+            return
+        }
+    }
+    
+    // Reload data if day has passed
+    if (waitDayPassed(localStorage.inputCurrentCode + "indexReload") <= 0)
+        reloadData(localStorage.inputCurrentCode)
 
-    noteContainer.children[noteContainer.children.length-1].removeEventListener("click", autoAddNote);
-    addNote();
-    noteContainer.children[noteContainer.children.length-1].addEventListener("click", autoAddNote);
+    // Load data from storage
+    noteList = JSON.parse(localStorage.inputNoteList)
+    displayTitle = localStorage.inputTitle
+    displayImage = localStorage.inputImage
+    currentCode = localStorage.inputCurrentCode
+    currentPassword = localStorage.inputCurrentPassword
+
+    loadNotes()
+    loadAttributes()
 }
 
-// Add note element on page
-function addNote(){
-    let noteContainer = document.getElementById("noteContainer");
-    let note = document.createElement("input")
-    note.classList.add("w3-input")
-    note.maxLength = 240
-    noteContainer.appendChild(note)
+// Syncs with database then reloads local data
+async function reloadData(code){
+    // Store all variables in local storage
+    localStorage.inputNoteList = JSON.stringify(await dbGetNotes(code))
+    localStorage.inputTitle = await dbGetVariable(code, dbVarPageTitle)
+    localStorage.inputImage = await dbGetVariable(code, dbVarImageURL)
+    localStorage.inputCurrentPassword = await dbGetVariable(code, dbVarPassword)
+    localStorage.inputCurrentCode = code
+}
+
+// Attempts user sign in to retrieve data from db
+async function signIn(displayIdIn, passwordIn){
+    let password = dbGetVariable(displayIdIn, dbVarPassword)
+    if (passwordIn != password) {  
+        return false
+    }
+
+    currentCode = displayIdIn
+    currentPassword = password
+    return true
+}
+
+// Signs user up to db if username does not already exist
+async function signUp(){
+    let displayIdIn = createRandomStr(10)
+    let passwordIn = createRandomStr(8)
+
+    // Make sure id does not exist
+    while (!await dbDoesExist(displayIdIn)){
+        displayIdIn = createRandomStr(10)
+    }
+
+    // Store edit url as backup
+    let currentHost = window.location.host;
+    let url = "/index.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
+    // Change current url
+    window.history.pushState('Kayletter', 'Kayletter', url)
+
+    // Set up in database
+    dbSetVariable(displayIdIn, dbVarPassword, passwordIn)
+    dbSetVariable(displayIdIn, "EditURL", currentHost + url)
+
+    currentCode = displayIdIn
+    currentPassword = passwordIn
 }
 
 // Apply changes for the current code
@@ -61,6 +135,7 @@ async function updateNotes(){
     let displayImg = document.getElementById("displayImg");
     displayImg.src = imageURL == null || imageURL == "" ? defaultImgSrc : imageURL
 
+    // Get notes from list
     let currentNotes = getCurrentNotes()
 
     // Count how many actual notes are present
@@ -86,28 +161,29 @@ async function updateNotes(){
         }
     }
 
-    let notes = await dbGetNotes(currentCode)
     // Update note if text is on notes line, otherwise delete note
-    for (let i = 0; i < notes.length; i++){
-        if (currentNotes[i] == '')
-            dbDeleteNote(currentCode, notes[i].id)
-        else if (notes[i].note != currentNotes[i])
-            dbUpdateNote(currentCode, notes[i].id, currentNotes[i])
+    for (let i = 0; i < noteList.length; i++){
+        if (noteList[i].note != currentNotes[i]){
+            dbUpdateNote(currentCode, noteList[i].id, currentNotes[i])
+            noteList[i].note = currentNotes[i]
+        }
     }
 
     // Create note if does not exist
-    if (currentNotes.length > notes.length){
-        for (let i = notes.length; i < currentNotes.length; i++){
+    if (currentNotes.length > noteList.length){
+        for (let i = noteList.length; i < currentNotes.length; i++){
             if (currentNotes[i] != ''){
-
                 // Make first note read if new user
                 if (newUser){
                     dbAddReadNote(currentCode, currentNotes[i])
+                    noteList.push(currentNotes[i])
                     newUser = false
                 }
                 // Add normal unread note
-                else
+                else{
                     dbAddNote(currentCode, currentNotes[i])
+                    noteList.push(currentNotes[i])
+                }
                     
                 await new Promise(r => setTimeout(r, 50))
             }
@@ -119,22 +195,24 @@ async function updateNotes(){
     // Store image url
     if (imageURL != null || imageURL != "")
         dbSetVariable(currentCode, dbVarImageURL, imageURL)
+    
+    // Save locally
+    localStorage.inputNoteList = JSON.stringify(noteList)
+    localStorage.inputTitle = pageTitle
+    localStorage.inputImage = imageURL
 
     Toast("Notes updated", 2)
 }
 
 // Loads notes
 async function loadNotes(){
-    let notes = await dbGetNotes(currentCode)
-
-    if (notes.length == 0){
+    if (noteList.length == 0)
         return
-    }
 
     let noteContainer = document.getElementById("noteContainer").children
 
     // Create as many notes as needed
-    let diff = noteContainer.length - notes.length
+    let diff = noteContainer.length - noteList.length
     if (diff < 0){
         for (let i = -1; i < diff*-1; i++){
             autoAddNote()
@@ -142,43 +220,37 @@ async function loadNotes(){
     }
 
     // Fill notes with notes found in database
-    for (let i = 0; i < notes.length; i++){
-        noteContainer[i].value = notes[i].note
+    for (let i = 0; i < noteList.length; i++){
+        noteContainer[i].value = noteList[i].note
 
         // Show what notes have been read
-        if (notes[i].read){
+        if (noteList[i].read){
             noteContainer[i].style.backgroundColor = "#fdfd96";
         }
 
         // Show favorite note
-        if (notes[i].isFavorite){
+        if (noteList[i].isFavorite){
             noteContainer[i].style.backgroundColor = "#FF748C";
         }
-
-        // Load animation
-        await new Promise(r => setTimeout(r, 10))
     }
 }
 
 // Loads title 
 function loadAttributes(){
     // Load title
-    dbGetVariable(currentCode, dbVarPageTitle).then(title => {
-        if (title == null || title == "") return;
-        let titleElm = document.getElementById("inputTitle")
-        titleElm.value = title
-    })
+    let titleElm = document.getElementById("inputTitle")
+    titleElm.value = displayTitle
 
-    // Load IMG URL
-    dbGetVariable(currentCode, dbVarImageURL).then(url => {
-        if (url == null || url == "") return;
+    // Check for img 
+    if (displayImage != null && displayImage != ""){
+        // Load img url
         let urlElm = document.getElementById("inputImageURL")
-        urlElm.value = url
+        urlElm.value = displayImage
 
         // Update image on this page
         let flower = document.getElementById("flower");
-        flower.src = url
-    })
+        flower.src = displayImage
+    }
 }
 
 // Copy URL to clipboard
@@ -196,44 +268,22 @@ function copyURLClipboard(urlOpt){
     Toast("Copied to clipboard", 2);
 }
 
-// Attempts user sign in to retrieve data from db
-function signIn(displayIdIn, passwordIn){
-    dbGetVariable(displayIdIn, dbVarPassword).then(password => {
-        if (passwordIn != password) {  
-            Toast("User not found", 2);
-            return;
-        }
+// Automatically add note element
+function autoAddNote(){
+    let noteContainer = document.getElementById("noteContainer");
 
-        currentCode = displayIdIn
-        currentPassword = password
-        loadNotes()
-        loadAttributes()
-    })
+    noteContainer.children[noteContainer.children.length-1].removeEventListener("click", autoAddNote);
+    addNote();
+    noteContainer.children[noteContainer.children.length-1].addEventListener("click", autoAddNote);
 }
 
-// Signs user up to db if username does not already exist
-async function signUp(){
-    let displayIdIn = createRandomStr(8)
-    let passwordIn = createRandomStr(8)
-
-    let password = await dbGetVariable(displayIdIn, dbVarPassword)
-    // If there is no account for this username, create one
-    if (password == ""){
-        dbSetVariable(displayIdIn, dbVarPassword, passwordIn)
-        // Store edit url as backup
-        let currentHost = window.location.host;
-        let url = "/index.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
-        dbSetVariable(displayIdIn, "EditURL", currentHost + url)
-        // Change current url
-        window.history.pushState('Kayletter', 'Kayletter', url);
-    }
-    else{
-        return
-    }
-
-    currentCode = displayIdIn
-    currentPassword = passwordIn
-    loadAttributes()
+// Add note element on page
+function addNote(){
+    let noteContainer = document.getElementById("noteContainer");
+    let note = document.createElement("input")
+    note.classList.add("w3-input")
+    note.maxLength = 240
+    noteContainer.appendChild(note)
 }
 
 function help(){

@@ -92,20 +92,17 @@ export function OutputInit(){
 
 // Loads data from database or local storage
 async function loadData(code){
-
     // Code exists already
     if (localStorage.currentCode){
-        // Existed code matches target code
-        if (localStorage.currentCode == code){
-            reloadData(code)
+        let doesCodeExist = await dbDoesExist(code)
         // Existed code does not match target code but target code exists
-        }else if (await dbDoesExist(code)){
-            reloadData()
+        if (localStorage.currentCode != code && doesCodeExist){
+            reloadData(code)
         }
         // Target code does not exist
-        else{
+        else if(!doesCodeExist){
             Toast("Page does not exist", 2)
-            eturn
+            return
         }
     }else{
         reloadData(code)
