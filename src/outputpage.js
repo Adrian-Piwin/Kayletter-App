@@ -245,7 +245,7 @@ function rightArrowClick(){
 
     // If next note has not been read
     // Check if it has been a day since reading most recently read note
-    if (checkDayPassed(noteList[currentNoteIndex+1].readOn) <= 0){
+    if (checkDayPassed(noteList[lastReadNoteIndex].readOn) <= 0){
         currentNoteIndex++
         lastReadNoteIndex++
 
