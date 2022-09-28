@@ -5,6 +5,7 @@ export const dbVarPageTitle = "pageTitle"
 export const dbVarImageURL = "imageURL"
 export const dbVarUsername = "displayPageId"
 export const dbVarFavorite = "favoriteNote"
+export const dbVarChangePending = "changePending"
 
 export const defaultImgSrc = "/flowers/sunflower.gif"
 
