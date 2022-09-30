@@ -288,17 +288,17 @@ function rightArrowClick(){
         currentNoteIndex++
         lastReadNoteIndex++
 
+        // Update local storage list
+        noteList[currentNoteIndex].read = true
+        noteList[currentNoteIndex].readOn = getCurrentDate()
+        storeLocalData()
+        dbReadNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].readOn)
+
         // Show new note
         displayNote(noteList[currentNoteIndex])
         displayNoteInfo()
         // Play sound
         revealAudio.play()
-
-        // Update local storage list
-        noteList[currentNoteIndex].isRead = true
-        noteList[currentNoteIndex].readOn = getCurrentDate()
-        storeLocalData()
-        dbReadNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].readOn)
 
         // Update timer
         displayLoadTimer()

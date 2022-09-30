@@ -42,7 +42,7 @@
         <input class="w3-input" type="text" maxlength="240">
     </div>
 
-    <div class="itemContainer">
+    <div class="itemContainer" style="margin-bottom: 15px;">
         <button id="btnGetDisplayURL">Display Page URL</button>
         <button id="btnGetEditURL">Edit Page URL</button>
         <div style="flex-basis: 100%; height: 0;"></div>
@@ -51,5 +51,25 @@
 
     <div id="snackbar"></div>
 
+    <div id="helpMenu">
+        <div id="helpClose">x</div>
+        <h1>How to use</h1>
+        <p>Create a title for your webpage and write at least 5 notes, then you will be able to save which will create your website</p>
+        <p>Optionally, you can change the image of the sunflower to whatever you want with a link to a hosted image</p>
+        <p>Once your website is created, copy your edit page url with the button. If you want to add/edit notes later you will need to save this link or you will lose access</p>
+        <p>To see the display page where your website is, copy the display page url with the button. Send this URL to your special someone:)</p>
+        <br>
+        <h1>Colors definition</h1>
+        <p>Once someone has access to your display page you will be able to see what notes they read or favorited</p>
+        <p><span style="background-color: #fdfd96; padding: 5px;">Yellow</span>: This means the note has been read</p>
+        <p><span style="background-color: #FF748C; padding: 5px;">Pink</span>: This means the note has been favorited</p>
+        <br>
+        <h1>Actions on display page</h1>
+        <p>Single click on arrow: Show next/prev note</p>
+        <p>Double click on arrow: Show first/last read note</p>
+        <p>Double click on note: Add note to favorites</p>
+        <p>Double click on image: Cycle through favorited notes</p>
+
+    </div>
 <script defer src="bundle.js"></script></body>
 </html>

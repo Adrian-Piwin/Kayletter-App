@@ -1,6 +1,7 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote, dbDoesExist } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, waitDayPassed } from './utility'
 import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc, dbVarChangePending } from './staticvariables'
+import { doc } from 'firebase/firestore'
 
 var currentCode = null
 var currentPassword = null
@@ -11,11 +12,15 @@ var noteList = []
 export function InputInit(){
     let btnSaveChanges = document.getElementById("btnSaveChanges")
     let btnHelp = document.getElementById("btnHelp")
+    let helpMenuClose = document.getElementById("helpClose")
+    let helpMenu = document.getElementById("helpMenu")
     let btnGetDisplayURL = document.getElementById("btnGetDisplayURL")
     let btnGetEditURL = document.getElementById("btnGetEditURL")
 
-    btnSaveChanges.addEventListener('click', updateNotes)
+    helpMenuClose.addEventListener('click', help)
     btnHelp.addEventListener('click', help)
+
+    btnSaveChanges.addEventListener('click', updateNotes)
     btnGetDisplayURL.addEventListener('click', function(){
         copyURLClipboard("display");
     })
@@ -263,6 +268,9 @@ function addNote(){
     noteContainer.appendChild(note)
 }
 
+// Enable/Disable help
 function help(){
-    Toast("Set a title and write some notes, press save. Make sure to save your edit URL to access this page again or your data will be lost. Send the display URL to the reciever.", 10)
+    let helpMenu = document.getElementById("helpMenu")
+    helpMenu.style.opacity = helpMenu.style.opacity == "1" ? "0" : "1"
+    helpMenu.style.visibility = helpMenu.style.visibility == "visible" ? "hidden" : "visible"
 }
