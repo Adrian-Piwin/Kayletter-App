@@ -104,6 +104,7 @@ async function loadData(code){
     }
 
     // Load page
+    animationLoad();
     displayLoadAttributes()
     displayLoadNotes()
     displayLoadTimer()
@@ -162,6 +163,13 @@ function displayLoadAttributes(){
         let imageElm = document.getElementById("displayImg")
         imageElm.src = displayImage
     }
+}
+
+// Fade elements in
+function animationLoad(){
+    PlayAnimation(document.getElementById("displayTitle"), "fadeIn2", 2, "ease-in-out")
+    PlayAnimation(document.getElementById("liveTimer"), "fadeIn2", 5, "ease-in-out")
+    PlayAnimation(document.getElementById("msgContainer"), "fadeIn2", 3, "ease-in-out")
 }
 
 // Load the timer for new note countdown
