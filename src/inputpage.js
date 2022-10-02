@@ -82,11 +82,6 @@ async function signUp(){
     let displayIdIn = createRandomStr(10)
     let passwordIn = createRandomStr(8)
 
-    // Make sure id does not exist
-    while (!await dbDoesExist(displayIdIn)){
-        displayIdIn = createRandomStr(10)
-    }
-
     // Store edit url as backup
     let currentHost = window.location.host;
     let url = "/index.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
@@ -112,15 +107,6 @@ async function updateNotes(){
     // Update image to show on this page
     let displayImg = document.getElementById("displayImg");
     displayImg.src = imageURL == null || imageURL == "" ? defaultImgSrc : imageURL
-
-    // Store title
-    dbSetVariable(currentCode, dbVarPageTitle, pageTitle)
-    // Store image url
-    if (imageURL != null || imageURL != "")
-        dbSetVariable(currentCode, dbVarImageURL, imageURL)
-    
-    // Tell db change is pending
-    dbSetVariable(currentCode, dbVarChangePending, 'true')
 
     // ========= SIGN UP IF NOT SIGNED IN ========= 
 
@@ -149,6 +135,15 @@ async function updateNotes(){
             newUser = true
         }
     }
+
+    // Store title
+    dbSetVariable(currentCode, dbVarPageTitle, pageTitle)
+    // Store image url
+    if (imageURL != null || imageURL != "")
+        dbSetVariable(currentCode, dbVarImageURL, imageURL)
+    
+    // Tell db change is pending
+    dbSetVariable(currentCode, dbVarChangePending, 'true')
 
     // ========= UPDATE NOTES ========= 
 

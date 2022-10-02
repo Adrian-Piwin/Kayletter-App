@@ -167,6 +167,8 @@ function displayLoadAttributes(){
 
 // Fade elements in
 function animationLoad(){
+    console.log(noteList)
+
     PlayAnimation(document.getElementById("displayTitle"), "fadeIn2", 2, "ease-in-out")
     PlayAnimation(document.getElementById("liveTimer"), "fadeIn2", 5, "ease-in-out")
     PlayAnimation(document.getElementById("msgContainer"), "fadeIn2", 3, "ease-in-out")
