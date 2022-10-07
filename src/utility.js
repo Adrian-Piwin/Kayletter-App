@@ -50,7 +50,7 @@ export function getCurrentNotes(){
 export function getCurrentDate(){
     let currentDate = new Date()
     let cDay = currentDate.getDate()
-    let cMonth = currentDate.getMonth() + 1
+    let cMonth = currentDate.getMonth()
     let cYear = currentDate.getFullYear()
     return Date.UTC(cYear, cMonth, cDay, currentDate.getHours() + 4, currentDate.getMinutes(), currentDate.getSeconds(), currentDate.getMilliseconds())
 }
