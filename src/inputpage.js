@@ -1,6 +1,6 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote, dbDoesExist } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, waitDayPassed } from './utility'
-import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc, dbVarChangePending } from './staticvariables'
+import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc } from './staticvariables'
 import { doc } from 'firebase/firestore'
 
 var currentCode = null
@@ -141,9 +141,6 @@ async function updateNotes(){
     // Store image url
     if (imageURL != null || imageURL != "")
         dbSetVariable(currentCode, dbVarImageURL, imageURL)
-    
-    // Tell db change is pending
-    dbSetVariable(currentCode, dbVarChangePending, 'true')
 
     // ========= UPDATE NOTES ========= 
 

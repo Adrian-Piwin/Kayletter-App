@@ -1,6 +1,6 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote, dbDoesExist } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, waitDayPassed, checkDayPassed } from './utility'
-import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, revealAudio, dbVarChangePending } from './staticvariables'
+import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, revealAudio } from './staticvariables'
 
 // Data to load
 var currentCode = null
@@ -88,20 +88,8 @@ export function OutputInit(){
 
 // Decide where to load data from
 async function loadData(code){
-    if (code == localStorage.localCode && await dbGetVariable(code, dbVarChangePending) == 'false'){
-        loadLocalData()
-    }else{
-        // Attempt to load code from database
-        let success = await loadDatabaseData(code)
-        // Don't load anything if unsuccessful
-        if (!success){
-            Toast("Page does not exist", 2)
-            return
-        }
-        // Store new data to local and have change pending no longer true
-        storeLocalData()
-        dbSetVariable(code, dbVarChangePending, 'false')
-    }
+    if (!await loadDatabaseData(code))
+        return
 
     // Load page
     animationLoad();
@@ -120,22 +108,6 @@ async function loadDatabaseData(code){
     currentCode = code
     
     return true
-}
-
-// Loads local data to variables
-function loadLocalData(){
-    noteList = JSON.parse(localStorage.localNoteList)
-    displayTitle = localStorage.localTitle
-    displayImage = localStorage.localImage
-    currentCode = localStorage.localCode
-}
-
-// Stores current variables to local storage
-function storeLocalData(){
-    localStorage.localNoteList = JSON.stringify(noteList)
-    localStorage.localTitle = displayTitle
-    localStorage.localImage = displayImage
-    localStorage.localCode = currentCode
 }
 
 // On load first time note setup
@@ -301,7 +273,6 @@ function rightArrowClick(){
         // Update local storage list
         noteList[currentNoteIndex].read = true
         noteList[currentNoteIndex].readOn = getCurrentDate()
-        storeLocalData()
         dbReadNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].readOn)
 
         // Show new note
@@ -335,7 +306,6 @@ function displayImgDblClick(){
 // Set note as favorite 
 function displaySetFavNote(){
     noteList[currentNoteIndex].isFavorite = !noteList[currentNoteIndex].isFavorite == null ? true : !noteList[currentNoteIndex].isFavorite
-    storeLocalData()
     dbFavoriteNote(currentCode, noteList[currentNoteIndex].id, noteList[currentNoteIndex].isFavorite)
 
     let noteTarget = document.getElementById("noteTarget");
