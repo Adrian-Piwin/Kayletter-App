@@ -1,7 +1,6 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote, dbDoesExist } from './database'
-import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, waitDayPassed } from './utility'
+import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
 import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc } from './staticvariables'
-import { doc } from 'firebase/firestore'
 
 var currentCode = null
 var currentPassword = null

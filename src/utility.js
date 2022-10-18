@@ -48,37 +48,16 @@ export function getCurrentNotes(){
 
 // Return the UTC date
 export function getCurrentDate(){
-    let currentDate = new Date()
-    let cDay = currentDate.getDate()
-    let cMonth = currentDate.getMonth()
-    let cYear = currentDate.getFullYear()
-    return Date.UTC(cYear, cMonth, cDay, currentDate.getHours() + 4, currentDate.getMinutes(), currentDate.getSeconds(), currentDate.getMilliseconds())
+    return Date.now()
 }
 
 // Given a date, return time left till a day has passed
 export function checkDayPassed(date){
     // Add day to original time
-    let countdownTime = new Date(parseInt(date))
-    countdownTime.setDate(countdownTime.getDate() + 1);
-    countdownTime = countdownTime.getTime()
+    date += 86400000
 
-    let now = new Date().getTime();
-    return countdownTime - now
-}
-
-// Set a repeated day counter, return time left till day passed
-export function waitDayPassed(key){
-    // Set key value if not present and return
-    if (!localStorage.getItem(key)){
-        localStorage.setItem(key, getCurrentDate())
-    }
-
-    let timeLeft = checkDayPassed(localStorage.getItem(key))
-    // If time has passed a day, reset timer for this key
-    if (timeLeft <= 0)
-        localStorage.setItem(key, getCurrentDate())
-    
-    return timeLeft
+    // Subtract from todays date
+    return date - Date.now()
 }
 
 // Clear notes on page

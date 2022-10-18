@@ -1,5 +1,5 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote, dbDoesExist } from './database'
-import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, waitDayPassed, checkDayPassed } from './utility'
+import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, checkDayPassed } from './utility'
 import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, revealAudio } from './staticvariables'
 
 // Data to load
@@ -139,9 +139,8 @@ function displayLoadAttributes(){
 
 // Fade elements in
 function animationLoad(){
-    console.log(noteList)
-
-    PlayAnimation(document.getElementById("displayTitle"), "fadeIn2", 2, "ease-in-out")
+    PlayAnimation(document.getElementById("displayImg"), "fadeIn2", 2, "ease-in-out")
+    PlayAnimation(document.getElementById("displayTitle"), "fadeIn2", 3, "ease-in-out")
     PlayAnimation(document.getElementById("liveTimer"), "fadeIn2", 5, "ease-in-out")
     PlayAnimation(document.getElementById("msgContainer"), "fadeIn2", 3, "ease-in-out")
 }
