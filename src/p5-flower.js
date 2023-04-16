@@ -68,7 +68,7 @@ export function FlowerCanvas() {
                 let ctrlX = x - (flowerCenterX * 0.5);
                 let ctrlY = y * 1.50;
                 p.noFill();
-                p.bezier(x, p.height-70, ctrlX, ctrlY, ctrlX, ctrlY, x + flowerCenterX, y + flowerCenterY);
+                p.bezier(x, p.height-100, ctrlX, ctrlY, ctrlX, ctrlY, x + flowerCenterX, y + flowerCenterY);
 
                 // Petals
                 DrawPetal(petals.length);
@@ -89,7 +89,7 @@ export function FlowerCanvas() {
             // Draw stem
             p.strokeWeight(stemWidth);
             p.stroke(stemColor);
-            p.line(x, p.height-70, x, stemHeight);
+            p.line(x, p.height-100, x, stemHeight);
 
             // Animate petals on start
             if (isStemDrawn) {
