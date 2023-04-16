@@ -1,6 +1,7 @@
 import { InputInit } from './inputpage.js'
 import { OutputInit } from './outputpage.js'
 import { defaultImgSrc } from './staticvariables.js'
+import { FlowerCanvas } from './p5-flower.js';
 
 window.addEventListener("load", function(event) {
 

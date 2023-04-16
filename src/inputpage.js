@@ -194,7 +194,7 @@ async function loadNotes(){
 
     // Fill notes with notes found in database
     for (let i = 0; i < noteList.length; i++){
-        noteContainer[i].value = noteList[i].note
+        noteContainer[i].innerHTML = noteList[i].note
 
         // Show what notes have been read
         if (noteList[i].read){
@@ -253,9 +253,8 @@ function autoAddNote(){
 // Add note element on page
 function addNote(){
     let noteContainer = document.getElementById("noteContainer");
-    let note = document.createElement("input")
-    note.classList.add("w3-input")
-    note.maxLength = 240
+    let copy = noteContainer.children[noteContainer.children.length-1]
+    let note = copy.cloneNode(true);
     noteContainer.appendChild(note)
 }
 

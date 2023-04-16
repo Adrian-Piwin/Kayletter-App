@@ -1,6 +1,7 @@
 import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote, dbDoesExist } from './database'
 import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, checkDayPassed } from './utility'
 import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, revealAudio } from './staticvariables'
+import { FlowerCanvas } from './p5-flower'
 
 // Data to load
 var currentCode = null
@@ -130,10 +131,16 @@ function displayLoadNotes(){
 function displayLoadAttributes(){
     let titleElm = document.getElementById("displayTitle")
     titleElm.innerHTML = displayTitle
+    console.log(displayImage)
 
     if (displayImage != null && displayImage != ""){
         let imageElm = document.getElementById("displayImg")
-        imageElm.src = displayImage
+
+        if (displayImage == "special"){
+            imageElm.style.display = "none";
+            FlowerCanvas()
+        }else
+            imageElm.src = displayImage
     }
 }
 

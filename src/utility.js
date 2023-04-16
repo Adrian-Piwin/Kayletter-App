@@ -41,7 +41,7 @@ export function getCurrentNotes(){
     let noteContainer = document.getElementById("noteContainer");
     let noteList = []
     for (let i = 0; i < noteContainer.children.length; i++){
-        noteList.push(noteContainer.children[i].value)
+        noteList.push(noteContainer.children[i].innerHTML)
     }
     return noteList
 }
