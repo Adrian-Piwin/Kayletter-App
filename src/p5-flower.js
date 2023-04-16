@@ -68,7 +68,7 @@ export function FlowerCanvas() {
                 let ctrlX = x - (flowerCenterX * 0.5);
                 let ctrlY = y * 1.50;
                 p.noFill();
-                p.bezier(x, p.height, ctrlX, ctrlY, ctrlX, ctrlY, x + flowerCenterX, y + flowerCenterY);
+                p.bezier(x, p.height-70, ctrlX, ctrlY, ctrlX, ctrlY, x + flowerCenterX, y + flowerCenterY);
 
                 // Petals
                 DrawPetal(petals.length);
@@ -89,7 +89,7 @@ export function FlowerCanvas() {
             // Draw stem
             p.strokeWeight(stemWidth);
             p.stroke(stemColor);
-            p.line(x, p.height, x, stemHeight);
+            p.line(x, p.height-70, x, stemHeight);
 
             // Animate petals on start
             if (isStemDrawn) {
@@ -149,9 +149,9 @@ export function FlowerCanvas() {
                 let petalYSize = p.random(10, 20);
 
                 if (j != 1) {
-                    petalLength = p.random(20 + (10 * j - 2), 60 + (10 * j - 2));
-                    petalXSize = p.random(30, 50) * j;
-                    petalYSize = p.random(20, 40) * j;
+                    petalLength = p.random(15 + (5 * j - 2), 40 + (5 * j - 2));
+                    petalXSize = p.random(20, 30) * j;
+                    petalYSize = p.random(10, 30) * j;
                 }
 
                 let petalCount = p.int(p.random(5, 12));
