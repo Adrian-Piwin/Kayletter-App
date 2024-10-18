@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query, getDoc, orderBy, doc, setDoc } from 'firebase/firestore'
-import { Toast } from './utility';
-import { getCurrentDate } from './utility';
+import { Toast } from '../utility';
+import { getCurrentDate } from '../utility';
 
 /* ==== DATABASE ====*/ 
 

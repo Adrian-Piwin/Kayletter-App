@@ -1,6 +1,6 @@
-import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbFavoriteNote, dbDoesExist } from './database'
-import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes, checkDayPassed } from './utility'
-import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, revealAudio } from './staticvariables'
+import { dbGetNotes, dbGetVariable, dbReadNote, dbFavoriteNote, dbDoesExist } from './services/database'
+import { PlayAnimation, Toast, getCurrentDate, checkDayPassed } from './utility'
+import { dbVarImageURL, dbVarPageTitle, revealAudio } from './staticvariables'
 import { FlowerCanvas } from './p5-flower'
 
 // Data to load
