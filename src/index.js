@@ -10,11 +10,11 @@ window.addEventListener("load", function(event) {
 
     let imageElm = document.getElementById("displayImg")
     imageElm.src = defaultImgSrc
-
-    if (page == "index.html"){
-        InputInit()
-    }else if (page == "display.html"){
+    
+    if (page == "display.html"){
         OutputInit()
+    }else{
+        InputInit()
     }
 
 });
