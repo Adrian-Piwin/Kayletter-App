@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="stylesheet" href="/styles/snackbar-styles.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+    <link rel="icon" href="/assets/heart.png">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7727309466685351"
+    crossorigin="anonymous"></script>
+    <title>Kayletter</title>
+</head>
+<body>
+    <div id="btnHelp">&#63;</div>
+
+    <div id="title">Create Notes</div>
+
+    <div id="imgContainer">
+        <img id="displayImg" src="/flowers/sunflower.gif" alt="">
+    </div>
+
+    <div class="itemContainer">
+        <input id="inputTitle" placeholder="Title" type="text">
+        <input id="inputImageURL" placeholder="Image URL" type="text">
+    </div>
+    
+    <div id="noteContainer">
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+        <div contenteditable="true"></div>
+    </div>
+
+    <div class="itemContainer" style="margin-bottom: 15px;">
+        <button id="btnSaveChanges">Save</button>
+		<br/>
+        <button id="btnGetDisplayURL">Copy Result URL</button>
+		<br/>
+		<button id="logoutBtn">Logout</button>
+		
+    </div>
+
+    <div id="snackbar"></div>
+
+    <div id="helpMenu">
+        <div id="helpClose">x</div>
+        <h1>How to use</h1>
+        <p>Create a title for your webpage and write at least 5 notes, then you will be able to save which will create your website</p>
+        <p>Optionally, you can change the image of the sunflower to whatever you want with a link to a hosted image (hint: use "special" in this box for randomly generated flowers)</p>
+        <p>Once your website is created, copy your edit page url with the button. If you want to add/edit notes later you will need to save this link or you will lose access</p>
+        <p>To see the display page where your website is, copy the display page url with the button. Send this URL to your special someone</p>
+        <br>
+        <h1>Colors definition</h1>
+        <p>Once someone has access to your display page you will be able to see what notes they read or favorited</p>
+        <p><span style="background-color: #fdfd96; padding: 5px;">Yellow</span>: This means the note has been read</p>
+        <p><span style="background-color: #FF748C; padding: 5px;">Pink</span>: This means the note has been favorited</p>
+        <br>
+        <h1>Actions on display page</h1>
+        <p>Single click on arrow: Show next/prev note</p>
+        <p>Double click on arrow: Show first/last read note</p>
+        <p>Double click on note: Add note to favorites</p>
+        <p>Double click on image: Cycle through favorited notes</p>
+
+    </div>
+<script defer src="bundle.js"></script></body>
+</html>
