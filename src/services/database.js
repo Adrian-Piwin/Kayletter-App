@@ -1,22 +1,53 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, query, getDoc, orderBy, doc, setDoc } from 'firebase/firestore'
-import { Toast } from '../utility';
-import { getCurrentDate } from '../utility';
+import { setPersistence, browserLocalPersistence, getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { Toast, getCurrentDate } from '../utility';
 
-/* ==== DATABASE ====*/ 
-
+/* ==== FIREBASE INIT ==== */
 const firebaseApp = initializeApp({
-    piKey: "AIzaSyD9RHiBSUHoxoBtKPC-sj4tBEn4RyPKZeo",
+    apiKey: "AIzaSyD9RHiBSUHoxoBtKPC-sj4tBEn4RyPKZeo",
     authDomain: "luckygame-1905f.firebaseapp.com",
-    databaseURL: "https://luckygame-1905f-default-rtdb.firebaseio.com",
     projectId: "luckygame-1905f",
     storageBucket: "luckygame-1905f.appspot.com",
     messagingSenderId: "391623292354",
-    appId: "1:391623292354:web:6c9871f970a8ad833d925b",
-    measurementId: "G-8V32MBZQPM"
+    appId: "1:391623292354:web:6c9871f970a8ad833d925b"
 });
 
 const db = getFirestore();
+const auth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('Failed to set persistence:', error);
+});
+
+/* ==== AUTH FUNCTIONS ==== */
+export function signUp(email, password) {
+    return createUserWithEmailAndPassword(auth, email, password);
+}
+
+export function login(email, password) {
+    return signInWithEmailAndPassword(auth, email, password);
+}
+
+export function googleSignIn() {
+    return signInWithPopup(auth, googleProvider);
+}
+
+export function logoutUser() {
+    return signOut(auth);
+}
+
+export function getCurrentUser() {
+    return auth.currentUser;
+}
+
+/* ==== FIREBASE NOTES ==== */
+
+export async function verifyPassword(displayId, inputPassword) {
+    const storedPassword = await dbGetVariable(displayId, 'password');
+    return storedPassword === inputPassword;
+}
 
 // Return if code exists
 export async function dbDoesExist(code){
@@ -34,13 +65,11 @@ export async function dbDoesExist(code){
 export async function dbGetNotes(code){
     const colRef = collection(db, code)
     const q = query(colRef, orderBy("createdOn", "asc"))
-
     const snapshot = await getDocs(q)
     let data = []
     snapshot.docs.forEach((doc) => {
         data.push({...doc.data(), id: doc.id})
     }) 
-
     return data
 }
 
@@ -68,6 +97,22 @@ export function dbAddReadNote(code, val){
         read: true,
         isFavorite: false
     });
+}
+
+// Set the user's associated displayId
+export async function dbSetUserCode(uid, displayId) {
+    const userDocRef = doc(db, 'users', uid);
+    await setDoc(userDocRef, { displayId }, { merge: true });
+}
+
+// Get the user's associated displayId
+export async function dbGetUserCode(uid) {
+    const userDocRef = doc(db, 'users', uid);
+    const docSnapshot = await getDoc(userDocRef);
+    if (docSnapshot.exists()) {
+        return docSnapshot.data().displayId;
+    }
+    return null;
 }
 
 // Store a variable associated with this code to db

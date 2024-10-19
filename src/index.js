@@ -1,21 +1,59 @@
-import { InputInit } from './inputpage.js'
-import { OutputInit } from './outputpage.js'
-import { defaultImgSrc } from './staticvariables.js'
-import { FlowerCanvas } from './p5-flower.js';
+import { InputInit } from './pages/input.js';
+import { OutputInit } from './pages/display.js';
+import { LoginInit } from './pages/login.js';
+import { verifyPassword } from './services/database.js';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-window.addEventListener("load", function(event) {
+const auth = getAuth();
 
-    var path = window.location.pathname;
-    var page = path.split("/").pop();
+// Wrap onAuthStateChanged in a Promise to ensure proper handling
+function checkAuthState() {
+    return new Promise((resolve) => {
+        onAuthStateChanged(auth, (user) => {
+            resolve(user); // Resolve with the user state once determined
+        });
+    });
+}
 
-    let imageElm = document.getElementById("displayImg")
-    imageElm.src = defaultImgSrc
-    
-    if (page == "display.html"){
-        OutputInit()
-    }else{
-        InputInit()
+window.addEventListener("load", async function (event) {
+    const user = await checkAuthState(); // Wait for the auth state to be determined
+
+    const path = window.location.pathname;
+    const page = path.split("/").pop();
+
+    if (page === "") {
+        window.location.href = `/login.html`;
+        return;
     }
 
-});
+    // Display page does not require the user to be logged in
+    if (page === "display.html") {
+        OutputInit();
+        return;
+    } else if (page === "login.html") {
+        LoginInit();
+    }
 
+    if (user) {
+        // User is signed in, proceed to the appropriate page
+        console.log('User is logged in:', user);
+        
+        if (page === "input.html") {
+            InputInit();
+        } else if (page === "login.html") {
+            window.location.href = `/input.html`; // Redirect to input page if already logged in
+        }
+    } else {
+        // No user is logged in, handle legacy account flow or redirect to login
+        const params = new URLSearchParams(window.location.search);
+        const displayId = params.get('displayId');
+        const password = params.get('password');
+
+        // Check if a legacy account exists and redirect to login with parameters
+        if (displayId && password && await verifyPassword(displayId, password) && page !== "login.html") {
+            window.location.href = `/login.html?displayId=${displayId}&password=${password}&message=Please create an account to access your notes`;
+        } else if (page !== "login.html") {
+            window.location.href = `/login.html`; // Redirect to login if not on login page
+        }
+    }
+});

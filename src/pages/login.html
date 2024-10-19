@@ -6,24 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/styles/styles.css">
     <link rel="stylesheet" href="/styles/snackbar-styles.css">
-    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
-    <link rel="icon" href="/assets/heart.png">
-    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7727309466685351"
-    crossorigin="anonymous"></script> -->
-    <title>Kayletter</title>
+    <title>Login / Signup</title>
 </head>
 <body>
     <div id="title">Login / Signup</div>
-	<div style="height: 50px;"></div>
-    <div class="itemContainer">
-        <input id="username" placeholder="Username" type="text">
-        <input id="password" placeholder="Password" type="text">
+    <div id="loginInputContainer">
+        <input id="email" placeholder="Email" type="email" required>
+        <input id="password" placeholder="Password" type="password" required>
     </div>
 
-	<button>Login</button>
+    <div id="loginBtnContainer">
+        <span>
+            <button id="loginBtn">Login</button>
+            <button id="signupBtn">Sign Up</button>
+        </span>
+        <button id="googleSignInBtn">Sign In with Google</button>
+    </div>
 
     <div id="snackbar"></div>
 </body>

@@ -1,6 +1,6 @@
-import { dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbReadNote, dbDeleteNote, dbAddReadNote, dbDoesExist } from './services/mockdatabase'
-import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from './utility'
-import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc } from './staticvariables'
+import { getCurrentUser, dbGetNotes, dbAddNote, dbSetVariable, dbGetVariable, dbUpdateNote, dbAddReadNote, dbGetUserCode, dbDoesExist, logoutUser } from '../services/database'
+import { PlayAnimation, Toast, createRandomStr, getCurrentNotes, getCurrentDate, clearNotes } from '../utility'
+import { dbVarPassword, dbVarUsername, dbVarImageURL, dbVarPageTitle, dbVarFavorite, defaultImgSrc } from '../staticvariables'
 
 var currentCode = null
 var currentPassword = null
@@ -8,13 +8,25 @@ var displayTitle
 var displayImage
 var noteList = []
 
-export function InputInit(){
+export async function InputInit(){
+    let imageElm = document.getElementById("displayImg");
+    imageElm.src = defaultImgSrc;
+
     let btnSaveChanges = document.getElementById("btnSaveChanges")
     let btnHelp = document.getElementById("btnHelp")
     let helpMenuClose = document.getElementById("helpClose")
     let helpMenu = document.getElementById("helpMenu")
     let btnGetDisplayURL = document.getElementById("btnGetDisplayURL")
-    let btnGetEditURL = document.getElementById("btnGetEditURL")
+    let logoutBtn = document.getElementById("logoutBtn")
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await logoutUser();
+            window.location.href = '/login.html';
+        } catch (error) {
+            Toast('Logout failed: ' + error.message, 4);
+        }
+    });
 
     helpMenuClose.addEventListener('click', help)
     btnHelp.addEventListener('click', help)
@@ -23,33 +35,25 @@ export function InputInit(){
     btnGetDisplayURL.addEventListener('click', function(){
         copyURLClipboard("display");
     })
-    btnGetEditURL.addEventListener('click', function(){
-        copyURLClipboard("edit");
-    })
 
     // Set up auto note
     autoAddNote()
 
-    // Get user from URL
-    let params = location.search
-    params = new URLSearchParams(params);
-    let displayId = params.get('displayId')
-    let password = params.get('password')
-
-    if (displayId != undefined && password != undefined){
-        loadData(displayId, password)
+    // Get the user and load the notes for them
+    const user = getCurrentUser();
+    if (user) {
+        const userCode = await dbGetUserCode(user.uid);
+        if (userCode) {
+            currentCode = userCode; // Set currentCode with the user’s associated displayId
+            loadData(currentCode);
+        } else {
+            Toast('No code associated with your account.', 4);
+        }
     }
 }
 
-async function loadData(code, password){
-    // If code exists, attempt sign in
-    if (dbDoesExist(code)){
-        if (signIn(code,password))
-            await reloadData(code)
-        else
-            return
-    }
-
+async function loadData(code){
+    await reloadData(code)
     loadNotes()
     loadAttributes()
 }
@@ -60,20 +64,6 @@ async function reloadData(code){
     noteList = await dbGetNotes(code)
     displayTitle = await dbGetVariable(code, dbVarPageTitle)
     displayImage = await dbGetVariable(code, dbVarImageURL)
-    currentPassword = await dbGetVariable(code, dbVarPassword)
-    currentCode = code
-}
-
-// Attempts user sign in to retrieve data from db
-async function signIn(displayIdIn, passwordIn){
-    let password = dbGetVariable(displayIdIn, dbVarPassword)
-    if (passwordIn != password) {  
-        return false
-    }
-
-    currentCode = displayIdIn
-    currentPassword = password
-    return true
 }
 
 // Signs user up to db if username does not already exist
@@ -83,7 +73,7 @@ async function signUp(){
 
     // Store edit url as backup
     let currentHost = window.location.host;
-    let url = "/index.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
+    let url = "/input.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
     // Change current url
     window.history.pushState('Kayletter', 'Kayletter', url)
 
@@ -125,8 +115,8 @@ async function updateNotes(){
             Toast("Missing page title", 2)
             return;
         }
-        else if (actNoteCount < 5){
-            Toast("Must make at least 5 notes", 2)
+        else if (actNoteCount < 1){
+            Toast("Must make at least 1 note", 2)
             return;
         }
         else{
@@ -235,7 +225,7 @@ function copyURLClipboard(urlOpt){
 
     let currentHost = window.location.host;
     let url = urlOpt == "display" ? currentHost + "/display.html" + "?displayId=" + currentCode :
-    currentHost + "/index.html" + "?displayId=" + currentCode + "&password=" + currentPassword;
+    currentHost + "/input.html" + "?displayId=" + currentCode + "&password=" + currentPassword;
     
     navigator.clipboard.writeText(url)
     Toast("Copied to clipboard", 2);

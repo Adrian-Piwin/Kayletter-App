@@ -1,7 +1,7 @@
-import { dbGetNotes, dbGetVariable, dbReadNote, dbFavoriteNote, dbDoesExist } from './services/database'
-import { PlayAnimation, Toast, getCurrentDate, checkDayPassed } from './utility'
-import { dbVarImageURL, dbVarPageTitle, revealAudio } from './staticvariables'
-import { FlowerCanvas } from './p5-flower'
+import { dbGetNotes, dbGetVariable, dbReadNote, dbFavoriteNote, dbDoesExist } from '../services/database'
+import { PlayAnimation, Toast, getCurrentDate, checkDayPassed } from '../utility'
+import { dbVarImageURL, dbVarPageTitle, revealAudio, defaultImgSrc } from '../staticvariables'
+import { FlowerCanvas } from '../p5-flower'
 
 // Data to load
 var currentCode = null
@@ -23,6 +23,9 @@ var didDoubleClick = false
 var canChangeNote = true
 
 export function OutputInit(){
+    let imageElm = document.getElementById("displayImg");
+    imageElm.src = defaultImgSrc;
+    
     let leftArrow = document.getElementById("leftArrow")
     let rightArrow = document.getElementById("rightArrow")
     let displayImg = document.getElementById("displayImg")

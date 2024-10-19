@@ -9,7 +9,7 @@ app.set('port', (process.env.PORT || PORT))
 
 //Send index.html when the user access the web
 app.get('/', function (req, res) {
-  res.redirect('/index.html')
+  res.redirect('/login.html')
 });
 
 //Serving the files on the dist folder
