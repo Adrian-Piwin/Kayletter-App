@@ -36,8 +36,6 @@ window.addEventListener("load", async function (event) {
 
     if (user) {
         // User is signed in, proceed to the appropriate page
-        console.log('User is logged in:', user);
-        
         if (page === "input.html") {
             InputInit();
         } else if (page === "login.html") {

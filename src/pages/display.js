@@ -134,7 +134,6 @@ function displayLoadNotes(){
 function displayLoadAttributes(){
     let titleElm = document.getElementById("displayTitle")
     titleElm.innerHTML = displayTitle
-    console.log(displayImage)
 
     if (displayImage != null && displayImage != ""){
         let imageElm = document.getElementById("displayImg")

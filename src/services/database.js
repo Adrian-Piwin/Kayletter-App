@@ -89,7 +89,7 @@ export function dbAddNote(code, val){
 // Add read note to db
 export function dbAddReadNote(code, val){
     const colRef = collection(db, code)
-
+    var test = getCurrentDate();
     addDoc(colRef, {
         note: val,
         createdOn: getCurrentDate(),

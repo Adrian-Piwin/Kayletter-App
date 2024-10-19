@@ -66,25 +66,6 @@ async function reloadData(code){
     displayImage = await dbGetVariable(code, dbVarImageURL)
 }
 
-// Signs user up to db if username does not already exist
-async function signUp(){
-    let displayIdIn = createRandomStr(10)
-    let passwordIn = createRandomStr(8)
-
-    // Store edit url as backup
-    let currentHost = window.location.host;
-    let url = "/input.html" + "?displayId=" + displayIdIn + "&password=" + passwordIn;
-    // Change current url
-    window.history.pushState('Kayletter', 'Kayletter', url)
-
-    // Set up in database
-    dbSetVariable(displayIdIn, dbVarPassword, passwordIn)
-    dbSetVariable(displayIdIn, "EditURL", currentHost + url)
-
-    currentCode = displayIdIn
-    currentPassword = passwordIn
-}
-
 // Apply changes for the current code
 async function updateNotes(){
 
@@ -97,8 +78,6 @@ async function updateNotes(){
     let displayImg = document.getElementById("displayImg");
     displayImg.src = imageURL == null || imageURL == "" ? defaultImgSrc : imageURL
 
-    // ========= SIGN UP IF NOT SIGNED IN ========= 
-
     // Get notes from list
     let currentNotes = getCurrentNotes()
 
@@ -108,21 +87,14 @@ async function updateNotes(){
         if (currentNotes[i].length > 0) actNoteCount++;
     }
 
-    let newUser = false
     // Create user if does not exist
-    if (currentCode == null || currentCode == ""){
-        if (pageTitle == ""){
-            Toast("Missing page title", 2)
-            return;
-        }
-        else if (actNoteCount < 1){
-            Toast("Must make at least 1 note", 2)
-            return;
-        }
-        else{
-            await signUp()
-            newUser = true
-        }
+    if (pageTitle == ""){
+        Toast("Missing page title", 2)
+        return;
+    }
+    else if (actNoteCount < 1){
+        Toast("Must make at least 1 note", 2)
+        return;
     }
 
     // Store title
@@ -147,11 +119,10 @@ async function updateNotes(){
     if (currentNotes.length > noteList.length){
         for (let i = noteList.length; i < currentNotes.length; i++){
             if (currentNotes[i] != ''){
-                // Make first note read if new user
-                if (newUser){
+                // Make first note read
+                if (i == 0 && !currentNotes[i].read){
                     dbAddReadNote(currentCode, currentNotes[i])
                     noteList.push(currentNotes[i])
-                    newUser = false
                 }
                 // Add normal unread note
                 else{
@@ -218,11 +189,6 @@ function loadAttributes(){
 
 // Copy URL to clipboard
 function copyURLClipboard(urlOpt){
-    if (currentCode == null || currentCode == ""){
-        Toast("Create and save some notes first", 4);
-        return;
-    }
-
     let currentHost = window.location.host;
     let url = urlOpt == "display" ? currentHost + "/display.html" + "?displayId=" + currentCode :
     currentHost + "/input.html" + "?displayId=" + currentCode + "&password=" + currentPassword;
