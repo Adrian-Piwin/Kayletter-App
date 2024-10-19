@@ -14,6 +14,11 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
+            template: './src/index.html',
+            filename: 'index.html',
+            inject: 'body'
+        }),
+        new HtmlWebpackPlugin({
             template: './src/pages/login.html',
             filename: 'login.html',
             inject: 'body'
