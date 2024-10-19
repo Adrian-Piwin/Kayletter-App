@@ -197,33 +197,37 @@ function displayLoadTimer(){
 }
 
 // Animate displaying a new note
-function displayNote(note){
+function displayNote(note) {
     let noteTarget = document.getElementById("noteTarget");
-    let fadeTimer = 400
-    canChangeNote = false
+    let fadeTimer = 400;
+    canChangeNote = false;
 
-    PlayAnimation(noteTarget, "fadeOut", "0.4", "ease-in-out")
-            
+    PlayAnimation(noteTarget, "fadeOut", "0.4", "ease-in-out");
+
     setTimeout(() => {
-        noteTarget.style.textShadow = note.isFavorite ? favNoteStyle : 'none'
-        noteTarget.innerHTML = note.note;
-        PlayAnimation(noteTarget, "fadeIn2", "0.1", "ease-in-out")
+        noteTarget.style.textShadow = note.isFavorite ? favNoteStyle : 'none';
 
-        var textWrapper = document.querySelector('.ml6 .letters');
-        textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
-        
-        anime.timeline({loop: false})
+        // Split text into words and wrap each word
+        const words = note.note.split(' ').map(word =>
+            `<span class="word">${[...word].map(letter => `<span class='letter'>${letter}</span>`).join('')}</span>`
+        ).join(' ');
+
+        noteTarget.innerHTML = words;
+
+        PlayAnimation(noteTarget, "fadeIn2", "0.1", "ease-in-out");
+
+        anime.timeline({ loop: false })
             .add({
                 targets: '.ml6 .letter',
                 translateY: ["1.1em", 0],
                 translateZ: 0,
                 duration: 750,
-                opacity: [0,1],
+                opacity: [0, 1],
                 delay: (el, i) => 50 * i
-            })
-        
-        canChangeNote = true
-    }, fadeTimer)
+            });
+
+        canChangeNote = true;
+    }, fadeTimer);
 }
 
 // Display current note date and index

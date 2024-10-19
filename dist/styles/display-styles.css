@@ -169,6 +169,15 @@ body{
     z-index: -100;
 }
 
+.word {
+    display: inline-block; /* Ensure words stay intact during wrapping */
+    white-space: nowrap; /* Prevent word splitting inside spans */
+}
+
+.letter {
+    display: inline-block; /* Keep letters animatable */
+}
+
 /* ==== Mobile Styles ====*/
 
 @media only screen and (max-width: 600px){
