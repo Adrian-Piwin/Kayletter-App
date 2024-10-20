@@ -38,7 +38,7 @@ window.addEventListener("load", async function (event) {
         // User is signed in, proceed to the appropriate page
         if (page === "input.html") {
             InputInit();
-        } else if (page === "login.html") {
+        } else if (page === "login.html" || page == "index.html") {
             window.location.href = `/input.html`; // Redirect to input page if already logged in
         }
     } else {
