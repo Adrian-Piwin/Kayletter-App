@@ -1,0 +1,69 @@
+#helpMenu{
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    height: 80%;
+    overflow-y: scroll;
+    background-color: #efe7df;
+    border: black solid 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: 0.2s ease-in-out;
+    padding: 3% 10%;
+    visibility: hidden;
+    opacity: 0;
+}
+
+#helpMenu p{
+    width: 100%;
+    text-align: left;
+}
+
+#helpClose{
+    position: fixed;
+    top: 0;
+    right: 0;
+    font-size: 2em;
+    padding: 5px 15px;
+}
+
+#helpClose:hover{
+    cursor: pointer;
+}
+
+#helpMenu p {
+    margin: 0;
+}
+
+#btnHelp {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    text-align: center;
+    font-size: 25px;
+    width: 40px;
+    height: 40px;
+    border: black 2px solid;
+    border-radius: 20px;
+}
+
+#btnHelp:hover {
+    cursor: pointer;
+}
+
+@media only screen and (max-width: 600px) {
+	#btnHelp{
+        font-size: 22px;
+        width: 35px;
+        height: 35px;
+    }
+
+	#helpMenu{
+        width: 80%;
+        height: 80%;
+    }
+}

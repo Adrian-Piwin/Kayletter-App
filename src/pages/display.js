@@ -31,6 +31,13 @@ export function OutputInit(){
     let displayImg = document.getElementById("displayImg")
     let noteTarget = document.getElementById("noteTarget")
 
+    let btnHelp = document.getElementById("btnHelp")
+    let helpMenuClose = document.getElementById("helpClose")
+    let helpMenu = document.getElementById("helpMenu")
+
+    helpMenuClose.addEventListener('click', help)
+    btnHelp.addEventListener('click', help)
+
     // Left arrow click vs dblclick detection
     leftArrow.addEventListener('click', () => {
         if (!canChangeNote) return;
@@ -343,4 +350,11 @@ function displayFavNote(){
     currentNoteIndex = favIndexList[currentFavNoteIndex]
     displayNote(noteList[currentNoteIndex])
     displayNoteInfo()
+}
+
+// Enable/Disable help
+function help(){
+    let helpMenu = document.getElementById("helpMenu")
+    helpMenu.style.opacity = helpMenu.style.opacity == "1" ? "0" : "1"
+    helpMenu.style.visibility = helpMenu.style.visibility == "visible" ? "hidden" : "visible"
 }
