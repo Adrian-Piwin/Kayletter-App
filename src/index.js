@@ -21,7 +21,10 @@ window.addEventListener("load", async function (event) {
     const path = window.location.pathname;
     const page = path.split("/").pop();
 
+    console.log("Page: " + page);
+
     if (page === "") {
+        console.log("Directing to login")
         window.location.href = `/login.html`;
         return;
     }
@@ -39,6 +42,7 @@ window.addEventListener("load", async function (event) {
         if (page === "input.html") {
             InputInit();
         } else if (page === "login.html" || page == "index.html") {
+            console.log("Directing to input")
             window.location.href = `/input.html`; // Redirect to input page if already logged in
         }
     } else {
@@ -49,8 +53,10 @@ window.addEventListener("load", async function (event) {
 
         // Check if a legacy account exists and redirect to login with parameters
         if (displayId && password && await verifyPassword(displayId, password) && page !== "login.html") {
+            console.log("Directing to login1")
             window.location.href = `/login.html?displayId=${displayId}&password=${password}&message=Please create an account to access your notes`;
         } else if (page !== "login.html") {
+            console.log("Directing to login2")
             window.location.href = `/login.html`; // Redirect to login if not on login page
         }
     }
