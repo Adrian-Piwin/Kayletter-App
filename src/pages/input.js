@@ -7,6 +7,7 @@ var currentPassword = null
 var displayTitle
 var displayImage
 var noteList = []
+let isBannerVisible = true;
 
 export async function InputInit(){
     let imageElm = document.getElementById("displayImg");
@@ -18,6 +19,22 @@ export async function InputInit(){
     let helpMenu = document.getElementById("helpMenu")
     let btnGetDisplayURL = document.getElementById("btnGetDisplayURL")
     let logoutBtn = document.getElementById("logoutBtn")
+
+    const banner = document.getElementById('adBanner');
+    const arrow = document.getElementById('bannerArrow');
+
+    function toggleBanner() {
+        if (isBannerVisible) {
+            banner.style.bottom = '-250px';
+            arrow.style.rotate = '0deg'; // Up arrow
+        } else {
+            banner.style.bottom = '0';
+            arrow.style.rotate = '180deg'; // Up arrow
+        }
+        isBannerVisible = !isBannerVisible;
+    }
+
+    arrow.addEventListener('click', toggleBanner);
 
     logoutBtn.addEventListener('click', async () => {
         try {
