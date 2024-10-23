@@ -78,11 +78,16 @@ body{
 
 .arrow {
     position: absolute;
-    top: -35px;
-    right: 10px;
+    top: 10px;
+    left: 10px;
     cursor: pointer;
-    font-size: 24px;
-    rotate: 180deg;
+    font-size: 20px;
+    width: 35px;
+    height: 35px;
+    border-radius: 20px;
+    background-color: grey;
+    text-align: center;
+    color: white;
 }
 
 #title {

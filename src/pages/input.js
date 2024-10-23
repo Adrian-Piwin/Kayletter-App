@@ -26,10 +26,8 @@ export async function InputInit(){
     function toggleBanner() {
         if (isBannerVisible) {
             banner.style.bottom = '-250px';
-            arrow.style.rotate = '0deg'; // Up arrow
         } else {
             banner.style.bottom = '0';
-            arrow.style.rotate = '180deg'; // Up arrow
         }
         isBannerVisible = !isBannerVisible;
     }
