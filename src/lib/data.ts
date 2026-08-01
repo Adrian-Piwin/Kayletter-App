@@ -29,10 +29,16 @@ export async function ensureProfile(clerkUserId: string, email: string): Promise
   return profile;
 }
 
-/** The author's letter page, created on first visit. */
+/**
+ * The author's letter page, created on first visit.
+ * Prefer a migrated legacy letter over an auto-created empty one, in case the
+ * author signed in before their old page was claimed (or even migrated).
+ */
 export async function getOrCreateLetter(clerkUserId: string): Promise<Letter> {
   const existing = await sql<Letter[]>`
-    select * from letters where owner_clerk_id = ${clerkUserId} order by created_at asc limit 1
+    select * from letters where owner_clerk_id = ${clerkUserId}
+    order by (legacy_display_id is not null) desc, created_at asc
+    limit 1
   `;
   if (existing.length) return existing[0];
 
