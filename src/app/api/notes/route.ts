@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthorContext } from "@/lib/author";
 import { addNote, countNotes, listNotes } from "@/lib/data";
 import { FREE_NOTE_LIMIT } from "@/lib/plan";
-import {
-  captureServerEvent,
-  distinctIdFromRequest,
-  sessionIdFromRequest,
-} from "@/lib/posthog-server";
+import { captureServerEvent, sessionIdFromRequest } from "@/lib/posthog-server";
 
 export async function GET() {
   const ctx = await getAuthorContext();
@@ -19,7 +15,8 @@ export async function POST(req: Request) {
   const ctx = await getAuthorContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const distinctId = distinctIdFromRequest(req, ctx.profile.clerk_user_id);
+  // Same id as posthog.identify(clerkUserId) on the client.
+  const distinctId = ctx.profile.clerk_user_id;
   const sessionId = sessionIdFromRequest(req);
 
   const { content } = await req.json();

@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthorContext } from "@/lib/author";
 import { getStripe } from "@/lib/stripe";
 import { UPGRADE_PRICE_CENTS } from "@/lib/plan";
-import {
-  captureServerEvent,
-  distinctIdFromRequest,
-  sessionIdFromRequest,
-} from "@/lib/posthog-server";
+import { captureServerEvent, sessionIdFromRequest } from "@/lib/posthog-server";
 
 /** Create a Stripe Checkout session for the one-time unlimited-notes upgrade. */
 export async function POST(req: Request) {
@@ -16,7 +12,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Already upgraded" }, { status: 409 });
   }
 
-  const distinctId = distinctIdFromRequest(req, ctx.profile.clerk_user_id);
+  const distinctId = ctx.profile.clerk_user_id;
   const sessionId = sessionIdFromRequest(req);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;

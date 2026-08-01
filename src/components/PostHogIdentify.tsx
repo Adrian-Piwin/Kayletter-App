@@ -6,11 +6,14 @@ import posthog from "posthog-js";
 
 /** Identify signed-in authors in PostHog; reset when they sign out. */
 export default function PostHogIdentify() {
-  const { isSignedIn, userId } = useAuth();
+  const { isLoaded, isSignedIn, userId } = useAuth();
   const { user } = useUser();
   const wasIdentified = useRef(false);
 
   useEffect(() => {
+    // Wait for Clerk — isSignedIn is unreliable before isLoaded.
+    if (!isLoaded) return;
+
     if (isSignedIn && userId) {
       posthog.identify(userId, {
         email: user?.primaryEmailAddress?.emailAddress,
@@ -25,7 +28,7 @@ export default function PostHogIdentify() {
       posthog.reset();
       wasIdentified.current = false;
     }
-  }, [isSignedIn, userId, user?.primaryEmailAddress?.emailAddress, user?.fullName]);
+  }, [isLoaded, isSignedIn, userId, user?.primaryEmailAddress?.emailAddress, user?.fullName]);
 
   return null;
 }

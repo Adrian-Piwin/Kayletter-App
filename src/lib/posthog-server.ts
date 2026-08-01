@@ -28,7 +28,7 @@ export async function captureServerEvent(
   await posthog.flush();
 }
 
-/** Prefer the browser session id so client + server events stitch to one person. */
+/** Anonymous / recipient events: prefer browser distinct id, else a stable fallback. */
 export function distinctIdFromRequest(req: Request, fallback: string) {
   return req.headers.get("x-posthog-distinct-id")?.trim() || fallback;
 }
