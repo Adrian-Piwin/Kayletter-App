@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import PixelButton from "@/components/PixelButton";
 import Sprite from "@/components/Sprite";
 import { FREE_NOTE_LIMIT } from "@/lib/plan";
 import type { Letter, Note } from "@/lib/types";
+
+// window.location.origin never changes, so subscribing is a no-op; this just
+// gives us "" during SSR and the real origin after hydration without a
+// mismatch or an extra effect.
+const subscribeNever = () => () => {};
+const useOrigin = () =>
+  useSyncExternalStore(
+    subscribeNever,
+    () => window.location.origin,
+    () => ""
+  );
 
 export default function Dashboard({
   letter,
@@ -25,10 +36,7 @@ export default function Dashboard({
   const [toast, setToast] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const [origin, setOrigin] = useState("");
-
-  // Set after mount to avoid a server/client hydration mismatch
-  useEffect(() => setOrigin(window.location.origin), []);
+  const origin = useOrigin();
 
   const shareUrl = `${origin}/l/${letter.share_token}`;
   const atLimit = !isPremium && notes.length >= FREE_NOTE_LIMIT;
@@ -39,7 +47,6 @@ export default function Dashboard({
       showToast("Upgrade complete — unlimited notes unlocked!");
       window.history.replaceState({}, "", "/notes");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function showToast(msg: string) {

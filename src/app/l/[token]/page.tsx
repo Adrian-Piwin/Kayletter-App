@@ -22,6 +22,11 @@ export default async function RecipientPage({ params }: Props) {
   const [notes, pet] = await Promise.all([listNotes(letter.id), getOrCreatePet(letter.id)]);
   const stats = decayedStats(pet, new Date(pet.updated_at));
 
+  // Server components render once per request, so reading the clock here is
+  // safe; the client uses this to keep its first render identical to SSR.
+  // eslint-disable-next-line react-hooks/purity
+  const serverNow = Date.now();
+
   return (
     <GardenScene
       token={token}
@@ -29,7 +34,7 @@ export default async function RecipientPage({ params }: Props) {
       petName={letter.pet_name}
       initialNotes={notes}
       initialPet={{ ...stats, tricks_unlocked: tricksUnlockedFor(notes) }}
-      serverNow={Date.now()}
+      serverNow={serverNow}
     />
   );
 }

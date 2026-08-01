@@ -50,12 +50,20 @@ export default function GardenScene({
   const mood = petMood(pet);
   const readNotes = unlock.readNotes;
 
-  /* --- ambient: clock tick for countdown, time-of-day sky --- */
+  /* --- ambient: clock tick for countdown + time-of-day sky --- */
   useEffect(() => {
-    const hour = new Date().getHours();
-    setPhase(hour >= 20 || hour < 6 ? "night" : hour >= 17 ? "sunset" : "day");
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    const tick = () => {
+      setNow(Date.now());
+      const hour = new Date().getHours();
+      setPhase(hour >= 20 || hour < 6 ? "night" : hour >= 17 ? "sunset" : "day");
+    };
+    // First tick lands ~immediately so the sky matches local time right away.
+    const first = setTimeout(tick, 50);
+    const t = setInterval(tick, 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(t);
+    };
   }, []);
 
   /* --- pig wandering when idle --- */
@@ -85,10 +93,12 @@ export default function GardenScene({
 
   /* --- pig walks to center when a letter is ready --- */
   useEffect(() => {
-    if (unlock.canUnlock && !busy) {
+    if (!unlock.canUnlock || busy) return;
+    const t = setTimeout(() => {
       setPigFlip(50 > pigX);
       setPigX(50);
-    }
+    }, 0);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlock.canUnlock]);
 
