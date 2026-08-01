@@ -1,65 +1,72 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Show, SignInButton, SignUpButton } from "@clerk/nextjs";
+import Sprite from "@/components/Sprite";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="flex-1 flex flex-col">
+      <header className="flex items-center justify-between px-6 py-4 max-w-4xl w-full mx-auto">
+        <span className="font-pixel text-xl text-pig-deep">Kayletter</span>
+        <nav className="flex items-center gap-3">
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="font-pixel text-sm px-3 py-1.5 text-ink hover:text-pig-deep cursor-pointer">
+                Sign in
+              </button>
+            </SignInButton>
+          </Show>
+          <Show when="signed-in">
+            <Link
+              href="/notes"
+              className="font-pixel text-sm px-4 py-2 bg-pig-deep text-white border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] hover:bg-[#d96679]"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              My notes
+            </Link>
+          </Show>
+        </nav>
+      </header>
+
+      <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 gap-6">
+        <div className="animate-bounce [animation-duration:2.5s]">
+          <Sprite name="pig-envelope" alt="A pixel pig carrying a letter" height={160} />
+        </div>
+        <h1 className="font-pixel text-4xl sm:text-5xl text-ink max-w-xl leading-tight">
+          Little letters, delivered by <span className="text-pig-deep">pig</span>
+        </h1>
+        <p className="text-lg text-ink/70 max-w-md">
+          Write a stack of notes for someone you love. A tiny pig delivers one a day in a garden
+          that grows a sunflower for every letter they read.
+        </p>
+        <div className="flex gap-4 mt-2">
+          <Show when="signed-out">
+            <SignUpButton mode="modal">
+              <button className="font-pixel text-base px-6 py-3 bg-pig-deep text-white border-2 border-ink shadow-[4px_4px_0_0_var(--ink)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-[#d96679] cursor-pointer">
+                Write your first note
+              </button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <Link
+              href="/notes"
+              className="font-pixel text-base px-6 py-3 bg-pig-deep text-white border-2 border-ink shadow-[4px_4px_0_0_var(--ink)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-[#d96679]"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              Write a note
+            </Link>
+          </Show>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <p className="text-sm text-ink/50">5 notes free, then $1 once for unlimited.</p>
+      </section>
+
+      <footer className="relative h-40 overflow-hidden" aria-hidden>
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-leaf border-t-4 border-leaf-deep" />
+        <div className="absolute inset-x-0 bottom-14 flex items-end justify-center gap-8 sm:gap-14">
+          <Sprite name="sunflower-bloom" alt="" height={90} className="translate-y-2" />
+          <Sprite name="sunflower-bud" alt="" height={70} className="translate-y-2" />
+          <Sprite name="pig-idle" alt="" height={80} className="translate-y-3" flip />
+          <Sprite name="sunflower-bloom" alt="" height={100} className="translate-y-2" />
+          <Sprite name="sunflower-sprout" alt="" height={36} className="translate-y-2" />
         </div>
-      </main>
-    </div>
+      </footer>
+    </main>
   );
 }

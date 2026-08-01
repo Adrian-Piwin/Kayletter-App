@@ -1,26 +1,175 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cozy pastel pixel palette */
+  --background: #fdf3e3;
+  --foreground: #4a3428;
+  --cream: #fdf3e3;
+  --cream-dark: #f3e2c7;
+  --pig-pink: #f4a7b4;
+  --pig-pink-deep: #e8788a;
+  --sunflower: #f7c948;
+  --sunflower-deep: #e8a13a;
+  --leaf: #7fb069;
+  --leaf-deep: #5d8a4a;
+  --sky: #aedef5;
+  --soil: #8a6647;
+  --ink: #4a3428;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-cream: var(--cream);
+  --color-cream-dark: var(--cream-dark);
+  --color-pig: var(--pig-pink);
+  --color-pig-deep: var(--pig-pink-deep);
+  --color-sunflower: var(--sunflower);
+  --color-sunflower-deep: var(--sunflower-deep);
+  --color-leaf: var(--leaf);
+  --color-leaf-deep: var(--leaf-deep);
+  --color-sky: var(--sky);
+  --color-soil: var(--soil);
+  --color-ink: var(--ink);
+  --font-sans: var(--font-sans);
+  --font-pixel: var(--font-pixel);
+  --font-pixel-body: var(--font-pixel-body);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* Crisp scaling for all pixel art sprites */
+.pixelated {
+  image-rendering: pixelated;
+}
+
+/* Chunky pixel-style border using box-shadow steps */
+.pixel-border {
+  box-shadow:
+    0 -4px 0 0 var(--ink),
+    0 4px 0 0 var(--ink),
+    -4px 0 0 0 var(--ink),
+    4px 0 0 0 var(--ink);
+}
+
+.font-pixel {
+  font-family: var(--font-pixel), sans-serif;
+}
+
+.font-pixel-body {
+  font-family: var(--font-pixel-body), monospace;
+}
+
+/* --- Garden scene animations --- */
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
+@keyframes heart-float {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-90px) scale(1.5);
+  }
+}
+
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-20vw);
+  }
+  to {
+    transform: translateX(120vw);
+  }
+}
+
+@keyframes spin-once {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes backflip {
+  0% {
+    transform: rotate(0deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-180deg) translateY(-40px);
+  }
+  100% {
+    transform: rotate(-360deg) translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0);
+  }
+  80% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes letter-open {
+  0% {
+    transform: scaleY(0.05);
+    opacity: 0;
+  }
+  60% {
+    transform: scaleY(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

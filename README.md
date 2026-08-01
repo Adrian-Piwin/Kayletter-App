@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kayletter
 
-## Getting Started
+Little letters, delivered by pig. Write a stack of love notes; a pixel pig delivers one a day
+to someone you love, in a garden that grows a sunflower for every letter they read.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, TypeScript, Tailwind 4), standalone output
+- **Clerk** — author authentication
+- **Supabase Postgres** — data (server-side only via `postgres.js`; RLS enabled with no policies
+  so the Data API can never touch the tables)
+- **Stripe** — one-time $1 upgrade for unlimited notes (5 free)
+- Pixel art sprites in `public/sprites`, animated with CSS
+
+## How it works
+
+- Authors sign in at `/notes`, write notes, and share `/l/<share_token>` (24-char unguessable token).
+- Recipients see a pixel garden with a tamagotchi pig (feed / play / tricks). One note unlocks
+  every 24 hours; each read note grows a sunflower. Favoriting a note makes its flower bloom.
+- Legacy links from the old Firebase site (`/display.html?displayId=...`) redirect via
+  `letters.legacy_display_id`. Old authors are relinked when they sign up with the same email
+  (`letters.claim_email`).
+
+## Development
 
 ```bash
+npm install
+# local Postgres:
+docker run -d --name kayletter-pg -e POSTGRES_PASSWORD=kayletter -e POSTGRES_DB=kayletter -p 54329:5432 postgres:17
+docker exec -i kayletter-pg psql -U postgres -d kayletter < supabase/schema.sql
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Environment (`.env.local`): `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`,
+`DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Pushing to `main` triggers `.github/workflows/deploy.yml`: build on CI, rsync the standalone
+bundle to the DigitalOcean droplet (`/root/kayletter-next/app`), reload via pm2. Caddy proxies
+kayletter.com to port 3000. Runtime env lives in `/root/kayletter-next/.env` on the droplet.
 
-## Learn More
+Repo secrets: `DROPLET_HOST`, `DROPLET_SSH_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `scripts/migrate-firebase.mjs [--dry-run]` — one-time Firestore/Auth → Postgres migration
+- `scripts/process-sprites.py` — background removal + crop for generated sprite art
