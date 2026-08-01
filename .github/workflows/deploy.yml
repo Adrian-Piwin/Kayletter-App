@@ -31,6 +31,8 @@ jobs:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           NEXT_PUBLIC_APP_URL: https://kayletter.com
+          NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+          NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
 
       - name: Assemble standalone bundle
         run: |
@@ -43,6 +45,25 @@ jobs:
           echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync PostHog runtime env on droplet
+        env:
+          POSTHOG_TOKEN: ${{ secrets.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+          POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key root@${{ secrets.DROPLET_HOST }} \
+            "ENV=/root/kayletter-next/.env
+             touch \"\$ENV\"
+             upsert() {
+               key=\"\$1\"; val=\"\$2\"
+               if grep -q \"^\${key}=\" \"\$ENV\"; then
+                 sed -i \"s|^\${key}=.*|\${key}=\${val}|\" \"\$ENV\"
+               else
+                 printf '%s=%s\n' \"\$key\" \"\$val\" >> \"\$ENV\"
+               fi
+             }
+             upsert NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN '${POSTHOG_TOKEN}'
+             upsert NEXT_PUBLIC_POSTHOG_HOST '${POSTHOG_HOST}'"
 
       - name: Sync build to droplet
         run: |

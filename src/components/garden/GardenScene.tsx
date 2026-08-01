@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sprite from "@/components/Sprite";
 import LetterModal from "./LetterModal";
 import Mailbox from "./Mailbox";
+import { analyticsFetch, track } from "@/lib/analytics";
 import { getUnlockState } from "@/lib/unlock";
 import { petMood, TRICKS } from "@/lib/pet";
 import { sounds } from "@/lib/sound";
@@ -49,6 +50,17 @@ export default function GardenScene({
   const unlock = useMemo(() => getUnlockState(notes), [notes]);
   const mood = petMood(pet);
   const readNotes = unlock.readNotes;
+
+  useEffect(() => {
+    track("garden_viewed", {
+      note_count: notes.length,
+      notes_delivered: readNotes.length,
+      can_unlock: unlock.canUnlock,
+      pet_mood: mood,
+    });
+    // Funnel top-of-garden view — fire once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* --- ambient: clock tick for countdown + time-of-day sky --- */
   useEffect(() => {
@@ -117,13 +129,14 @@ export default function GardenScene({
 
   async function petAction(action: "feed" | "play" | "trick") {
     if (busy) return;
-    const res = await fetch(`/api/l/${token}/pet`, {
+    const res = await analyticsFetch(`/api/l/${token}/pet`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
     if (!res.ok) return;
     const { pet: saved } = await res.json();
+    track("pet_action", { action, happiness: saved.happiness, hunger: saved.hunger });
 
     if (action === "feed") {
       sounds.eat();
@@ -170,13 +183,18 @@ export default function GardenScene({
 
   async function openTodaysLetter() {
     if (!unlock.canUnlock || busy) return;
-    const res = await fetch(`/api/l/${token}/unlock`, { method: "POST" });
+    const res = await analyticsFetch(`/api/l/${token}/unlock`, { method: "POST" });
     if (!res.ok) return;
     const { note } = await res.json();
     sounds.unlock();
     burstHearts(6);
     setNotes((ns) => ns.map((n) => (n.id === note.id ? note : n)));
     setOpenNote(note);
+    track("letter_opened", {
+      delivery_index: readNotes.length + 1,
+      note_count: notes.length,
+      source: "unlock",
+    });
     setPet((p) => ({
       ...p,
       tricks_unlocked: Math.max(p.tricks_unlocked, Math.floor((readNotes.length + 1) / 2)),
@@ -185,15 +203,17 @@ export default function GardenScene({
 
   async function toggleFavorite(note: Note) {
     sounds.pop();
-    const res = await fetch(`/api/l/${token}/favorite`, {
+    const nextFavorite = !note.is_favorite;
+    const res = await analyticsFetch(`/api/l/${token}/favorite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ noteId: note.id, isFavorite: !note.is_favorite }),
+      body: JSON.stringify({ noteId: note.id, isFavorite: nextFavorite }),
     });
     if (!res.ok) return;
     const { note: saved } = await res.json();
     setNotes((ns) => ns.map((n) => (n.id === saved.id ? saved : n)));
     if (openNote?.id === saved.id) setOpenNote(saved);
+    track(nextFavorite ? "letter_favorited" : "letter_unfavorited");
   }
 
   /* --- derived display helpers --- */
@@ -293,7 +313,10 @@ export default function GardenScene({
 
       {/* mailbox */}
       <button
-        onClick={() => setMailboxOpen(true)}
+        onClick={() => {
+          track("mailbox_opened", { letters_count: readNotes.length });
+          setMailboxOpen(true);
+        }}
         className="absolute top-6 right-4 bg-cream/90 border-2 border-ink px-3 py-2 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-sm text-ink hover:bg-cream cursor-pointer z-10"
       >
         ✉ letters ({readNotes.length})
@@ -312,7 +335,10 @@ export default function GardenScene({
         return (
           <button
             key={n.id}
-            onClick={() => setOpenNote(n)}
+            onClick={() => {
+              track("letter_opened", { source: "sunflower", is_favorite: n.is_favorite });
+              setOpenNote(n);
+            }}
             className="absolute bottom-[22%] origin-bottom [animation:sway_4s_ease-in-out_infinite] cursor-pointer hover:brightness-110 z-[5]"
             style={{ left: `${x}%`, animationDelay: `${(i % 4) * 0.6}s` }}
             title="re-read this letter"
@@ -416,6 +442,7 @@ export default function GardenScene({
           notes={readNotes}
           onClose={() => setMailboxOpen(false)}
           onOpen={(n) => {
+            track("letter_opened", { source: "mailbox", is_favorite: n.is_favorite });
             setMailboxOpen(false);
             setOpenNote(n);
           }}

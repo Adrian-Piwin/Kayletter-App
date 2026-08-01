@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAuthorContext } from "@/lib/author";
 import { updateLetter } from "@/lib/data";
+import {
+  captureServerEvent,
+  distinctIdFromRequest,
+  sessionIdFromRequest,
+} from "@/lib/posthog-server";
 
 export async function PATCH(req: Request) {
   const ctx = await getAuthorContext();
@@ -17,5 +22,12 @@ export async function PATCH(req: Request) {
     title,
     pet_name: petName,
   });
+
+  await captureServerEvent(distinctIdFromRequest(req, ctx.profile.clerk_user_id), "letter_settings_saved", {
+    $session_id: sessionIdFromRequest(req),
+    changed_title: title !== undefined,
+    changed_pet_name: petName !== undefined,
+  });
+
   return NextResponse.json({ letter });
 }

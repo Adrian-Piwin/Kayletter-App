@@ -5,6 +5,7 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import PixelButton from "@/components/PixelButton";
 import Sprite from "@/components/Sprite";
+import { analyticsFetch, track } from "@/lib/analytics";
 import { FREE_NOTE_LIMIT } from "@/lib/plan";
 import type { Letter, Note } from "@/lib/types";
 
@@ -43,7 +44,19 @@ export default function Dashboard({
   const readCount = notes.filter((n) => n.read_at).length;
 
   useEffect(() => {
+    track("dashboard_viewed", {
+      note_count: notes.length,
+      notes_delivered: readCount,
+      is_premium: isPremium,
+      at_limit: atLimit,
+    });
+    // Capture initial dashboard state once per visit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (new URLSearchParams(window.location.search).get("upgraded") === "1") {
+      track("upgrade_success_viewed");
       showToast("Upgrade complete — unlimited notes unlocked!");
       window.history.replaceState({}, "", "/notes");
     }
@@ -56,19 +69,20 @@ export default function Dashboard({
 
   async function saveSettings() {
     setBusy(true);
-    const res = await fetch("/api/letter", {
+    const res = await analyticsFetch("/api/letter", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, pet_name: petName }),
     });
     setBusy(false);
+    if (res.ok) track("letter_settings_saved");
     showToast(res.ok ? "Saved!" : "Couldn't save settings");
   }
 
   async function addNote() {
     if (!draft.trim()) return;
     setBusy(true);
-    const res = await fetch("/api/notes", {
+    const res = await analyticsFetch("/api/notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: draft }),
@@ -78,7 +92,13 @@ export default function Dashboard({
       const { note } = await res.json();
       setNotes((n) => [...n, note]);
       setDraft("");
+      track("note_created_client", {
+        note_count: notes.length + 1,
+        content_length: note.content.length,
+        is_premium: isPremium,
+      });
     } else if (res.status === 402) {
+      track("note_limit_hit_client", { note_count: notes.length });
       showToast("Free limit reached — upgrade for unlimited notes");
     } else {
       showToast("Couldn't add note");
@@ -86,7 +106,7 @@ export default function Dashboard({
   }
 
   async function saveEdit(id: string) {
-    const res = await fetch(`/api/notes/${id}`, {
+    const res = await analyticsFetch(`/api/notes/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: editText }),
@@ -95,20 +115,24 @@ export default function Dashboard({
       const { note } = await res.json();
       setNotes((ns) => ns.map((n) => (n.id === id ? note : n)));
       setEditingId(null);
+      track("note_edited");
     } else {
       showToast("Couldn't save note");
     }
   }
 
   async function removeNote(id: string) {
-    const res = await fetch(`/api/notes/${id}`, { method: "DELETE" });
-    if (res.ok) setNotes((ns) => ns.filter((n) => n.id !== id));
-    else showToast("Couldn't delete note");
+    const res = await analyticsFetch(`/api/notes/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setNotes((ns) => ns.filter((n) => n.id !== id));
+      track("note_deleted");
+    } else showToast("Couldn't delete note");
   }
 
   async function upgrade() {
+    track("upgrade_clicked", { note_count: notes.length, source: atLimit ? "limit_banner" : "manual" });
     setBusy(true);
-    const res = await fetch("/api/checkout", { method: "POST" });
+    const res = await analyticsFetch("/api/checkout", { method: "POST" });
     setBusy(false);
     if (res.ok) {
       const { url } = await res.json();
@@ -120,6 +144,7 @@ export default function Dashboard({
 
   function copyLink() {
     navigator.clipboard.writeText(shareUrl);
+    track("share_link_copied", { note_count: notes.length, notes_delivered: readCount });
     showToast("Link copied — send it to your favorite person");
   }
 

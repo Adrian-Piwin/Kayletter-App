@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { getLetterByToken, setNoteFavorite } from "@/lib/data";
+import {
+  captureServerEvent,
+  distinctIdFromRequest,
+  sessionIdFromRequest,
+} from "@/lib/posthog-server";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -15,5 +20,14 @@ export async function POST(req: Request, { params }: Params) {
 
   const note = await setNoteFavorite(noteId, letter.id, isFavorite);
   if (!note) return NextResponse.json({ error: "Note not found" }, { status: 404 });
+
+  const distinctId = distinctIdFromRequest(req, `recipient:${token}`);
+  await captureServerEvent(distinctId, isFavorite ? "letter_favorited" : "letter_unfavorited", {
+    $session_id: sessionIdFromRequest(req),
+    letter_id: letter.id,
+    note_id: note.id,
+    author_user_id: letter.owner_clerk_id,
+  });
+
   return NextResponse.json({ note });
 }

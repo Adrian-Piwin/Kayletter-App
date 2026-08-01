@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Pixelify_Sans, VT323, Nunito } from "next/font/google";
+import PostHogIdentify from "@/components/PostHogIdentify";
 import "./globals.css";
 
 const pixelify = Pixelify_Sans({
@@ -42,6 +43,7 @@ export default function RootLayout({
             },
           }}
         >
+          <PostHogIdentify />
           {children}
         </ClerkProvider>
       </body>

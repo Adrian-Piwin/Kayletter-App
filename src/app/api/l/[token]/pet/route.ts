@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getLetterByToken, getOrCreatePet, listNotes, savePetStats } from "@/lib/data";
 import { applyAction, decayedStats, tricksUnlockedFor, type PetAction } from "@/lib/pet";
+import {
+  captureServerEvent,
+  distinctIdFromRequest,
+  sessionIdFromRequest,
+} from "@/lib/posthog-server";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -30,6 +35,16 @@ export async function POST(req: Request, { params }: Params) {
     ...next,
     fed: action === "feed",
     played: action === "play",
+    tricks_unlocked: unlocked,
+  });
+
+  const distinctId = distinctIdFromRequest(req, `recipient:${token}`);
+  await captureServerEvent(distinctId, "pet_action", {
+    $session_id: sessionIdFromRequest(req),
+    action,
+    letter_id: letter.id,
+    happiness: saved.happiness,
+    hunger: saved.hunger,
     tricks_unlocked: unlocked,
   });
 

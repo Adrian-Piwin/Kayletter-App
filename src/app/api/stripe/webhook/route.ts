@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { setPremium } from "@/lib/data";
+import { captureServerEvent } from "@/lib/posthog-server";
+import { UPGRADE_PRICE_CENTS } from "@/lib/plan";
 
 /** Stripe webhook: flip is_premium once the $1 checkout completes. */
 export async function POST(req: Request) {
@@ -21,6 +23,11 @@ export async function POST(req: Request) {
     const clerkUserId = session.metadata?.clerk_user_id;
     if (clerkUserId && session.payment_status === "paid") {
       await setPremium(clerkUserId, typeof session.customer === "string" ? session.customer : null);
+      await captureServerEvent(clerkUserId, "upgrade_completed", {
+        amount_cents: session.amount_total ?? UPGRADE_PRICE_CENTS,
+        currency: session.currency ?? "usd",
+        stripe_session_id: session.id,
+      });
     }
   }
 

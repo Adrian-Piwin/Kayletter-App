@@ -32,15 +32,18 @@ npm run dev
 ```
 
 Environment (`.env.local`): `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`,
-`DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL`.
+`DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL`,
+`NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `NEXT_PUBLIC_POSTHOG_HOST`.
 
 ## Deployment
 
 Pushing to `main` triggers `.github/workflows/deploy.yml`: build on CI, rsync the standalone
 bundle to the DigitalOcean droplet (`/root/kayletter-next/app`), reload via pm2. Caddy proxies
 kayletter.com to port 3000. Runtime env lives in `/root/kayletter-next/.env` on the droplet.
+Deploy also upserts PostHog keys into that `.env` (needed for server-side capture).
 
-Repo secrets: `DROPLET_HOST`, `DROPLET_SSH_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`.
+Repo secrets: `DROPLET_HOST`, `DROPLET_SSH_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`,
+`CLERK_SECRET_KEY`, `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `NEXT_PUBLIC_POSTHOG_HOST`.
 
 ## Scripts
 

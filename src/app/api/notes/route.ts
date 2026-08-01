@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getAuthorContext } from "@/lib/author";
 import { addNote, countNotes, listNotes } from "@/lib/data";
 import { FREE_NOTE_LIMIT } from "@/lib/plan";
+import {
+  captureServerEvent,
+  distinctIdFromRequest,
+  sessionIdFromRequest,
+} from "@/lib/posthog-server";
 
 export async function GET() {
   const ctx = await getAuthorContext();
@@ -14,6 +19,9 @@ export async function POST(req: Request) {
   const ctx = await getAuthorContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const distinctId = distinctIdFromRequest(req, ctx.profile.clerk_user_id);
+  const sessionId = sessionIdFromRequest(req);
+
   const { content } = await req.json();
   if (typeof content !== "string" || !content.trim()) {
     return NextResponse.json({ error: "Note can't be empty" }, { status: 400 });
@@ -25,6 +33,12 @@ export async function POST(req: Request) {
   if (!ctx.profile.is_premium) {
     const count = await countNotes(ctx.letter.id);
     if (count >= FREE_NOTE_LIMIT) {
+      await captureServerEvent(distinctId, "note_limit_reached", {
+        $session_id: sessionId,
+        note_count: count,
+        free_limit: FREE_NOTE_LIMIT,
+        is_premium: false,
+      });
       return NextResponse.json(
         { error: "Free limit reached", code: "limit_reached" },
         { status: 402 }
@@ -33,5 +47,14 @@ export async function POST(req: Request) {
   }
 
   const note = await addNote(ctx.letter.id, content.trim());
+  const noteCount = await countNotes(ctx.letter.id);
+  await captureServerEvent(distinctId, "note_created", {
+    $session_id: sessionId,
+    note_id: note.id,
+    note_count: noteCount,
+    content_length: note.content.length,
+    is_premium: ctx.profile.is_premium,
+    first_note: noteCount === 1,
+  });
   return NextResponse.json({ note }, { status: 201 });
 }
