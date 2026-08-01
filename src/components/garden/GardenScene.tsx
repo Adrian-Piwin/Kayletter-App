@@ -5,6 +5,7 @@ import Sprite from "@/components/Sprite";
 import LetterModal from "./LetterModal";
 import Mailbox from "./Mailbox";
 import { analyticsFetch, track } from "@/lib/analytics";
+import { useIsMobile } from "@/lib/hooks";
 import { getUnlockState } from "@/lib/unlock";
 import { petMood, TRICKS } from "@/lib/pet";
 import { sounds } from "@/lib/sound";
@@ -15,6 +16,14 @@ type PigState = "idle" | "walk" | "eat" | "play" | "spin" | "backflip" | "sit";
 type Heart = { id: number; x: number; y: number; kind: "heart" | "sparkle" };
 
 const WALK_FRAME_MS = 170;
+
+/** Flowers crowd each other on narrow screens, so fewer of them are planted. */
+const MAX_FLOWERS = { mobile: 8, desktop: 14 };
+/** Minimum spread used when there are only a few flowers, to keep them apart. */
+const FLOWER_SPREAD = { mobile: 5, desktop: 7 };
+
+const actionButtonClass =
+  "font-pixel text-xs sm:text-sm min-h-11 px-3 bg-cream border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] hover:bg-white disabled:opacity-50 cursor-pointer touch-manipulation";
 
 export default function GardenScene({
   token,
@@ -45,6 +54,7 @@ export default function GardenScene({
   const [phase, setPhase] = useState<"day" | "sunset" | "night">("day");
   const [showFood, setShowFood] = useState(false);
   const heartId = useRef(0);
+  const isMobile = useIsMobile();
   const busy = pigState !== "idle" && pigState !== "walk";
 
   const unlock = useMemo(() => getUnlockState(notes), [notes]);
@@ -254,7 +264,11 @@ export default function GardenScene({
   const allDelivered = !unlock.nextNote && notes.length > 0;
 
   return (
-    <main className="fixed inset-0 overflow-hidden select-none" style={{ background: sky }}>
+    /* h-svh rather than inset-0 so mobile browser chrome can't crop the scene. */
+    <main
+      className="fixed inset-x-0 top-0 h-svh overflow-hidden select-none"
+      style={{ background: sky }}
+    >
       {/* stars at night */}
       {phase === "night" &&
         [...Array(24)].map((_, i) => (
@@ -271,7 +285,7 @@ export default function GardenScene({
 
       {/* sun / moon */}
       <div
-        className="absolute right-[10%] top-[18%] w-14 h-14 border-4 border-ink/20"
+        className="absolute right-[10%] top-[20%] w-10 h-10 sm:w-14 sm:h-14 border-4 border-ink/20"
         style={{ background: phase === "night" ? "#f0ead6" : "#ffd93d", borderRadius: 4 }}
       />
 
@@ -293,45 +307,56 @@ export default function GardenScene({
         </div>
       ))}
 
-      {/* title */}
-      <h1 className="absolute top-6 left-1/2 -translate-x-1/2 font-pixel text-xl sm:text-3xl text-ink bg-cream/90 border-2 border-ink px-4 py-2 shadow-[4px_4px_0_0_var(--ink)] max-w-[90vw] truncate z-10">
-        {title}
-      </h1>
+      {/* Top bar: stats and mailbox share a row; the title wraps below them on small screens */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start gap-2 p-3 sm:p-4">
+        {/* HUD: pet stats */}
+        <div className="bg-cream/90 border-2 border-ink px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-[3px_3px_0_0_var(--ink)]">
+          <p className="font-pixel text-xs sm:text-sm text-ink mb-1 max-w-28 sm:max-w-none truncate">
+            {petName}
+          </p>
+          <p className="font-pixel text-xs text-pig-deep" title="happiness">
+            {"♥".repeat(Math.max(1, Math.round(pet.happiness / 20)))}
+            <span className="opacity-25">
+              {"♥".repeat(5 - Math.max(1, Math.round(pet.happiness / 20)))}
+            </span>
+          </p>
+          <p className="font-pixel text-xs text-sunflower-deep" title="fullness">
+            {"●".repeat(Math.max(0, 5 - Math.round(pet.hunger / 20)))}
+            <span className="opacity-25">{"●".repeat(Math.min(5, Math.round(pet.hunger / 20)))}</span>
+          </p>
+        </div>
 
-      {/* HUD: pet stats */}
-      <div className="absolute top-6 left-4 bg-cream/90 border-2 border-ink px-3 py-2 shadow-[3px_3px_0_0_var(--ink)] z-10">
-        <p className="font-pixel text-sm text-ink mb-1">{petName}</p>
-        <p className="font-pixel text-xs text-pig-deep" title="happiness">
-          {"♥".repeat(Math.max(1, Math.round(pet.happiness / 20)))}
-          <span className="opacity-25">{"♥".repeat(5 - Math.max(1, Math.round(pet.happiness / 20)))}</span>
-        </p>
-        <p className="font-pixel text-xs text-sunflower-deep" title="fullness">
-          {"●".repeat(Math.max(0, 5 - Math.round(pet.hunger / 20)))}
-          <span className="opacity-25">{"●".repeat(Math.min(5, Math.round(pet.hunger / 20)))}</span>
-        </p>
+        {/* title */}
+        <h1 className="order-last w-full text-center sm:order-none sm:w-auto sm:flex-1 sm:min-w-0 font-pixel text-lg sm:text-3xl text-ink">
+          <span className="inline-block max-w-full truncate align-bottom bg-cream/90 border-2 border-ink px-3 py-1.5 sm:px-4 sm:py-2 shadow-[4px_4px_0_0_var(--ink)]">
+            {title}
+          </span>
+        </h1>
+
+        {/* mailbox */}
+        <button
+          onClick={() => {
+            track("mailbox_opened", { letters_count: readNotes.length });
+            setMailboxOpen(true);
+          }}
+          className="pointer-events-auto ml-auto sm:ml-0 min-h-11 bg-cream/90 border-2 border-ink px-3 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink hover:bg-cream cursor-pointer touch-manipulation"
+        >
+          ✉ <span className="hidden sm:inline">letters </span>({readNotes.length})
+        </button>
       </div>
-
-      {/* mailbox */}
-      <button
-        onClick={() => {
-          track("mailbox_opened", { letters_count: readNotes.length });
-          setMailboxOpen(true);
-        }}
-        className="absolute top-6 right-4 bg-cream/90 border-2 border-ink px-3 py-2 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-sm text-ink hover:bg-cream cursor-pointer z-10"
-      >
-        ✉ letters ({readNotes.length})
-      </button>
 
       {/* ground */}
       <div className="absolute inset-x-0 bottom-0 h-[26%] bg-leaf border-t-8 border-leaf-deep" />
       <div className="absolute inset-x-0 bottom-0 h-[7%] bg-soil" />
 
       {/* sunflower garden — one per read note */}
-      {readNotes.slice(-14).map((n, i, arr) => {
+      {readNotes.slice(isMobile ? -MAX_FLOWERS.mobile : -MAX_FLOWERS.desktop).map((n, i, arr) => {
         const ageHours = n.read_at ? (now - new Date(n.read_at).getTime()) / 3_600_000 : 999;
         const stage = n.is_favorite || ageHours > 72 ? "bloom" : ageHours > 24 ? "bud" : "sprout";
-        const size = stage === "bloom" ? (n.is_favorite ? 110 : 92) : stage === "bud" ? 66 : 34;
-        const x = 4 + (i * 92) / Math.max(arr.length, 7);
+        const base = stage === "bloom" ? (n.is_favorite ? 110 : 92) : stage === "bud" ? 66 : 34;
+        const size = Math.round(base * (isMobile ? 0.7 : 1));
+        const spread = isMobile ? FLOWER_SPREAD.mobile : FLOWER_SPREAD.desktop;
+        const x = 4 + (i * 92) / Math.max(arr.length, spread);
         return (
           <button
             key={n.id}
@@ -339,7 +364,7 @@ export default function GardenScene({
               track("letter_opened", { source: "sunflower", is_favorite: n.is_favorite });
               setOpenNote(n);
             }}
-            className="absolute bottom-[22%] origin-bottom [animation:sway_4s_ease-in-out_infinite] cursor-pointer hover:brightness-110 z-[5]"
+            className="absolute bottom-[22%] origin-bottom [animation:sway_4s_ease-in-out_infinite] cursor-pointer hover:brightness-110 touch-manipulation z-[5]"
             style={{ left: `${x}%`, animationDelay: `${(i % 4) * 0.6}s` }}
             title="re-read this letter"
           >
@@ -370,11 +395,11 @@ export default function GardenScene({
           }`}
           aria-label={unlock.canUnlock ? "open today's letter" : petName}
         >
-          <Sprite name={pigSprite} alt={petName} height={110} flip={pigFlip} />
+          <Sprite name={pigSprite} alt={petName} height={isMobile ? 84 : 110} flip={pigFlip} />
         </button>
         {showFood && (
-          <div className="absolute -left-10 bottom-0">
-            <Sprite name="strawberry" alt="a strawberry" height={34} />
+          <div className="absolute -left-8 sm:-left-10 bottom-0">
+            <Sprite name="strawberry" alt="a strawberry" height={isMobile ? 26 : 34} />
           </div>
         )}
         {unlock.canUnlock && (
@@ -395,9 +420,9 @@ export default function GardenScene({
         </span>
       ))}
 
-      {/* status chip: countdown / all delivered / no notes */}
+      {/* status chip: countdown / all delivered / no notes — clears the action bar on short screens */}
       {!unlock.canUnlock && (
-        <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 bg-cream/95 border-2 border-ink px-4 py-2 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink text-center z-10 max-w-[90vw]">
+        <div className="absolute bottom-20 sm:bottom-[8%] left-1/2 -translate-x-1/2 bg-cream/95 border-2 border-ink px-3 sm:px-4 py-2 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink text-center z-10 max-w-[90vw]">
           {countdown
             ? `next letter in ${countdown}`
             : allDelivered
@@ -409,26 +434,18 @@ export default function GardenScene({
       )}
 
       {/* action bar */}
-      <div className="absolute bottom-[2%] left-1/2 -translate-x-1/2 flex gap-2 z-10">
-        <button
-          onClick={() => petAction("feed")}
-          disabled={busy}
-          className="font-pixel text-xs sm:text-sm px-3 py-2 bg-cream border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] hover:bg-white disabled:opacity-50 cursor-pointer"
-        >
+      <div className="absolute bottom-4 sm:bottom-[2%] inset-x-0 flex flex-wrap justify-center gap-2 px-3 z-10">
+        <button onClick={() => petAction("feed")} disabled={busy} className={actionButtonClass}>
           🍓 feed
         </button>
-        <button
-          onClick={() => petAction("play")}
-          disabled={busy}
-          className="font-pixel text-xs sm:text-sm px-3 py-2 bg-cream border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] hover:bg-white disabled:opacity-50 cursor-pointer"
-        >
+        <button onClick={() => petAction("play")} disabled={busy} className={actionButtonClass}>
           ⚽ play
         </button>
         <button
           onClick={() => petAction("trick")}
           disabled={busy || pet.tricks_unlocked === 0}
           title={pet.tricks_unlocked === 0 ? `${petName} learns tricks as you read letters` : undefined}
-          className="font-pixel text-xs sm:text-sm px-3 py-2 bg-cream border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] hover:bg-white disabled:opacity-50 cursor-pointer"
+          className={actionButtonClass}
         >
           ✨ trick
         </button>

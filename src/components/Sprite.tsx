@@ -10,7 +10,8 @@ export default function Sprite({
 }: {
   name: string;
   alt: string;
-  height: number;
+  /** Pixel number, or any CSS length (e.g. `clamp(56px, 16vw, 90px)`) to scale with the viewport. */
+  height: number | string;
   className?: string;
   flip?: boolean;
 }) {

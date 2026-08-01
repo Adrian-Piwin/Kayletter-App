@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorContext } from "@/lib/author";
 import { addNote, countNotes, listNotes } from "@/lib/data";
-import { FREE_NOTE_LIMIT } from "@/lib/plan";
+import { FREE_NOTE_LIMIT, MAX_NOTE_LENGTH } from "@/lib/plan";
 import { captureServerEvent, sessionIdFromRequest } from "@/lib/posthog-server";
 
 export async function GET() {
@@ -23,8 +23,11 @@ export async function POST(req: Request) {
   if (typeof content !== "string" || !content.trim()) {
     return NextResponse.json({ error: "Note can't be empty" }, { status: 400 });
   }
-  if (content.length > 2000) {
-    return NextResponse.json({ error: "Note is too long (2000 characters max)" }, { status: 400 });
+  if (content.length > MAX_NOTE_LENGTH) {
+    return NextResponse.json(
+      { error: `Note is too long (${MAX_NOTE_LENGTH} characters max)` },
+      { status: 400 }
+    );
   }
 
   if (!ctx.profile.is_premium) {
