@@ -7,12 +7,15 @@ import { getLetterByLegacyDisplayId } from "@/lib/data";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  // Behind the reverse proxy the request URL reflects the internal bind
+  // address (0.0.0.0:3000), so build redirects from the public app URL.
+  const base = process.env.NEXT_PUBLIC_APP_URL || url.origin;
   const displayId = url.searchParams.get("displayId");
   if (displayId) {
     const letter = await getLetterByLegacyDisplayId(displayId);
     if (letter) {
-      return NextResponse.redirect(new URL(`/l/${letter.share_token}`, url.origin), 308);
+      return NextResponse.redirect(new URL(`/l/${letter.share_token}`, base), 308);
     }
   }
-  return NextResponse.redirect(new URL("/", url.origin), 308);
+  return NextResponse.redirect(new URL("/", base), 308);
 }
