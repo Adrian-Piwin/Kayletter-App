@@ -33,7 +33,7 @@ export const INTRO = {
 } as const;
 
 /** How long the whole sequence runs, after which the scene drops its opening styles. */
-export const INTRO_MS = 600000;
+export const INTRO_MS = 1850;
 
 /**
  * Where the scene is in its opening. `waiting` covers the server render and

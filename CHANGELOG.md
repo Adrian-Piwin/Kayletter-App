@@ -21,3 +21,13 @@ Gardens now grow into a walkable field — swipe or drag to wander, with the pig
 ##### **shared**
 - `useElementWidth` for live scene measurement.
 - Entrance and cloud-float animations in global CSS.
+
+### Fix the garden opening never ending, leaving the pig walking on the spot
+
+A debug value shipped in place of the opening sequence's real length, so the scene never finished arriving.
+
+#### Changes
+- Restore the opening to 1.85s so the garden drops its entrance styles once the sequence is over.
+
+##### **garden**
+- Pig settles into its idle bob on arrival instead of cycling walk frames for ten minutes.
