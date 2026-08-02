@@ -2,10 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sprite from "@/components/Sprite";
+import Backdrop, { SKY_GRADIENT, type SkyPhase } from "./Backdrop";
+import FieldNav from "./FieldNav";
+import FlowerField from "./FlowerField";
 import LetterModal from "./LetterModal";
 import Mailbox from "./Mailbox";
+import { useCamera, type ScrollDirection } from "./useCamera";
 import { analyticsFetch, track } from "@/lib/analytics";
-import { useIsMobile } from "@/lib/hooks";
+import { entrance, INTRO, INTRO_MS, type IntroPhase } from "@/lib/garden-intro";
+import { FIELD_REFRESH_MS, nominalWidth, planField } from "@/lib/garden-layout";
+import { useElementWidth, useIsMobile, usePrefersReducedMotion } from "@/lib/hooks";
 import { getUnlockState } from "@/lib/unlock";
 import { petMood, TRICKS } from "@/lib/pet";
 import { sounds } from "@/lib/sound";
@@ -16,14 +22,18 @@ type PigState = "idle" | "walk" | "eat" | "play" | "spin" | "backflip" | "sit";
 type Heart = { id: number; x: number; y: number; kind: "heart" | "sparkle" };
 
 const WALK_FRAME_MS = 170;
-
-/** Flowers crowd each other on narrow screens, so fewer of them are planted. */
-const MAX_FLOWERS = { mobile: 8, desktop: 14 };
-/** Minimum spread used when there are only a few flowers, to keep them apart. */
-const FLOWER_SPREAD = { mobile: 5, desktop: 7 };
+/** How long the pig takes to cross to a new spot, and its faster scripted gait. */
+const PIG_WALK_MS = 2500;
+const PIG_STEP_MS = 900;
+/** The pig never wanders off the edges of the screen. */
+const PIG_BOUNDS = { min: 12, max: 85 };
+/** How far the pig drifts ahead when the field starts scrolling, in percent. */
+const PIG_LEAD = 9;
 
 const actionButtonClass =
   "font-pixel text-xs sm:text-sm min-h-11 px-3 bg-cream border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] hover:bg-white disabled:opacity-50 cursor-pointer touch-manipulation";
+
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 export default function GardenScene({
   token,
@@ -44,22 +54,76 @@ export default function GardenScene({
   const [notes, setNotes] = useState(initialNotes);
   const [pet, setPet] = useState(initialPet);
   const [pigState, setPigState] = useState<PigState>("idle");
-  const [pigX, setPigX] = useState(50); // percent across scene
-  const [pigFlip, setPigFlip] = useState(false);
+  /** Screen position of the pig, with the duration of the walk taking it there. */
+  const [pigMove, setPigMove] = useState({ x: 50, ms: PIG_WALK_MS });
+  /** Starts facing right: the pig walks in from the left when the scene opens. */
+  const [pigFlip, setPigFlip] = useState(true);
   const [walkFrame, setWalkFrame] = useState(0);
+  const [scrollDir, setScrollDir] = useState<ScrollDirection>(0);
   const [hearts, setHearts] = useState<Heart[]>([]);
   const [openNote, setOpenNote] = useState<Note | null>(null);
   const [mailboxOpen, setMailboxOpen] = useState(false);
   const [now, setNow] = useState(serverNow);
-  const [phase, setPhase] = useState<"day" | "sunset" | "night">("day");
+  const [phase, setPhase] = useState<SkyPhase>("day");
   const [showFood, setShowFood] = useState(false);
+  const [introPhase, setIntroPhase] = useState<IntroPhase>("waiting");
   const heartId = useRef(0);
+  const pigXRef = useRef(pigMove.x);
+  const sceneRef = useRef<HTMLElement>(null);
   const isMobile = useIsMobile();
+  const reduceMotion = usePrefersReducedMotion();
   const busy = pigState !== "idle" && pigState !== "walk";
+  /** Reduced motion skips the opening outright rather than flashing through it. */
+  const intro: IntroPhase = reduceMotion ? "done" : introPhase;
+  const opening = intro === "playing";
 
   const unlock = useMemo(() => getUnlockState(notes), [notes]);
   const mood = petMood(pet);
   const readNotes = unlock.readNotes;
+
+  /* --- pig movement --- */
+
+  /** Walks the pig to a spot on screen, turning it to face the way it travels. */
+  const movePig = useCallback((x: number, ms = PIG_WALK_MS) => {
+    const next = clamp(x, PIG_BOUNDS.min, PIG_BOUNDS.max);
+    if (next !== pigXRef.current) setPigFlip(next > pigXRef.current);
+    pigXRef.current = next;
+    setPigMove({ x: next, ms });
+  }, []);
+
+  /**
+   * The camera reports which way the field is travelling. The pig sets off in
+   * the same direction and leads by a step, so it looks like it is walking the
+   * garden rather than being dragged along by it.
+   */
+  const handleScroll = useCallback(
+    (dir: ScrollDirection) => {
+      setScrollDir(dir);
+      if (dir === 0 || busy) return;
+      setPigFlip(dir > 0);
+      movePig(pigXRef.current + dir * PIG_LEAD, PIG_STEP_MS);
+    },
+    [busy, movePig]
+  );
+
+  /* --- the field --- */
+
+  const sceneWidth = useElementWidth(sceneRef, nominalWidth(isMobile));
+  // Flowers only change stage hours apart, so the field is re-planned on a
+  // coarse clock rather than with every tick of the countdown.
+  const fieldNow = Math.floor(now / FIELD_REFRESH_MS) * FIELD_REFRESH_MS;
+  const layout = useMemo(
+    () => planField(readNotes, { isMobile, viewportWidth: sceneWidth, now: fieldNow }),
+    [readNotes, isMobile, sceneWidth, fieldNow]
+  );
+  const scrollable = layout.screens > 1;
+
+  const { camera, surfaceRef } = useCamera({
+    screens: layout.screens,
+    viewportWidth: sceneWidth,
+    enabled: scrollable && !openNote && !mailboxOpen,
+    onDirection: handleScroll,
+  });
 
   useEffect(() => {
     track("garden_viewed", {
@@ -67,10 +131,32 @@ export default function GardenScene({
       notes_delivered: readNotes.length,
       can_unlock: unlock.canUnlock,
       pet_mood: mood,
+      field_screens: layout.screens,
     });
     // Funnel top-of-garden view — fire once per mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* --- the opening sequence --- */
+  /**
+   * Held until the scene has mounted rather than started from the server's
+   * markup: the client re-plans the field as soon as it knows the real
+   * viewport and the time of day, and a garden that had already begun
+   * assembling itself would start over halfway through.
+   *
+   * Waiting on a frame also waits on the tab being looked at, so a letter
+   * opened in the background is still greeted with its full opening.
+   */
+  useEffect(() => {
+    const start = requestAnimationFrame(() => setIntroPhase("playing"));
+    return () => cancelAnimationFrame(start);
+  }, []);
+
+  useEffect(() => {
+    if (introPhase !== "playing") return;
+    const done = setTimeout(() => setIntroPhase("done"), INTRO_MS);
+    return () => clearTimeout(done);
+  }, [introPhase]);
 
   /* --- ambient: clock tick for countdown + time-of-day sky --- */
   useEffect(() => {
@@ -79,55 +165,56 @@ export default function GardenScene({
       const hour = new Date().getHours();
       setPhase(hour >= 20 || hour < 6 ? "night" : hour >= 17 ? "sunset" : "day");
     };
-    // First tick lands ~immediately so the sky matches local time right away.
-    const first = setTimeout(tick, 50);
+    // The first tick lands on the frame the scene opens on, so the sky is the
+    // right time of day before any of it is on screen.
+    const first = requestAnimationFrame(tick);
     const t = setInterval(tick, 1000);
     return () => {
-      clearTimeout(first);
+      cancelAnimationFrame(first);
       clearInterval(t);
     };
   }, []);
 
   /* --- pig wandering when idle --- */
   useEffect(() => {
-    if (busy || unlock.canUnlock) return;
+    if (busy || unlock.canUnlock || scrollDir !== 0) return;
     const t = setInterval(() => {
       if (Math.random() < 0.5) return;
-      const target = 15 + Math.random() * 70;
-      setPigFlip(target > pigX);
       setPigState("walk");
-      setPigX(target);
+      movePig(15 + Math.random() * 70);
     }, 5000);
     return () => clearInterval(t);
-  }, [busy, unlock.canUnlock, pigX]);
+  }, [busy, unlock.canUnlock, scrollDir, movePig]);
 
-  /* --- walking frame animation; stop walking after transit --- */
+  /* --- walking frame animation --- */
+  const walking = opening || pigState === "walk" || pigState === "play" || scrollDir !== 0;
   useEffect(() => {
-    if (pigState !== "walk" && pigState !== "play") return;
-    const frames = setInterval(() => setWalkFrame((f) => f ^ 1), WALK_FRAME_MS);
-    const stop =
-      pigState === "walk" ? setTimeout(() => setPigState("idle"), 2600) : undefined;
-    return () => {
-      clearInterval(frames);
-      if (stop) clearTimeout(stop);
-    };
+    if (!walking) return;
+    // The pig covers the whole screen on its way in, so it takes quicker steps
+    // than it does pottering around the field.
+    const every = opening ? INTRO.pig.frameMs : WALK_FRAME_MS;
+    const frames = setInterval(() => setWalkFrame((f) => f ^ 1), every);
+    return () => clearInterval(frames);
+  }, [walking, opening]);
+
+  /* --- stop walking once the pig has reached where it was headed --- */
+  useEffect(() => {
+    if (pigState !== "walk") return;
+    const stop = setTimeout(() => setPigState("idle"), PIG_WALK_MS + 100);
+    return () => clearTimeout(stop);
   }, [pigState]);
 
-  /* --- pig walks to center when a letter is ready --- */
+  /* --- pig walks to centre when a letter is ready --- */
   useEffect(() => {
     if (!unlock.canUnlock || busy) return;
-    const t = setTimeout(() => {
-      setPigFlip(50 > pigX);
-      setPigX(50);
-    }, 0);
-    return () => clearTimeout(t);
+    movePig(50);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlock.canUnlock]);
 
   const burstHearts = useCallback((count: number, kind: Heart["kind"] = "heart") => {
     const burst: Heart[] = Array.from({ length: count }, () => ({
       id: heartId.current++,
-      x: 42 + Math.random() * 16,
+      x: clamp(pigXRef.current - 8 + Math.random() * 16, 2, 96),
       y: 30 + Math.random() * 20,
       kind,
     }));
@@ -161,17 +248,10 @@ export default function GardenScene({
     } else if (action === "play") {
       sounds.play();
       setPigState("play");
-      const here = pigX;
-      setPigFlip(true);
-      setPigX(Math.min(85, here + 22));
-      setTimeout(() => {
-        setPigFlip(false);
-        setPigX(Math.max(12, here - 22));
-      }, 900);
-      setTimeout(() => {
-        setPigFlip(here > pigX);
-        setPigX(here);
-      }, 1800);
+      const here = pigXRef.current;
+      movePig(here + 22, PIG_STEP_MS);
+      setTimeout(() => movePig(here - 22, PIG_STEP_MS), 900);
+      setTimeout(() => movePig(here, PIG_STEP_MS), 1800);
       setTimeout(() => {
         setPigState("idle");
         burstHearts(4);
@@ -183,13 +263,19 @@ export default function GardenScene({
       const trick = learned[Math.floor(Math.random() * learned.length)] ?? "spin";
       const state: PigState = trick === "backflip" ? "backflip" : trick === "sit" ? "sit" : "spin";
       setPigState(state);
-      setTimeout(() => {
-        setPigState("idle");
-        burstHearts(5, "sparkle");
-        setPet((p) => ({ ...p, ...saved }));
-      }, state === "sit" ? 2000 : 1300);
+      setTimeout(
+        () => {
+          setPigState("idle");
+          burstHearts(5, "sparkle");
+          setPet((p) => ({ ...p, ...saved }));
+        },
+        state === "sit" ? 2000 : 1300
+      );
     }
   }
+
+  /** Set when a letter is opened, so the camera can walk out to its new flower. */
+  const showNewFlower = useRef(false);
 
   async function openTodaysLetter() {
     if (!unlock.canUnlock || busy) return;
@@ -198,6 +284,7 @@ export default function GardenScene({
     const { note } = await res.json();
     sounds.unlock();
     burstHearts(6);
+    showNewFlower.current = true;
     setNotes((ns) => ns.map((n) => (n.id === note.id ? note : n)));
     setOpenNote(note);
     track("letter_opened", {
@@ -210,6 +297,13 @@ export default function GardenScene({
       tricks_unlocked: Math.max(p.tricks_unlocked, Math.floor((readNotes.length + 1) / 2)),
     }));
   }
+
+  // Runs after the new flower has been planted and the world resized.
+  useEffect(() => {
+    if (!showNewFlower.current) return;
+    showNewFlower.current = false;
+    camera.panToEnd();
+  }, [camera, readNotes.length]);
 
   async function toggleFavorite(note: Note) {
     sounds.pop();
@@ -225,6 +319,11 @@ export default function GardenScene({
     if (openNote?.id === saved.id) setOpenNote(saved);
     track(nextFavorite ? "letter_favorited" : "letter_unfavorited");
   }
+
+  const openFlower = useCallback((note: Note) => {
+    track("letter_opened", { source: "sunflower", is_favorite: note.is_favorite });
+    setOpenNote(note);
+  }, []);
 
   /* --- derived display helpers --- */
 
@@ -244,7 +343,7 @@ export default function GardenScene({
         ? "pig-sit"
         : pigState === "spin" || pigState === "backflip"
           ? "pig-happy"
-          : pigState === "walk" || pigState === "play"
+          : walking
             ? walkFrame
               ? "pig-walk1"
               : "pig-walk2"
@@ -254,63 +353,112 @@ export default function GardenScene({
                 ? "pig-sad"
                 : "pig-idle";
 
-  const sky =
-    phase === "night"
-      ? "linear-gradient(#1d2a52 0%, #2b3a67 55%, #40518a 100%)"
-      : phase === "sunset"
-        ? "linear-gradient(#7ec8e3 0%, #f9c784 60%, #f4a7b4 100%)"
-        : "linear-gradient(#8ed3ee 0%, #aedef5 60%, #d9f3fa 100%)";
-
   const allDelivered = !unlock.nextNote && notes.length > 0;
 
   return (
-    /* h-svh rather than inset-0 so mobile browser chrome can't crop the scene. */
+    /*
+     * h-svh rather than inset-0 so mobile browser chrome can't crop the scene.
+     * `clip` rather than `hidden`: the field is far wider than the viewport, and
+     * a scroll container would let focus or a stray gesture shunt the whole
+     * scene sideways behind the camera's back.
+     */
     <main
-      className="fixed inset-x-0 top-0 h-svh overflow-hidden select-none"
-      style={{ background: sky }}
+      ref={sceneRef}
+      className="fixed inset-x-0 top-0 h-svh overflow-clip select-none"
+      style={{ background: SKY_GRADIENT[phase] }}
     >
-      {/* stars at night */}
-      {phase === "night" &&
-        [...Array(24)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white [animation:twinkle_2.4s_ease-in-out_infinite]"
-            style={{
-              left: `${(i * 41) % 97}%`,
-              top: `${(i * 17) % 45}%`,
-              animationDelay: `${(i % 5) * 0.5}s`,
-            }}
-          />
-        ))}
-
-      {/* sun / moon */}
+      {/* the walkable world — everything in here moves with the camera */}
       <div
-        className="absolute right-[10%] top-[20%] w-10 h-10 sm:w-14 sm:h-14 border-4 border-ink/20"
-        style={{ background: phase === "night" ? "#f0ead6" : "#ffd93d", borderRadius: 4 }}
-      />
+        ref={surfaceRef}
+        className={`absolute inset-0 ${scrollable ? "cursor-grab active:cursor-grabbing" : ""}`}
+        // The page never scrolls, so a horizontal drag belongs to the field.
+        style={scrollable ? { touchAction: "none" } : undefined}
+      >
+        <Backdrop
+          camera={camera}
+          phase={phase}
+          screens={layout.screens}
+          horizonPct={layout.horizonPct}
+          isMobile={isMobile}
+          intro={intro}
+        />
 
-      {/* drifting clouds */}
-      {[0, 1, 2].map((i) => (
+        <FlowerField layout={layout} camera={camera} onOpen={openFlower} intro={intro} />
+
+        {/*
+         * The pig — held on screen while the field slides past underneath.
+         * Centring is left to the `translate` property so the opening walk has
+         * `transform` to itself, and a steady gait rather than an eased one.
+         */}
         <div
-          key={i}
-          className="absolute flex [animation:cloud-drift_linear_infinite]"
+          className="absolute ease-in-out -translate-x-1/2"
           style={{
-            top: `${8 + i * 11}%`,
-            animationDuration: `${70 + i * 25}s`,
-            animationDelay: `${-i * 30}s`,
-            opacity: phase === "night" ? 0.25 : 0.85,
+            left: `${pigMove.x}%`,
+            bottom: `${layout.pig.bottomPct}%`,
+            zIndex: layout.pig.zIndex,
+            transitionProperty: "left",
+            transitionDuration: `${pigMove.ms}ms`,
+            ...entrance(intro, "pig-walk-in", INTRO.pig, { easing: "linear" }),
           }}
         >
-          <div className="w-10 h-6 bg-white" />
-          <div className="w-14 h-9 bg-white -ml-2 -mt-3" />
-          <div className="w-10 h-6 bg-white -ml-2" />
+          <button
+            onClick={openTodaysLetter}
+            disabled={!unlock.canUnlock || busy}
+            className={`block cursor-${unlock.canUnlock ? "pointer" : "default"} ${
+              pigState === "spin"
+                ? "[animation:spin-once_0.6s_ease-in-out_2]"
+                : pigState === "backflip"
+                  ? "[animation:backflip_1.1s_ease-in-out]"
+                  : pigState === "idle" && !opening
+                    ? "[animation:bob_2s_ease-in-out_infinite]"
+                    : ""
+            }`}
+            aria-label={unlock.canUnlock ? "open today's letter" : petName}
+          >
+            <Sprite name={pigSprite} alt={petName} height={isMobile ? 102 : 110} flip={pigFlip} />
+          </button>
+          {showFood && (
+            <div className="absolute -left-8 sm:-left-10 bottom-0">
+              <Sprite name="strawberry" alt="a strawberry" height={isMobile ? 32 : 34} />
+            </div>
+          )}
+          {unlock.canUnlock && (
+            <div className="absolute -top-9 left-1/2 -translate-x-1/2 font-pixel text-xs bg-sunflower border-2 border-ink px-2 py-1 whitespace-nowrap [animation:bob_1.4s_ease-in-out_infinite]">
+              a letter for you!
+            </div>
+          )}
         </div>
-      ))}
 
-      {/* Top bar: stats and mailbox share a row; the title wraps below them on small screens */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start gap-2 p-3 sm:p-4">
+        {/* hearts / sparkles */}
+        {hearts.map((h) => (
+          <span
+            key={h.id}
+            className="absolute font-pixel text-2xl pointer-events-none [animation:heart-float_1.5s_ease-out_forwards] z-[14]"
+            style={{
+              left: `${h.x}%`,
+              bottom: `${h.y}%`,
+              color: h.kind === "heart" ? "#e8788a" : "#f7c948",
+            }}
+          >
+            {h.kind === "heart" ? "♥" : "✦"}
+          </span>
+        ))}
+      </div>
+
+      {scrollable && <FieldNav camera={camera} intro={intro} />}
+
+      {/*
+       * Top bar: stats and mailbox share a row; the title wraps below them on
+       * small screens. Three columns rather than a flex row, with matching
+       * flexible tracks either side, so the title centres on the scene itself
+       * instead of on whatever space the two cards happen to leave it.
+       */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 grid grid-cols-[auto_1fr] sm:grid-cols-[1fr_auto_1fr] items-start gap-2 p-3 sm:p-4">
         {/* HUD: pet stats */}
-        <div className="bg-cream/90 border-2 border-ink px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-[3px_3px_0_0_var(--ink)]">
+        <div
+          className="justify-self-start bg-cream/90 border-2 border-ink px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-[3px_3px_0_0_var(--ink)]"
+          style={entrance(intro, "enter-drop", INTRO.hud, { extraDelay: INTRO.hud.stagger })}
+        >
           <p className="font-pixel text-xs sm:text-sm text-ink mb-1 max-w-28 sm:max-w-none truncate">
             {petName}
           </p>
@@ -327,7 +475,10 @@ export default function GardenScene({
         </div>
 
         {/* title */}
-        <h1 className="order-last w-full text-center sm:order-none sm:w-auto sm:flex-1 sm:min-w-0 font-pixel text-lg sm:text-3xl text-ink">
+        <h1
+          className="order-last col-span-2 min-w-0 text-center sm:order-none sm:col-span-1 font-pixel text-lg sm:text-3xl text-ink"
+          style={entrance(intro, "enter-drop", INTRO.hud)}
+        >
           <span className="inline-block max-w-full truncate align-bottom bg-cream/90 border-2 border-ink px-3 py-1.5 sm:px-4 sm:py-2 shadow-[4px_4px_0_0_var(--ink)]">
             {title}
           </span>
@@ -339,90 +490,19 @@ export default function GardenScene({
             track("mailbox_opened", { letters_count: readNotes.length });
             setMailboxOpen(true);
           }}
-          className="pointer-events-auto ml-auto sm:ml-0 min-h-11 bg-cream/90 border-2 border-ink px-3 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink hover:bg-cream cursor-pointer touch-manipulation"
+          className="pointer-events-auto justify-self-end min-h-11 bg-cream/90 border-2 border-ink px-3 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink hover:bg-cream cursor-pointer touch-manipulation"
+          style={entrance(intro, "enter-drop", INTRO.hud, { extraDelay: INTRO.hud.stagger * 2 })}
         >
           ✉ <span className="hidden sm:inline">letters </span>({readNotes.length})
         </button>
       </div>
 
-      {/* ground */}
-      <div className="absolute inset-x-0 bottom-0 h-[26%] bg-leaf border-t-8 border-leaf-deep" />
-      <div className="absolute inset-x-0 bottom-0 h-[7%] bg-soil" />
-
-      {/* sunflower garden — one per read note */}
-      {readNotes.slice(isMobile ? -MAX_FLOWERS.mobile : -MAX_FLOWERS.desktop).map((n, i, arr) => {
-        const ageHours = n.read_at ? (now - new Date(n.read_at).getTime()) / 3_600_000 : 999;
-        const stage = n.is_favorite || ageHours > 72 ? "bloom" : ageHours > 24 ? "bud" : "sprout";
-        const base = stage === "bloom" ? (n.is_favorite ? 110 : 92) : stage === "bud" ? 66 : 34;
-        const size = Math.round(base * (isMobile ? 0.7 : 1));
-        const spread = isMobile ? FLOWER_SPREAD.mobile : FLOWER_SPREAD.desktop;
-        const x = 4 + (i * 92) / Math.max(arr.length, spread);
-        return (
-          <button
-            key={n.id}
-            onClick={() => {
-              track("letter_opened", { source: "sunflower", is_favorite: n.is_favorite });
-              setOpenNote(n);
-            }}
-            className="absolute bottom-[22%] origin-bottom [animation:sway_4s_ease-in-out_infinite] cursor-pointer hover:brightness-110 touch-manipulation z-[5]"
-            style={{ left: `${x}%`, animationDelay: `${(i % 4) * 0.6}s` }}
-            title="re-read this letter"
-          >
-            <Sprite name={`sunflower-${stage}`} alt="a sunflower grown from a letter" height={size} />
-            {n.is_favorite && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-pig-deep text-sm">♥</span>
-            )}
-          </button>
-        );
-      })}
-
-      {/* the pig */}
-      <div
-        className="absolute bottom-[20%] z-10 transition-[left] duration-[2500ms] ease-in-out"
-        style={{ left: `${pigX}%`, transform: "translateX(-50%)" }}
-      >
-        <button
-          onClick={openTodaysLetter}
-          disabled={!unlock.canUnlock || busy}
-          className={`block cursor-${unlock.canUnlock ? "pointer" : "default"} ${
-            pigState === "spin"
-              ? "[animation:spin-once_0.6s_ease-in-out_2]"
-              : pigState === "backflip"
-                ? "[animation:backflip_1.1s_ease-in-out]"
-                : pigState === "idle"
-                  ? "[animation:bob_2s_ease-in-out_infinite]"
-                  : ""
-          }`}
-          aria-label={unlock.canUnlock ? "open today's letter" : petName}
-        >
-          <Sprite name={pigSprite} alt={petName} height={isMobile ? 84 : 110} flip={pigFlip} />
-        </button>
-        {showFood && (
-          <div className="absolute -left-8 sm:-left-10 bottom-0">
-            <Sprite name="strawberry" alt="a strawberry" height={isMobile ? 26 : 34} />
-          </div>
-        )}
-        {unlock.canUnlock && (
-          <div className="absolute -top-9 left-1/2 -translate-x-1/2 font-pixel text-xs bg-sunflower border-2 border-ink px-2 py-1 whitespace-nowrap [animation:bob_1.4s_ease-in-out_infinite]">
-            a letter for you!
-          </div>
-        )}
-      </div>
-
-      {/* hearts / sparkles */}
-      {hearts.map((h) => (
-        <span
-          key={h.id}
-          className="absolute font-pixel text-2xl pointer-events-none [animation:heart-float_1.5s_ease-out_forwards] z-20"
-          style={{ left: `${h.x}%`, bottom: `${h.y}%`, color: h.kind === "heart" ? "#e8788a" : "#f7c948" }}
-        >
-          {h.kind === "heart" ? "♥" : "✦"}
-        </span>
-      ))}
-
       {/* status chip: countdown / all delivered / no notes — clears the action bar on short screens */}
       {!unlock.canUnlock && (
-        <div className="absolute bottom-20 sm:bottom-[8%] left-1/2 -translate-x-1/2 bg-cream/95 border-2 border-ink px-3 sm:px-4 py-2 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink text-center z-10 max-w-[90vw]">
+        <div
+          className="absolute bottom-20 sm:bottom-[8%] left-1/2 -translate-x-1/2 bg-cream/95 border-2 border-ink px-3 sm:px-4 py-2 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink text-center z-20 max-w-[90vw]"
+          style={entrance(intro, "enter-rise", INTRO.controls)}
+        >
           {countdown
             ? `next letter in ${countdown}`
             : allDelivered
@@ -434,7 +514,10 @@ export default function GardenScene({
       )}
 
       {/* action bar */}
-      <div className="absolute bottom-4 sm:bottom-[2%] inset-x-0 flex flex-wrap justify-center gap-2 px-3 z-10">
+      <div
+        className="absolute bottom-4 sm:bottom-[2%] inset-x-0 flex flex-wrap justify-center gap-2 px-3 z-20"
+        style={entrance(intro, "enter-rise", INTRO.controls)}
+      >
         <button onClick={() => petAction("feed")} disabled={busy} className={actionButtonClass}>
           🍓 feed
         </button>

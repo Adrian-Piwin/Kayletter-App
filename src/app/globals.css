@@ -97,12 +97,25 @@ body {
   }
 }
 
-@keyframes cloud-drift {
+/* Clouds keep their place in the scrollable sky and only breathe around it,
+   so walking the field is what reveals new sky rather than waiting. */
+@keyframes cloud-float {
   from {
-    transform: translateX(-20vw);
+    transform: translateX(-4vw);
   }
   to {
-    transform: translateX(120vw);
+    transform: translateX(4vw);
+  }
+}
+
+@keyframes hint-fade {
+  0%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
   }
 }
 
@@ -164,11 +177,103 @@ body {
   }
 }
 
+/* --- Opening sequence ---
+   The garden builds itself back to front on load: sky, then ground, then the
+   field sprouting row by row, with the pig walking in last. Every step fills
+   `both`, so a piece stays out of sight until its turn comes round. */
+
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Settles downwards — for things that belong in the sky. */
+@keyframes enter-drift {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enter-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The ground slides up under the scenery already standing on it. */
+@keyframes enter-ground {
+  from {
+    opacity: 0;
+    transform: translateY(45%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Uses `scale` rather than `transform` so it composes with the centring
+   `translate` on a flower and leaves its sway animation alone. */
+@keyframes enter-sprout {
+  0% {
+    opacity: 0;
+    scale: 1 0;
+  }
+  60% {
+    opacity: 1;
+    scale: 1 1.15;
+  }
+  80% {
+    scale: 1 0.94;
+  }
+  100% {
+    opacity: 1;
+    scale: 1 1;
+  }
+}
+
+@keyframes pig-walk-in {
+  from {
+    transform: translateX(-78vw);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* Delays are cut too: a staged entrance would otherwise leave everything
+       hidden for its full run and then snap in. */
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }

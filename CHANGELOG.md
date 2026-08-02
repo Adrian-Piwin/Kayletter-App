@@ -1,25 +1,23 @@
 # Changelog
 
-## [0.2.0] - 2026-08-01
+## [0.2.0] - 2026-08-02
 
-### Make the app mobile-friendly with note pagination and a top composer
+### Add a parallax scrolling flower field for gardens of any size
 
-Notes are easier to write and browse on phones; every page scales better on small screens.
+Gardens now grow into a walkable field — swipe or drag to wander, with the pig staying on screen while depth layers slide past.
 
 #### Changes
-- Move the note composer above the list and add a floating shortcut when it scrolls away.
-- Paginate author notes and the recipient mailbox so long stacks stay scannable.
-- Tighten mobile layouts across landing, dashboard, garden, and modals (tap targets, wrapping HUD, `svh`).
-
-##### **dashboard**
-- Composer-first notes section with pagination (5 per page) and delete confirmation.
-- Shared `NoteComposer` / `NoteCard` components and floating “new note” button.
+- Plan flowers across depth rows so five letters sit in view and hundreds stretch into a multi-screen field.
+- Pan by swipe, drag, wheel, or arrow keys; drop the edge scroll arrows.
+- Keep a clear path for the pig so flowers only partially overlap it.
+- Zoom the mobile scene in (taller grass, larger sprites) and centre the title on desktop.
+- Root backdrop hills under the grass line so they no longer float.
 
 ##### **garden**
-- Wrapping top bar so title, pet HUD, and mailbox no longer overlap on narrow screens.
-- Fewer, smaller sunflowers on mobile; action bar and status chip clear each other.
-- Mailbox and letter modal use larger touch targets and stay within the viewport.
+- New layout planner, camera controller, and parallax layers (`Backdrop`, `FlowerField`, `FieldNav`, intro timing).
+- Pig walks with scroll direction; HUD and progress bar stay fixed while the world moves.
+- Local seed script for tiny / small / medium / huge test gardens.
 
 ##### **shared**
-- Reusable `Pagination` / `usePagination`, client hooks (`useOrigin`, `useMediaQuery`).
-- `MAX_NOTE_LENGTH` and `NOTES_PER_PAGE` constants shared with the notes API.
+- `useElementWidth` for live scene measurement.
+- Entrance and cloud-float animations in global CSS.

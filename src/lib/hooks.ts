@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type RefObject } from "react";
 
 // window.location.origin never changes, so subscribing is a no-op; this just
 // gives us "" during SSR and the real origin after hydration without a
@@ -40,3 +40,24 @@ export function useMediaQuery(query: string) {
 
 /** Tailwind's `sm` breakpoint, for the JS side of responsive behaviour. */
 export const useIsMobile = () => useMediaQuery("(max-width: 639px)");
+
+/** For motion CSS can't tone down on its own, such as scripted animation. */
+export const usePrefersReducedMotion = () => useMediaQuery("(prefers-reduced-motion: reduce)");
+
+/**
+ * Live width of an element in px. Stays at `fallback` until the element is
+ * measured, so server and first client render agree before it corrects.
+ */
+export function useElementWidth(ref: RefObject<HTMLElement | null>, fallback: number) {
+  const [width, setWidth] = useState(fallback);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return width;
+}
