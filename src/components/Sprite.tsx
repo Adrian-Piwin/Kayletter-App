@@ -20,7 +20,13 @@ export default function Sprite({
       src={`/sprites/${name}.png`}
       alt={alt}
       style={{ height, transform: flip ? "scaleX(-1)" : undefined }}
-      className={`pixelated w-auto ${className}`}
+      /*
+       * `max-w-none` undoes the preflight `max-width: 100%`. A sprite is sized by
+       * its height, so inside a shrink-to-fit parent (any absolutely positioned
+       * wrapper) the percentage has nothing to resolve against and collapses the
+       * image to zero width.
+       */
+      className={`pixelated w-auto max-w-none ${className}`}
       draggable={false}
     />
   );

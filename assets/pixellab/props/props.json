@@ -1,0 +1,22 @@
+{
+  "_note": "Props generated with PixelLab. palette_base64 is the forced palette; re-running create_image_pixflux with the same seed + palette reproduces these.",
+  "palette_base64": "iVBORw0KGgoAAAANSUhEUgAAAFgAAAAICAIAAADyea+UAAAAY0lEQVR4nGP8v28LAzbw+9w5rOJfrtzDKv7i3ius4qdefcAqzrEuAKv4pQcPsIrfufECq/iTW2+wih+uKsEqbqORhFWcCavoCASjAQEFowEBBaMBAQWjAQEFowEBBaMBwQABAG+YGGcofDTsAAAAAElFTkSuQmCC",
+  "props": {
+    "strawberry": {
+      "job": "f6e2da76-8687-4bff-ab31-cc1a77cd0147",
+      "tool": "create_image_pixflux",
+      "canvas": [
+        80,
+        80
+      ],
+      "seed": 91,
+      "trimmed_to": [
+        54,
+        70
+      ],
+      "display_height": 34,
+      "description": "one big cute strawberry filling the whole frame, side view, rounded shape, small green leaves on top, pale seeds, soft shading, chunky pixel art",
+      "note": "80px canvas so the trimmed berry has enough art pixels to sit at the pig's on-screen pixel density (~0.5 screen px per art px) at 34px tall."
+    }
+  }
+}

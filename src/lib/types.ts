@@ -33,6 +33,7 @@ export type Pet = {
   hunger: number;
   last_fed_at: string | null;
   last_played_at: string | null;
+  last_petted_at: string | null;
   tricks_unlocked: number;
   updated_at: string;
 };

@@ -46,6 +46,7 @@ create table if not exists pets (
   hunger int not null default 30 check (hunger between 0 and 100),
   last_fed_at timestamptz,
   last_played_at timestamptz,
+  last_petted_at timestamptz,
   tricks_unlocked int not null default 0,
   updated_at timestamptz not null default now()
 );

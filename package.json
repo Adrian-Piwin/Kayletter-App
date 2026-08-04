@@ -1,12 +1,13 @@
 {
   "name": "kayletter",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sprites": "python3 scripts/pig/download_clips.py && python3 scripts/pig/faces.py && python3 scripts/pig/derive.py && python3 scripts/pig/build.py"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.6.4",

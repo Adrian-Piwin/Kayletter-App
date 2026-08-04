@@ -1,10 +1,13 @@
 import Link from "next/link";
-import Sprite from "@/components/Sprite";
+import PigStill from "@/components/PigStill";
+import { PIG_CLIPS } from "@/lib/pig-anim.generated";
 
 export default function NotFound() {
+  const clip = "idle_sad" in PIG_CLIPS ? "idle_sad" : "idle_breathe";
+
   return (
     <main className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-5 sm:px-6 py-12 sm:py-20">
-      <Sprite name="pig-sad" alt="A sad pixel pig" height="clamp(88px, 26vw, 120px)" />
+      <PigStill clip={clip} alt="A sad pixel pig" height={110} />
       <h1 className="font-pixel text-xl sm:text-2xl text-ink">nothing planted here</h1>
       <p className="text-ink/60 max-w-sm text-pretty">
         This garden doesn&apos;t exist — the link may be mistyped or the letters were removed.

@@ -23,6 +23,8 @@ const CLICK_BLOCK_MS = 120;
 const SETTLE_MS = 160;
 /** Fraction of a screen covered by one arrow key press. */
 const PAN_STEP = 0.7;
+/** Marks a subtree whose drags belong to it, not to panning the field. */
+export const NO_PAN_ATTR = "data-no-pan";
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -225,6 +227,9 @@ export function useCamera({
 
     const onPointerDown = (e: PointerEvent) => {
       if (pointerId !== null || (e.pointerType === "mouse" && e.button !== 0)) return;
+      // Actors that own their own drag gesture (rubbing the pig) opt out here,
+      // otherwise panning claims the pointer the moment the drag threshold trips.
+      if ((e.target as Element | null)?.closest?.(`[${NO_PAN_ATTR}]`)) return;
       pointerId = e.pointerId;
       startX = lastX = e.clientX;
       lastTime = e.timeStamp;
@@ -261,7 +266,8 @@ export function useCamera({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if ((e.target as HTMLElement | null)?.closest("input, textarea, [contenteditable]")) return;
+      // The target is window/document when nothing is focused, which has no closest().
+      if ((e.target as Element | null)?.closest?.("input, textarea, [contenteditable]")) return;
       const step = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
       if (!step) return;
       e.preventDefault();

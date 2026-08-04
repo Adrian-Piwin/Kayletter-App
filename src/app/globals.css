@@ -97,6 +97,24 @@ body {
   }
 }
 
+/* A crumb knocked loose by a chomp: thrown out and up, then dropping past where
+   it started. Each crumb passes its own arc in as custom properties, so one
+   keyframe serves a whole scatter. */
+@keyframes crumb-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(calc(var(--crumb-x) * 0.6), var(--crumb-rise));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--crumb-x), var(--crumb-fall));
+  }
+}
+
 /* Clouds keep their place in the scrollable sky and only breathe around it,
    so walking the field is what reveals new sky rather than waiting. */
 @keyframes cloud-float {
@@ -116,27 +134,6 @@ body {
   100% {
     opacity: 0;
     visibility: hidden;
-  }
-}
-
-@keyframes spin-once {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes backflip {
-  0% {
-    transform: rotate(0deg) translateY(0);
-  }
-  50% {
-    transform: rotate(-180deg) translateY(-40px);
-  }
-  100% {
-    transform: rotate(-360deg) translateY(0);
   }
 }
 

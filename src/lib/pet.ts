@@ -25,7 +25,10 @@ export function tricksUnlockedFor(notes: Note[]): number {
   return Math.min(TRICKS.length, Math.floor(readCount / NOTES_PER_TRICK));
 }
 
-export type PetAction = "feed" | "play" | "trick";
+export type PetAction = "feed" | "play" | "trick" | "pet";
+
+/** Petting is +1 happiness with a server-side cooldown so the public endpoint can't be farmed. */
+export const PET_COOLDOWN_MS = 60_000;
 
 /** Stat changes for each interaction. Feeding a full pig barely helps. */
 export function applyAction(stats: { happiness: number; hunger: number }, action: PetAction) {
@@ -38,6 +41,8 @@ export function applyAction(stats: { happiness: number; hunger: number }, action
       return { happiness: clamp(stats.happiness + 20), hunger: clamp(stats.hunger + 10) };
     case "trick":
       return { happiness: clamp(stats.happiness + 10), hunger: clamp(stats.hunger + 5) };
+    case "pet":
+      return { happiness: clamp(stats.happiness + 1), hunger: stats.hunger };
   }
 }
 

@@ -1,7 +1,11 @@
 import Sprite from "@/components/Sprite";
+import PigStill from "@/components/PigStill";
 import LandingCtas, { LandingHeroCta } from "@/components/LandingCtas";
+import { PIG_CLIPS } from "@/lib/pig-anim.generated";
 
 export default function LandingPage() {
+  const heroClip = "idle_letter" in PIG_CLIPS ? "idle_letter" : "idle_breathe";
+
   return (
     <main className="flex-1 flex flex-col">
       <header className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 max-w-4xl w-full mx-auto">
@@ -10,12 +14,8 @@ export default function LandingPage() {
       </header>
 
       <section className="flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-6 py-8 sm:py-10 gap-5 sm:gap-6">
-        <div className="animate-bounce [animation-duration:2.5s]">
-          <Sprite
-            name="pig-envelope"
-            alt="A pixel pig carrying a letter"
-            height="clamp(112px, 32vw, 160px)"
-          />
+        <div className="animate-bounce [animation-duration:2.5s] flex justify-center">
+          <PigStill clip={heroClip} alt="A pixel pig carrying a letter" height={140} />
         </div>
         <h1 className="font-pixel text-3xl sm:text-5xl text-ink max-w-xl leading-tight text-balance">
           Little letters, delivered by <span className="text-pig-deep">pig</span>
@@ -33,7 +33,7 @@ export default function LandingPage() {
         <div className="absolute inset-x-0 bottom-10 sm:bottom-14 flex items-end justify-center gap-3 sm:gap-14">
           <Sprite name="sunflower-bloom" alt="" height="clamp(54px, 17vw, 90px)" className="translate-y-2" />
           <Sprite name="sunflower-bud" alt="" height="clamp(42px, 13vw, 70px)" className="translate-y-2" />
-          <Sprite name="pig-idle" alt="" height="clamp(48px, 15vw, 80px)" className="translate-y-3" flip />
+          <PigStill clip="idle_breathe" alt="" height={72} flip className="translate-y-3" />
           <Sprite name="sunflower-bloom" alt="" height="clamp(60px, 19vw, 100px)" className="translate-y-2" />
           <Sprite name="sunflower-sprout" alt="" height="clamp(22px, 7vw, 36px)" className="translate-y-2" />
         </div>

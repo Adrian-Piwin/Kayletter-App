@@ -1,0 +1,212 @@
+{
+  "reference": "https://raw.githubusercontent.com/Adrian-Piwin/Kayletter-App/main/public/sprites/pig-idle.png",
+  "frame_size": [
+    189,
+    199
+  ],
+  "clips": {
+    "walk": {
+      "job_id": "47e54f3e-4800-474d-8f5e-aef84397788c",
+      "status": "downloaded",
+      "frames": 8,
+      "ms": 120,
+      "loop": true,
+      "skip_input": true,
+      "dir": "docs/previews/aseprite/pixellab-walk",
+      "downloaded_frames": 8
+    },
+    "idle_breathe": {
+      "job_id": "0abadf03-2bc4-4587-8677-16e0766a7954",
+      "status": "downloaded",
+      "frames": 8,
+      "ms": 200,
+      "loop": true,
+      "skip_input": false,
+      "downloaded_frames": 6,
+      "note": "blink frames removed; blink is idle_blink flourish only"
+    },
+    "idle_sniff": {
+      "job_id": "6d3071fd-ac41-4684-9b91-e87d9667dd87",
+      "status": "downloaded",
+      "frames": 12,
+      "ms": 125,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 13
+    },
+    "idle_look": {
+      "job_id": "7199aa4d-ab16-40b3-94a8-3afe7743b1d2",
+      "status": "downloaded",
+      "frames": 12,
+      "ms": 125,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 13
+    },
+    "idle_blink": {
+      "job_id": "a8b7fc25-f588-4eb0-a22b-6d6f9f77ea9a",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 125,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "idle_scratch": {
+      "job_id": "cd2132d1-8a97-47d9-ac24-344c60483803",
+      "status": "downloaded",
+      "frames": 8,
+      "ms": 140,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 9
+    },
+    "idle_sad": {
+      "job_id": "4c9e4869-e61b-456e-aba3-a87feac18ee3",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 200,
+      "loop": true,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "idle_hungry": {
+      "job_id": "962270fe-4ad9-4baa-b9cf-c491e7ab1822",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 180,
+      "loop": true,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "idle_letter": {
+      "job_id": "736fb7cc-3929-4699-90ac-11ccf44c1459",
+      "status": "downloaded",
+      "frames": 6,
+      "ms": 150,
+      "loop": true,
+      "skip_input": false,
+      "downloaded_frames": 7
+    },
+    "feed_munch": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [
+        "eye_shut",
+        "mouth_open"
+      ],
+      "frames": 8,
+      "ms": 150,
+      "loop": true,
+      "downloaded_frames": 8,
+      "chomps": [
+        3,
+        5
+      ]
+    },
+    "feed_gobble": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [
+        "eye_shut",
+        "mouth_open"
+      ],
+      "frames": 8,
+      "ms": 150,
+      "loop": true,
+      "downloaded_frames": 8,
+      "chomps": [
+        2,
+        4,
+        6
+      ]
+    },
+    "play_chase": {
+      "job_id": "e98d3771-6fc3-4841-a51b-35038388b1f7",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 110,
+      "loop": true,
+      "skip_input": true,
+      "downloaded_frames": 4
+    },
+    "play_bounce": {
+      "job_id": "af056b8b-25e5-4fd7-ba33-5be0b8224d68",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 120,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "play_roll": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [],
+      "frames": 6,
+      "ms": 130,
+      "loop": false,
+      "downloaded_frames": 6
+    },
+    "trick_spin": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [],
+      "frames": 7,
+      "ms": 90,
+      "loop": false,
+      "downloaded_frames": 7
+    },
+    "trick_backflip": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [],
+      "frames": 6,
+      "ms": 110,
+      "loop": false,
+      "downloaded_frames": 6
+    },
+    "trick_sit": {
+      "job_id": "6eb1f2b0-6fd6-4863-b99b-933e099a04a2",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 150,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "trick_dance": {
+      "job_id": "7553dfcd-5786-4704-b6d7-bae6c1081d02",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 130,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "pet_enjoy": {
+      "job_id": "c23daa82-cbd8-44d3-acac-82b6d9abf2a8",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 160,
+      "loop": true,
+      "skip_input": true,
+      "downloaded_frames": 4
+    },
+    "pet_end": {
+      "job_id": "0503c943-bb3c-4fd9-ada0-31cf3844c5a7",
+      "status": "downloaded",
+      "frames": 4,
+      "ms": 150,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 5
+    }
+  },
+  "pending": []
+}

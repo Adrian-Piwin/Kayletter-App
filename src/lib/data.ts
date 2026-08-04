@@ -154,7 +154,14 @@ export async function getOrCreatePet(letterId: string): Promise<Pet> {
 
 export async function savePetStats(
   letterId: string,
-  fields: { happiness: number; hunger: number; fed?: boolean; played?: boolean; tricks_unlocked?: number }
+  fields: {
+    happiness: number;
+    hunger: number;
+    fed?: boolean;
+    played?: boolean;
+    petted?: boolean;
+    tricks_unlocked?: number;
+  }
 ): Promise<Pet> {
   const [pet] = await sql<Pet[]>`
     update pets set
@@ -162,6 +169,7 @@ export async function savePetStats(
       hunger = ${fields.hunger},
       last_fed_at = case when ${fields.fed ?? false} then now() else last_fed_at end,
       last_played_at = case when ${fields.played ?? false} then now() else last_played_at end,
+      last_petted_at = case when ${fields.petted ?? false} then now() else last_petted_at end,
       tricks_unlocked = coalesce(${fields.tricks_unlocked ?? null}, tricks_unlocked),
       updated_at = now()
     where letter_id = ${letterId}

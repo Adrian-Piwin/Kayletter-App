@@ -6,6 +6,8 @@ import { UserButton } from "@clerk/nextjs";
 import PixelButton from "@/components/PixelButton";
 import Pagination, { usePagination } from "@/components/Pagination";
 import Sprite from "@/components/Sprite";
+import PigStill from "@/components/PigStill";
+import { PIG_CLIPS } from "@/lib/pig-anim.generated";
 import NoteCard from "./NoteCard";
 import NoteComposer from "./NoteComposer";
 import { analyticsFetch, track } from "@/lib/analytics";
@@ -244,7 +246,12 @@ export default function Dashboard({
       {/* Share link */}
       <section className={`${cardClass} flex flex-col sm:flex-row sm:items-center gap-3`}>
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Sprite name="pig-envelope" alt="" height={56} className="shrink-0" />
+          <PigStill
+            clip={"idle_letter" in PIG_CLIPS ? "idle_letter" : "idle_breathe"}
+            alt=""
+            height={56}
+            className="shrink-0"
+          />
           <div className="min-w-0">
             <h2 className="font-pixel text-base text-ink">Their secret garden link</h2>
             <p className="font-pixel-body text-lg text-ink/60 truncate">{shareUrl}</p>

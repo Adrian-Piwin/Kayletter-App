@@ -1,27 +1,43 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Sprite from "@/components/Sprite";
 import Backdrop, { SKY_GRADIENT, type SkyPhase } from "./Backdrop";
 import FieldNav from "./FieldNav";
 import FlowerField from "./FlowerField";
 import LetterModal from "./LetterModal";
 import Mailbox from "./Mailbox";
+import PigActor, { pickTrick, trickToState } from "./PigActor";
+import { snoutOffset } from "./pig-display";
 import { useCamera, type ScrollDirection } from "./useCamera";
 import { analyticsFetch, track } from "@/lib/analytics";
 import { entrance, INTRO, INTRO_MS, type IntroPhase } from "@/lib/garden-intro";
 import { FIELD_REFRESH_MS, nominalWidth, planField } from "@/lib/garden-layout";
 import { useElementWidth, useIsMobile, usePrefersReducedMotion } from "@/lib/hooks";
 import { getUnlockState } from "@/lib/unlock";
-import { petMood, TRICKS } from "@/lib/pet";
+import { actionHoldMs, chompTimes, clipForState, type PigActorState } from "@/lib/pig-clips";
+import { PIG_CLIPS } from "@/lib/pig-anim.generated";
+import { petMood } from "@/lib/pet";
 import { sounds } from "@/lib/sound";
 import type { Note } from "@/lib/types";
 
 type PetStats = { happiness: number; hunger: number; tricks_unlocked: number };
-type PigState = "idle" | "walk" | "eat" | "play" | "spin" | "backflip" | "sit";
 type Heart = { id: number; x: number; y: number; kind: "heart" | "sparkle" };
+/**
+ * A bit of strawberry thrown loose by a chomp. Positions are px relative to the
+ * berry, and `dx`/`rise`/`fall` describe the arc this one crumb flies.
+ */
+type Crumb = {
+  id: number;
+  x: number;
+  bottom: number;
+  size: number;
+  dx: number;
+  rise: number;
+  fall: number;
+  colour: string;
+};
 
-const WALK_FRAME_MS = 170;
 /** How long the pig takes to cross to a new spot, and its faster scripted gait. */
 const PIG_WALK_MS = 2500;
 const PIG_STEP_MS = 900;
@@ -29,6 +45,10 @@ const PIG_STEP_MS = 900;
 const PIG_BOUNDS = { min: 12, max: 85 };
 /** How far the pig drifts ahead when the field starts scrolling, in percent. */
 const PIG_LEAD = 9;
+/** Crumb flight time — must match the `crumb-fly` animation in globals.css. */
+const CRUMB_MS = 620;
+/** Taken from the strawberry sprite's palette so the bits match the fruit. */
+const CRUMB_COLOURS = ["#ee6060", "#d63e4a", "#7ab66a"];
 
 const actionButtonClass =
   "font-pixel text-xs sm:text-sm min-h-11 px-3 bg-cream border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] hover:bg-white disabled:opacity-50 cursor-pointer touch-manipulation";
@@ -53,14 +73,15 @@ export default function GardenScene({
 }) {
   const [notes, setNotes] = useState(initialNotes);
   const [pet, setPet] = useState(initialPet);
-  const [pigState, setPigState] = useState<PigState>("idle");
+  const [pigState, setPigState] = useState<PigActorState>("idle");
   /** Screen position of the pig, with the duration of the walk taking it there. */
   const [pigMove, setPigMove] = useState({ x: 50, ms: PIG_WALK_MS });
   /** Starts facing right: the pig walks in from the left when the scene opens. */
   const [pigFlip, setPigFlip] = useState(true);
-  const [walkFrame, setWalkFrame] = useState(0);
   const [scrollDir, setScrollDir] = useState<ScrollDirection>(0);
+  const [playFinisher, setPlayFinisher] = useState<"play_bounce" | "play_roll" | null>(null);
   const [hearts, setHearts] = useState<Heart[]>([]);
+  const [crumbs, setCrumbs] = useState<Crumb[]>([]);
   const [openNote, setOpenNote] = useState<Note | null>(null);
   const [mailboxOpen, setMailboxOpen] = useState(false);
   const [now, setNow] = useState(serverNow);
@@ -117,6 +138,17 @@ export default function GardenScene({
     [readNotes, isMobile, sceneWidth, fieldNow]
   );
   const scrollable = layout.screens > 1;
+
+  /**
+   * Where the pig stands. Shared with anything that has to sit beside it — the
+   * food has to ride the same walk transition or it drifts off the snout.
+   */
+  const pigAnchor = {
+    left: `${pigMove.x}%`,
+    bottom: `${layout.pig.bottomPct}%`,
+    transitionProperty: "left",
+    transitionDuration: `${pigMove.ms}ms`,
+  };
 
   const { camera, surfaceRef } = useCamera({
     screens: layout.screens,
@@ -186,16 +218,13 @@ export default function GardenScene({
     return () => clearInterval(t);
   }, [busy, unlock.canUnlock, scrollDir, movePig]);
 
-  /* --- walking frame animation --- */
-  const walking = opening || pigState === "walk" || pigState === "play" || scrollDir !== 0;
-  useEffect(() => {
-    if (!walking) return;
-    // The pig covers the whole screen on its way in, so it takes quicker steps
-    // than it does pottering around the field.
-    const every = opening ? INTRO.pig.frameMs : WALK_FRAME_MS;
-    const frames = setInterval(() => setWalkFrame((f) => f ^ 1), every);
-    return () => clearInterval(frames);
-  }, [walking, opening]);
+  /** While travelling, the actor plays the walk (or chase) clip. */
+  const travelling = opening || pigState === "walk" || pigState === "play" || scrollDir !== 0;
+  const actorState: PigActorState = travelling && (pigState === "idle" || pigState === "walk")
+    ? "walk"
+    : pigState === "play" && !playFinisher
+      ? "play"
+      : pigState;
 
   /* --- stop walking once the pig has reached where it was headed --- */
   useEffect(() => {
@@ -222,56 +251,113 @@ export default function GardenScene({
     setTimeout(() => setHearts((h) => h.filter((x) => !burst.includes(x))), 1600);
   }, []);
 
+  /**
+   * Scatter crumbs from the snout. Called on the chew frames of the feed clip, so
+   * the bits come off the berry on the beat the jaw actually shuts.
+   */
+  const spitCrumbs = useCallback((count: number) => {
+    const burst: Crumb[] = Array.from({ length: count }, () => ({
+      id: heartId.current++,
+      x: -5 + Math.random() * 10,
+      bottom: 12 + Math.random() * 10,
+      size: Math.random() < 0.4 ? 4 : 3,
+      // Thrown forward, away from the pig, and always ending below the start so
+      // gravity reads even over a short flight.
+      dx: -14 - Math.random() * 12,
+      rise: -10 - Math.random() * 8,
+      fall: 6 + Math.random() * 6,
+      colour: CRUMB_COLOURS[Math.floor(Math.random() * CRUMB_COLOURS.length)],
+    }));
+    setCrumbs((c) => [...c, ...burst]);
+    setTimeout(() => setCrumbs((c) => c.filter((x) => !burst.includes(x))), CRUMB_MS);
+  }, []);
+
   /* --- actions --- */
 
-  async function petAction(action: "feed" | "play" | "trick") {
-    if (busy) return;
-    const res = await analyticsFetch(`/api/l/${token}/pet`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    if (!res.ok) return;
-    const { pet: saved } = await res.json();
-    track("pet_action", { action, happiness: saved.happiness, hunger: saved.hunger });
+  async function petAction(action: "feed" | "play" | "trick" | "pet") {
+    if (busy && action !== "pet") return;
 
+    const trickState =
+      action === "trick" ? trickToState(pickTrick(pet.tricks_unlocked)) : null;
+
+    /*
+     * The whole visual timeline is scheduled from the click, never from the API
+     * reply: the clip, the props sharing the screen with it and the return to idle
+     * all have to land on the same beat, and a slow round-trip must not stretch one
+     * past the others. A failure cancels whatever has not fired yet.
+     */
+    let failed = false;
+    const endAction = (hold: number, done: () => void) =>
+      setTimeout(() => {
+        if (!failed) done();
+      }, hold);
+
+    // Start the clip immediately so a slow/failed network never looks like a dead button.
     if (action === "feed") {
       sounds.eat();
       setShowFood(true);
       setPigState("eat");
-      setTimeout(() => setShowFood(false), 1400);
-      setTimeout(() => {
+      const hold = actionHoldMs("eat");
+      // Ask for the clip the actor will pick for this hunger, so the crumbs land
+      // on that clip's chews rather than an assumed rhythm.
+      const eating = clipForState({ state: "eat", mood, hasLetter: false, hunger: pet.hunger });
+      for (const at of chompTimes(eating, hold)) {
+        endAction(at, () => spitCrumbs(3));
+      }
+      endAction(hold, () => {
+        setShowFood(false);
         setPigState("idle");
         burstHearts(3);
-        setPet((p) => ({ ...p, ...saved }));
-      }, 1800);
+      });
     } else if (action === "play") {
       sounds.play();
+      setPlayFinisher(null);
       setPigState("play");
       const here = pigXRef.current;
       movePig(here + 22, PIG_STEP_MS);
       setTimeout(() => movePig(here - 22, PIG_STEP_MS), 900);
       setTimeout(() => movePig(here, PIG_STEP_MS), 1800);
       setTimeout(() => {
+        const finisher = Math.random() < 0.5 ? "play_bounce" : "play_roll";
+        setPlayFinisher(
+          finisher in PIG_CLIPS ? (finisher as "play_bounce" | "play_roll") : null
+        );
+      }, 2400);
+      endAction(actionHoldMs("play"), () => {
+        setPlayFinisher(null);
         setPigState("idle");
         burstHearts(4);
-        setPet((p) => ({ ...p, ...saved }));
-      }, 2700);
-    } else {
+      });
+    } else if (action === "trick" && trickState) {
       sounds.trick();
-      const learned = TRICKS.slice(0, pet.tricks_unlocked);
-      const trick = learned[Math.floor(Math.random() * learned.length)] ?? "spin";
-      const state: PigState = trick === "backflip" ? "backflip" : trick === "sit" ? "sit" : "spin";
-      setPigState(state);
-      setTimeout(
-        () => {
-          setPigState("idle");
-          burstHearts(5, "sparkle");
-          setPet((p) => ({ ...p, ...saved }));
-        },
-        state === "sit" ? 2000 : 1300
-      );
+      setPigState(trickState);
+      endAction(actionHoldMs(trickState), () => {
+        setPigState("idle");
+        burstHearts(5, "sparkle");
+      });
+    } else if (action === "pet") {
+      // Visual petting is owned by PigActor's rub gesture; this only syncs stats.
+      burstHearts(2);
     }
+
+    const res = await analyticsFetch(`/api/l/${token}/pet`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (!res.ok) {
+      // Keep petting visuals (gesture-driven). Revert button actions on failure.
+      if (action !== "pet") {
+        failed = true;
+        setPlayFinisher(null);
+        setShowFood(false);
+        setPigState("idle");
+      }
+      return;
+    }
+    const { pet: saved } = await res.json();
+    track("pet_action", { action, happiness: saved.happiness, hunger: saved.hunger });
+    setPet((p) => ({ ...p, ...saved }));
   }
 
   /** Set when a letter is opened, so the camera can walk out to its new flower. */
@@ -336,23 +422,6 @@ export default function GardenScene({
     return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
   }, [unlock.unlocksAt, now]);
 
-  const pigSprite =
-    pigState === "eat"
-      ? "pig-eat"
-      : pigState === "sit"
-        ? "pig-sit"
-        : pigState === "spin" || pigState === "backflip"
-          ? "pig-happy"
-          : walking
-            ? walkFrame
-              ? "pig-walk1"
-              : "pig-walk2"
-            : unlock.canUnlock
-              ? "pig-envelope"
-              : mood === "sad" || mood === "hungry"
-                ? "pig-sad"
-                : "pig-idle";
-
   const allDelivered = !unlock.nextNote && notes.length > 0;
 
   return (
@@ -393,41 +462,81 @@ export default function GardenScene({
         <div
           className="absolute ease-in-out -translate-x-1/2"
           style={{
-            left: `${pigMove.x}%`,
-            bottom: `${layout.pig.bottomPct}%`,
+            ...pigAnchor,
             zIndex: layout.pig.zIndex,
-            transitionProperty: "left",
-            transitionDuration: `${pigMove.ms}ms`,
             ...entrance(intro, "pig-walk-in", INTRO.pig, { easing: "linear" }),
           }}
         >
-          <button
-            onClick={openTodaysLetter}
-            disabled={!unlock.canUnlock || busy}
-            className={`block cursor-${unlock.canUnlock ? "pointer" : "default"} ${
-              pigState === "spin"
-                ? "[animation:spin-once_0.6s_ease-in-out_2]"
-                : pigState === "backflip"
-                  ? "[animation:backflip_1.1s_ease-in-out]"
-                  : pigState === "idle" && !opening
-                    ? "[animation:bob_2s_ease-in-out_infinite]"
-                    : ""
-            }`}
-            aria-label={unlock.canUnlock ? "open today's letter" : petName}
-          >
-            <Sprite name={pigSprite} alt={petName} height={isMobile ? 102 : 110} flip={pigFlip} />
-          </button>
-          {showFood && (
-            <div className="absolute -left-8 sm:-left-10 bottom-0">
-              <Sprite name="strawberry" alt="a strawberry" height={isMobile ? 32 : 34} />
-            </div>
-          )}
+          <PigActor
+            name={petName}
+            mood={mood}
+            hunger={pet.hunger}
+            hasLetter={unlock.canUnlock}
+            state={actorState}
+            flip={pigFlip}
+            isMobile={isMobile}
+            opening={opening}
+            playFinisher={playFinisher}
+            disabled={busy}
+            onOpenLetter={openTodaysLetter}
+            /* The rub drives the petting clip itself; the scene only credits it.
+             * Deliberately no setPigState("pet") — that would mark the pig busy
+             * and disable the very element the rub is happening on. */
+            onPet={() => {
+              void petAction("pet");
+            }}
+            onClipComplete={(clip) => {
+              if (clip === "pet_end") setPigState("idle");
+            }}
+          />
           {unlock.canUnlock && (
             <div className="absolute -top-9 left-1/2 -translate-x-1/2 font-pixel text-xs bg-sunflower border-2 border-ink px-2 py-1 whitespace-nowrap [animation:bob_1.4s_ease-in-out_infinite]">
               a letter for you!
             </div>
           )}
         </div>
+
+        {showFood && (
+          /*
+           * A sibling of the pig rather than a child of it: the pig sits at its own
+           * depth in the field, so flowers rooted nearer than it are painted on top
+           * — and its z-index makes it a stacking context, so nothing inside it can
+           * climb out. The food would just hide behind a sunflower. It rides the
+           * same anchor as the pig and stacks with the hearts, the other transient
+           * bit of action feedback.
+           */
+          <div className="absolute ease-in-out pointer-events-none z-[14]" style={pigAnchor}>
+            {/*
+             * Sat on the ground in front of the snout — measured from the sprite
+             * rather than nudged by eye, and mirrored with the pig's facing. The
+             * feed clips lean the pig the rest of the way in.
+             */}
+            <div
+              className="absolute bottom-0 -translate-x-1/2"
+              style={{ left: pigFlip ? snoutOffset(isMobile) : -snoutOffset(isMobile) }}
+            >
+              <Sprite name="strawberry" alt="a strawberry" height={isMobile ? 32 : 34} />
+              {crumbs.map((c) => (
+                <span
+                  key={c.id}
+                  aria-hidden
+                  className="absolute block [animation:crumb-fly_620ms_ease-out_forwards]"
+                  style={{
+                    left: `calc(50% + ${c.x}px)`,
+                    bottom: c.bottom,
+                    width: c.size,
+                    height: c.size,
+                    background: c.colour,
+                    // The pig faces left by default; flipping it flips the scatter.
+                    "--crumb-x": `${pigFlip ? -c.dx : c.dx}px`,
+                    "--crumb-rise": `${c.rise}px`,
+                    "--crumb-fall": `${c.fall}px`,
+                  } as CSSProperties}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* hearts / sparkles */}
         {hearts.map((h) => (

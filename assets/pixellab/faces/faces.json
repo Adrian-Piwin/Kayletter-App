@@ -1,0 +1,16 @@
+{
+  "mouth_open": {
+    "job": "5b8a26d0-f08f-4c9d-8562-a60f48133d4e",
+    "keep": "face",
+    "revert": [
+      "eye"
+    ],
+    "note": "snout with the mouth wide open below it, tongue showing"
+  },
+  "eye_shut": {
+    "job": "e8e25e4f-3007-4122-8bf4-9fbc4dc7c418",
+    "keep": "eye",
+    "revert": [],
+    "note": "eye closed to a short curved line, a contented squint"
+  }
+}

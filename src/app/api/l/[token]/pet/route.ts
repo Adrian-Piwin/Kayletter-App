@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getLetterByToken, getOrCreatePet, listNotes, savePetStats } from "@/lib/data";
-import { applyAction, decayedStats, tricksUnlockedFor, type PetAction } from "@/lib/pet";
+import {
+  applyAction,
+  decayedStats,
+  PET_COOLDOWN_MS,
+  tricksUnlockedFor,
+  type PetAction,
+} from "@/lib/pet";
 import {
   captureServerEvent,
   distinctIdFromRequest,
@@ -9,7 +15,7 @@ import {
 
 type Params = { params: Promise<{ token: string }> };
 
-const ACTIONS: PetAction[] = ["feed", "play", "trick"];
+const ACTIONS: PetAction[] = ["feed", "play", "trick", "pet"];
 
 export async function POST(req: Request, { params }: Params) {
   const { token } = await params;
@@ -29,12 +35,23 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "No tricks learned yet" }, { status: 409 });
   }
 
+  if (action === "pet" && pet.last_petted_at) {
+    const elapsed = Date.now() - new Date(pet.last_petted_at).getTime();
+    if (elapsed < PET_COOLDOWN_MS) {
+      return NextResponse.json(
+        { error: "Petting cooldown", retry_after_ms: PET_COOLDOWN_MS - elapsed },
+        { status: 429 }
+      );
+    }
+  }
+
   const current = decayedStats(pet, new Date(pet.updated_at));
   const next = applyAction(current, action);
   const saved = await savePetStats(letter.id, {
     ...next,
     fed: action === "feed",
     played: action === "play",
+    petted: action === "pet",
     tricks_unlocked: unlocked,
   });
 
