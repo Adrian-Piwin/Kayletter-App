@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sprites": "python3 scripts/pig/download_clips.py && python3 scripts/pig/faces.py && python3 scripts/pig/derive.py && python3 scripts/pig/build.py"
+    "sprites": "python3 scripts/pig/download_clips.py && python3 scripts/pig/faces.py && python3 scripts/pig/derive.py && python3 scripts/pig/build.py && python3 scripts/pig/review.py"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.6.4",

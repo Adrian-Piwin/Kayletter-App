@@ -3,31 +3,32 @@
     python3 scripts/pig/faces.py
     python3 scripts/pig/faces.py --preview   # draw the region boxes
 
-Why inpainting and not generation
---------------------------------
-The pig is a blob character: head and body are one round mass with no neck, so
-there is nothing to "lower" or "turn". Asking a model to redraw it in a new pose
-gets you a *different pig* — `edit_image` came back with a giant round body and
-stubby legs. What reads as an action here is a small change to one feature over a
-whole-body squash or lean.
+`PATCHES` is currently empty — every shipping clip is either generated whole or
+composed from the idle pose alone. The machinery stays because a patch is still
+the only way to draw something the idle pose does not contain in a place a
+generation will not reliably put it (`legs_folded` for `trick_sit` is the open
+case). It is not the way to change a *pose*; that is what generation is for.
 
-`inpaint_image` is the right tool: it regenerates one rectangle and freezes the
-rest. It still drifted ~150 pixels outside the mask, so this script keeps only
-the region it asked for. Outside its footprint each patch is byte-identical to
-`pig-idle.png`, which is what pins the pig's size across every clip.
+What a patch is
+--------------
+`inpaint_image` regenerates one rectangle and freezes the rest. It still drifted
+~150 pixels outside the mask it was given, so trusting the mask is not enough —
+this script keeps only the region it asked for. Outside its footprint a patch is
+byte-identical to `pig-idle.png`.
 
 Keep less than you generate
 --------------------------
 The mask sent to the model and the region kept from the result are separate
-things, and they should be. This face is tiny — eye, snout, blush, nothing else —
-so a mask tight enough to leave the eye alone is too tight for the model to draw
-a decent open mouth in. So `mouth_open` is generated with a generous face mask
-and then has the `eye` box reverted to the idle pose. The model gets room to
-draw; the eye still cannot change on a frame that only opens the mouth.
+things. A mask tight enough to protect a neighbouring feature can be too tight
+for the model to draw anything decent in, so a patch may be generated with a
+generous box and then have sub-regions `revert`ed to the idle pose.
 
-That is what `keep` and `revert` express, and a patch's *footprint* — keep minus
-revert — is what gets layered. Footprints must not overlap, so `derive.py` can
-stack `mouth_open` and `eye_shut` in either order and get the same pixels.
+`keep` minus `revert` is the patch's *footprint*, the pixels it owns. Footprints
+must not overlap, so `derive.py` can layer patches in any order and get the same
+result. But note the limit that retired the last two patches: reverting protects
+a feature's *pixels*, not the model's *idea* of the region. Given a box that
+contains the snout, the model draws a new snout, and no amount of reverting
+elsewhere puts the original one back.
 
 To add a patch: inpaint against pig-idle.png, note the mask you used, register it
 below. Raw downloads are cached, so re-running is free.
@@ -74,21 +75,19 @@ class Patch:
     """Regions inside `keep` put back to the idle pose."""
 
 
-PATCHES: dict[str, Patch] = {
-    # Generated with the whole `face` box so the model had room for a real open
-    # mouth, then the eye is put back — the mouth opening must not restyle the eye.
-    "mouth_open": Patch(
-        job="5b8a26d0-f08f-4c9d-8562-a60f48133d4e",
-        keep="face",
-        revert=("eye",),
-        note="snout with the mouth wide open below it, tongue showing",
-    ),
-    "eye_shut": Patch(
-        job="e8e25e4f-3007-4122-8bf4-9fbc4dc7c418",
-        keep="eye",
-        note="eye closed to a short curved line, a contented squint",
-    ),
-}
+# Empty on purpose. The eat clip was the only consumer and is now generated whole
+# (see derive.py), which draws the chewing mouth without a patch at all.
+#
+# Two patches were withdrawn rather than lost:
+#   mouth_open  5b8a26d0-f08f-4c9d-8562-a60f48133d4e, keep `face` minus `eye`.
+#               Rejected: the `face` box contains the snout, so the model redrew
+#               the snout along with the mouth and the pig's nose changed shape
+#               and position on every open-mouth frame. A patch is only safe when
+#               its box excludes every feature that must not move — and on a face
+#               this small there is no room to mask a mouth without the snout.
+#   eye_shut    e8e25e4f-3007-4122-8bf4-9fbc4dc7c418, keep `eye`. A good patch,
+#               correctly scoped; no current clip needs it.
+PATCHES: dict[str, Patch] = {}
 
 
 def box_of(region: str) -> tuple[int, int, int, int]:

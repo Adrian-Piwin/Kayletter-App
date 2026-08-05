@@ -44,20 +44,29 @@ export const useIsMobile = () => useMediaQuery("(max-width: 639px)");
 /** For motion CSS can't tone down on its own, such as scripted animation. */
 export const usePrefersReducedMotion = () => useMediaQuery("(prefers-reduced-motion: reduce)");
 
+export type Size = { width: number; height: number };
+
 /**
- * Live width of an element in px. Stays at `fallback` until the element is
+ * Live size of an element in px. Stays at `fallback` until the element is
  * measured, so server and first client render agree before it corrects.
  */
-export function useElementWidth(ref: RefObject<HTMLElement | null>, fallback: number) {
-  const [width, setWidth] = useState(fallback);
+export function useElementSize(ref: RefObject<HTMLElement | null>, fallback: Size) {
+  const [size, setSize] = useState(fallback);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      // Kept identical when nothing moved: a fresh object on every observation
+      // would have anything measuring off this re-run for no reason.
+      setSize((prev) =>
+        prev.width === width && prev.height === height ? prev : { width, height }
+      );
+    });
     observer.observe(el);
     return () => observer.disconnect();
   }, [ref]);
 
-  return width;
+  return size;
 }

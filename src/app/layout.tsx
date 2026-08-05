@@ -22,7 +22,7 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "Kayletter — little letters, delivered by pig",
+  title: "Kayletter — little letters, delivered by a pig",
   description:
     "Write a stack of love notes. A tiny pixel pig delivers one a day to someone you love, in a garden of sunflowers.",
 };

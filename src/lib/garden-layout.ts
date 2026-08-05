@@ -59,8 +59,9 @@ const FIELD = {
     tuftsPerScreen: 20,
     /** Roughly how many flowers fill one screen — sets how fast the field grows. */
     flowersPerScreen: 12,
-    /** Nominal viewport width used for the very first (pre-measurement) render. */
+    /** Nominal viewport used for the very first (pre-measurement) render. */
     nominalWidth: 390,
+    nominalHeight: 844,
   },
   desktop: {
     rows: 5,
@@ -72,6 +73,7 @@ const FIELD = {
     tuftsPerScreen: 20,
     flowersPerScreen: 45,
     nominalWidth: 1280,
+    nominalHeight: 800,
   },
 } as const;
 
@@ -93,12 +95,28 @@ const PIG_DEPTH = 0.765;
  * The pig walks a clear path along the front of the field: the planted rows
  * stop at this depth, leaving the ground between here and the nearest row
  * unplanted. That gap is what stops a flower ever standing fully in front of
- * the pig — the one row beyond the path is rooted low enough that its heads
- * reach the pig's legs and stop well short of its face.
+ * the pig — the one row beyond the path is rooted low enough (see
+ * `FRONT_ROW_REACH`) that its heads only fringe the pig's legs.
  */
 const BACK_ROWS_END = 0.68;
 /** A field needs this many rows before one of them is spared for the front. */
 const ROWS_FOR_A_FRONT_ROW = 3;
+/**
+ * How far past the pig's feet the tallest sunflower in the front row may reach,
+ * in px at full size — about the height of its legs. The row is rooted from
+ * this rather than from the depth ramp alone: its flowers are the biggest in
+ * the field, and the ramp on its own leaves the tallest of them climbing well
+ * up the pig's body instead of fringing it. Measured in px because that is what
+ * a sprite's height is: the ramp works in shares of the scene, so the same drop
+ * expressed there would let the overlap grow with the size of the screen.
+ */
+const FRONT_ROW_REACH = 26;
+/**
+ * Safety valve on that reach: however tall the flowers or short the screen, the
+ * front row is never rooted more than this share of the gap between rows below
+ * the ramp, so it can't sink off the bottom of the scene behind the controls.
+ */
+const FRONT_ROW_MAX_DROP = 0.35;
 /**
  * A garden of a few letters is a shallow patch right in front of you rather
  * than a field stretching to the horizon: the back row stays large and close,
@@ -175,9 +193,11 @@ function hash01(seed: string): number {
   return ((h >>> 0) % 10000) / 10000;
 }
 
-/** Nominal viewport width to assume before the scene has been measured. */
-export const nominalWidth = (isMobile: boolean) =>
-  (isMobile ? FIELD.mobile : FIELD.desktop).nominalWidth;
+/** Nominal viewport to assume before the scene has been measured. */
+export function nominalViewport(isMobile: boolean) {
+  const cfg = isMobile ? FIELD.mobile : FIELD.desktop;
+  return { width: cfg.nominalWidth, height: cfg.nominalHeight };
+}
 
 /**
  * Plans where every read letter's flower grows.
@@ -188,7 +208,12 @@ export const nominalWidth = (isMobile: boolean) =>
  */
 export function planField(
   notes: Note[],
-  { isMobile, viewportWidth, now }: { isMobile: boolean; viewportWidth: number; now: number }
+  {
+    isMobile,
+    viewportWidth,
+    viewportHeight,
+    now,
+  }: { isMobile: boolean; viewportWidth: number; viewportHeight: number; now: number }
 ): FieldLayout {
   const cfg = isMobile ? FIELD.mobile : FIELD.desktop;
   const planted = notes.length > MAX_FLOWERS ? notes.slice(-MAX_FLOWERS) : notes;
@@ -250,6 +275,21 @@ export function planField(
   /** How far back a flower must stay to leave the pig's path clear. */
   const behindFloorPct = hasFrontRow ? bottomAt(BACK_ROWS_END) : pigBottomPct;
 
+  /** A px measurement as the share of the scene's height it covers. */
+  const heightPct = (px: number) => (px / viewportHeight) * 100;
+  /** Tallest sunflower the front row can grow, at the size it draws them. */
+  const tallestFront = flowerHeight("bloom", true) * scaleAt(1) * cfg.sizeScale;
+  /**
+   * Where the front row is rooted. Low enough that even its tallest flower tops
+   * out around the pig's legs, but never below the ramp's own baseline (short
+   * flowers need no drop) nor so far below it that the row leaves the scene.
+   */
+  const frontRowBottomPct = clamp(
+    pigBottomPct + heightPct(FRONT_ROW_REACH * cfg.sizeScale - tallestFront),
+    bottomAt(1) - rowGapPct * FRONT_ROW_MAX_DROP,
+    bottomAt(1)
+  );
+
   /** Grass scattered across a band, so no stretch of ground reads as bare. */
   const scatterTufts = (
     seedKey: string,
@@ -274,8 +314,10 @@ export function planField(
     const factor = factorAt(depth);
     const scale = scaleAt(depth) * cfg.sizeScale;
     const widthScreens = 1 + (screens - 1) * factor;
-    const rowBottomPct = bottomAt(depth);
     const behindPig = row < rowsBehindPig;
+    // The front row is rooted off the pig rather than off the ramp, so its
+    // grass drops with its flowers and the two stay planted in the same ground.
+    const rowBottomPct = behindPig ? bottomAt(depth) : frontRowBottomPct;
     // Rows are painted far to near with the pig and its path slotted in at
     // their own depth, so a flower rooted nearer than the pig passes in front
     // of it instead of the pig punching a hole through it.

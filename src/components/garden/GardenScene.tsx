@@ -12,8 +12,8 @@ import { snoutOffset } from "./pig-display";
 import { useCamera, type ScrollDirection } from "./useCamera";
 import { analyticsFetch, track } from "@/lib/analytics";
 import { entrance, INTRO, INTRO_MS, type IntroPhase } from "@/lib/garden-intro";
-import { FIELD_REFRESH_MS, nominalWidth, planField } from "@/lib/garden-layout";
-import { useElementWidth, useIsMobile, usePrefersReducedMotion } from "@/lib/hooks";
+import { FIELD_REFRESH_MS, nominalViewport, planField } from "@/lib/garden-layout";
+import { useElementSize, useIsMobile, usePrefersReducedMotion } from "@/lib/hooks";
 import { getUnlockState } from "@/lib/unlock";
 import { actionHoldMs, chompTimes, clipForState, type PigActorState } from "@/lib/pig-clips";
 import { PIG_CLIPS } from "@/lib/pig-anim.generated";
@@ -129,13 +129,19 @@ export default function GardenScene({
 
   /* --- the field --- */
 
-  const sceneWidth = useElementWidth(sceneRef, nominalWidth(isMobile));
+  const scene = useElementSize(sceneRef, nominalViewport(isMobile));
   // Flowers only change stage hours apart, so the field is re-planned on a
   // coarse clock rather than with every tick of the countdown.
   const fieldNow = Math.floor(now / FIELD_REFRESH_MS) * FIELD_REFRESH_MS;
   const layout = useMemo(
-    () => planField(readNotes, { isMobile, viewportWidth: sceneWidth, now: fieldNow }),
-    [readNotes, isMobile, sceneWidth, fieldNow]
+    () =>
+      planField(readNotes, {
+        isMobile,
+        viewportWidth: scene.width,
+        viewportHeight: scene.height,
+        now: fieldNow,
+      }),
+    [readNotes, isMobile, scene.width, scene.height, fieldNow]
   );
   const scrollable = layout.screens > 1;
 
@@ -152,7 +158,7 @@ export default function GardenScene({
 
   const { camera, surfaceRef } = useCamera({
     screens: layout.screens,
-    viewportWidth: sceneWidth,
+    viewportWidth: scene.width,
     enabled: scrollable && !openNote && !mailboxOpen,
     onDirection: handleScroll,
   });
@@ -298,9 +304,9 @@ export default function GardenScene({
       setShowFood(true);
       setPigState("eat");
       const hold = actionHoldMs("eat");
-      // Ask for the clip the actor will pick for this hunger, so the crumbs land
-      // on that clip's chews rather than an assumed rhythm.
-      const eating = clipForState({ state: "eat", mood, hasLetter: false, hunger: pet.hunger });
+      // Ask for the clip the actor will actually play, so the crumbs land on that
+      // clip's chews rather than an assumed rhythm.
+      const eating = clipForState({ state: "eat", mood, hasLetter: false });
       for (const at of chompTimes(eating, hold)) {
         endAction(at, () => spitCrumbs(3));
       }
@@ -470,7 +476,6 @@ export default function GardenScene({
           <PigActor
             name={petName}
             mood={mood}
-            hunger={pet.hunger}
             hasLetter={unlock.canUnlock}
             state={actorState}
             flip={pigFlip}
@@ -515,7 +520,12 @@ export default function GardenScene({
               className="absolute bottom-0 -translate-x-1/2"
               style={{ left: pigFlip ? snoutOffset(isMobile) : -snoutOffset(isMobile) }}
             >
-              <Sprite name="strawberry" alt="a strawberry" height={isMobile ? 32 : 34} />
+              {/*
+               * 34px on both breakpoints, which is the sprite's own height, so it
+               * draws 1:1 with no resampling. Scaling it with the pig would buy a
+               * 3px difference nobody can see at the cost of dropped pixel rows.
+               */}
+              <Sprite name="strawberry" alt="a strawberry" height={34} />
               {crumbs.map((c) => (
                 <span
                   key={c.id}

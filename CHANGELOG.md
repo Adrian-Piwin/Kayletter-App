@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.3.0] - 2026-08-04
+## [0.3.0] - 2026-08-05
 
 ### Animate the pig from a generated sprite sheet and add petting
 
@@ -30,6 +30,31 @@ The pig now breathes, walks, eats, plays, does tricks, and leans into being rubb
 
 ##### **docs**
 - `docs/pixellab-notes.md` on what does and doesn't work when generating pixel art, and `docs/pig-sprite-rework.md` for how each clip is produced.
+
+
+### Fix pig animations with a reliable generation recipe
+
+Clips stay the same pig end to end, the feed is a real bend and chew rather than a squash, and the strawberry matches the art.
+
+#### Changes
+- Pin every clip to the idle pose at both ends and draw the whole motion in one PixelLab job, so the pig cannot drift or end as a different character.
+- Collapse the two feed clips into one drawn 6-frame loop; drop the pose/squash and mouth-patch path that warped the snout.
+- Restyle the strawberry at true display size with a palette that matches the pig (coloured outline, no eye-black edge).
+- Standardise on 6 frames (8 for gaits only), clean frames mechanically, and fail the build on strays or partial alpha.
+- Root the front flower row from the pig's legs so blooms fringe them instead of climbing the body.
+
+##### **sprites**
+- Generated clips use the pinned first+last recipe; compose only for rigid rotations (`trick_spin`, `trick_backflip`, `play_roll`).
+- `pixels.py` hardens alpha, drops strays and re-grounds; airborne clips skip re-ground so hops land.
+- `review.py` gates `npm run sprites`; chomp beats are measured off the open mouth and carried in the manifest.
+
+##### **garden**
+- Single `feed` clip; strawberry always draws 1:1 at 34px.
+- Front-row placement uses viewport height so flower reach stays consistent across screens.
+
+##### **docs**
+- Document the recipe, frame-count finding, prop styling, and retired patch/squash approaches in the PixelLab and pig-sprite notes.
+
 
 ## [0.2.0] - 2026-08-02
 

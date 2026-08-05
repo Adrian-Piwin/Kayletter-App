@@ -11,40 +11,44 @@ The pipeline is one-directional:
     assets/pixellab/clips/<clip>/  what build.py packs
       -> build.py                  pig-v2.png + pig-anim.generated.ts
 
-Why clips are composed rather than generated
--------------------------------------------
-The pig is a blob character: head and body are one round mass, no neck, tiny
-legs. Ask a model for "lowers its head and chews" and it has nothing to
-articulate, so it either barely moves or redraws a different pig at a different
-size. Both failures showed up in the first two passes.
+Three ways a clip gets made
+--------------------------
+  GENERATED  frames come from one `animate_image` job, cleaned and re-grounded.
+             The pig's whole body moves, and it stays the same pig, *provided*
+             the job pinned the idle pose as both first and last frame — see
+             docs/pixellab-notes.md. This is the default for a new clip.
+  POSED      generated frames with a body transform layered on top. Weaker: the
+             transform resamples art the generator already drew, so it softens.
+  COMPOSED   every frame = the idle pose (plus optional feature patches from
+             faces.py) under one Pose. No generation at all, so identity cannot
+             drift — but nothing can be drawn that the idle pose does not already
+             contain. Right for rotations, wrong for anything postural.
 
-What reads as an action on this character is a **small drawn change to one
-feature** over a **whole-body squash, lean or turn**. So a clip is a list of
-frames, each one a set of feature patches plus a body transform:
+Why the eat clip is GENERATED and not COMPOSED
+---------------------------------------------
+It used to be composed: an inpainted `mouth_open` patch over a `scale_y` squash
+standing in for a crouch. Both halves were wrong.
 
-  COMPOSED  every frame = idle pose + zero or more patches + one Pose. Covers
-            eating (mouth and eye change) and spin/backflip/roll (no patches,
-            the body turns).
-  POSED     legacy: generated frames from raw/ with body motion layered on.
-            Clips still on this path are candidates for redoing as COMPOSED.
+The squash was a resample of the whole sprite, so it did not bend the pig, it
+*distorted* it — and a squash cannot move the snout forward toward the food,
+which is what bending down actually looks like. The patch was worse: the mask it
+was generated with covered the snout, so the model redrew the snout as well as
+adding the mouth, and the pig's nose changed shape and position every time the
+mouth opened.
 
-Patches are layered, not swapped wholesale, because expression has to stay put
-when it is not the thing moving: a frame that only opens the mouth keeps the
-idle eye pixel-for-pixel. `faces.py` guarantees the footprints are disjoint.
+A generated clip does not have either problem. The bend is drawn, so the head
+comes down *and* forward and the legs fold; and because the model is redrawing
+the frame as a whole, the snout stays a snout.
 
-A blob has no neck to bend, so a crouch *is* a vertical squash — but it has to be
-deep enough to read as one. Anchored at the feet, `scale_y=0.90` drops the top of
-the head ~20px and the snout ~10px, which reads as bending down to the food. A
-shallow 0.93 reads as a rendering glitch instead: the same distortion, none of the
-intent. There is no room to widen in compensation — the sprite is 187px in a 189px
-frame — so squashes here are vertical only.
-
-Every source is cropped to the *idle pose's* bounding box, never its own, so a
-patch whose open mouth juts further down still lines up pixel-for-pixel.
-
-Rotations stay on multiples of 90° where possible: the idle pose's diagonal is
-272px against a 189×199 frame, so a 45° turn would have to shrink ~30% and the
-pig would visibly change size mid-trick.
+Rules that survive from the composed era
+---------------------------------------
+- Every source is cropped to the *idle pose's* bounding box, never its own, so a
+  frame whose snout juts further down does not shift the whole pig.
+- Rotations stay on multiples of 90° where possible: the idle pose's diagonal is
+  272px against a 189×199 frame, so a 45° turn would have to shrink ~30% and the
+  pig would visibly change size mid-trick.
+- A clip's uniform `scale` is held constant across its frames. Varying it per
+  frame reads as the pig pulsing rather than moving.
 """
 
 from __future__ import annotations
@@ -61,6 +65,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).parent))
 from faces import PATCHES, footprint  # noqa: E402
 from frame import FRAME_H, FRAME_W  # noqa: E402
+from pixels import drop_strays, harden_alpha, reground  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 IDLE_POSE = ROOT / "public" / "sprites" / "pig-idle.png"
@@ -121,63 +126,7 @@ def _spin_frames() -> list[Frame]:
     return frames
 
 
-# Only two snout drawings exist — idle's and the open mouth — and they alternate.
-# A third would read as the face changing shape rather than the mouth working, so
-# the chew beat closes the eye over the *idle* snout instead of drawing a new one.
-MOUTH_OPEN = ("mouth_open",)
-CHEWING = ("eye_shut",)
-
-
-def chomp_frames(clip: Clip) -> list[int]:
-    """Frames where the jaw shuts — the beats crumbs should fly out on.
-
-    Exported to the manifest so the scene can spawn particles on the chew without
-    anyone retyping frame numbers that only exist here.
-    """
-    return [i for i, f in enumerate(clip.frames) if f.patches == CHEWING]
-
 COMPOSED: dict[str, Clip] = {
-    # Two chomps and a swallow. The mouth doing the work means the body only has
-    # to lean in and squash a little, which is all this silhouette can do. The
-    # eye only closes on the chew beats, so the open-mouth frames keep the idle
-    # eye exactly.
-    # Down, chomp twice at the strawberry, back up. Both feed clips loop, and both
-    # cycles are 8 × 150ms, so the scene can hold whole cycles (see actionHoldMs)
-    # and always leave the clip standing upright on the idle frame.
-    #
-    # The middle four frames all hold the crouch: the bend only reads if the pig
-    # *stays* down long enough to be seen chewing there, rather than dipping
-    # through the low pose on its way back up.
-    "feed_munch": Clip(
-        ms=150,
-        loop=True,
-        frames=[
-            Frame(),
-            Frame(MOUTH_OPEN, Pose(shift_x=-3, scale_y=0.95)),  # going down
-            Frame(MOUTH_OPEN, Pose(shift_x=-6, scale_y=0.90)),  # down at the berry
-            Frame(CHEWING, Pose(shift_x=-7, scale_y=0.88)),  # chomp
-            Frame(MOUTH_OPEN, Pose(shift_x=-6, scale_y=0.90)),
-            Frame(CHEWING, Pose(shift_x=-7, scale_y=0.88)),  # chomp again
-            Frame(MOUTH_OPEN, Pose(shift_x=-4, scale_y=0.93)),  # coming up
-            Frame(),
-        ],
-    ),
-    # Same rhythm, hungrier: dives deeper, leans further in, and chews on three
-    # beats instead of two.
-    "feed_gobble": Clip(
-        ms=150,
-        loop=True,
-        frames=[
-            Frame(),
-            Frame(MOUTH_OPEN, Pose(shift_x=-5, scale_y=0.93)),
-            Frame(CHEWING, Pose(shift_x=-9, scale_y=0.87)),
-            Frame(MOUTH_OPEN, Pose(shift_x=-10, scale_y=0.86)),
-            Frame(CHEWING, Pose(shift_x=-9, scale_y=0.87)),
-            Frame(MOUTH_OPEN, Pose(shift_x=-10, scale_y=0.86)),
-            Frame(CHEWING, Pose(shift_x=-6, scale_y=0.91)),
-            Frame(),
-        ],
-    ),
     "trick_spin": Clip(ms=90, loop=False, frames=_spin_frames()),
     # A jump only has headroom if the airborne frames shrink a little — which
     # happens to read as height anyway.
@@ -207,51 +156,20 @@ COMPOSED: dict[str, Clip] = {
     ),
 }
 
-# Body motion layered onto generated frames — the older, weaker path. A clip's
-# uniform `scale` is held constant across its frames on purpose: varying it per
-# frame makes the pig look like it is pulsing rather than moving.
-POSED: dict[str, list[Pose]] = {
-    "play_chase": [
-        Pose(scale=0.97),
-        Pose(scale=0.97, lift=4),
-        Pose(scale=0.97),
-        Pose(scale=0.97, lift=4),
-    ],
-    "play_bounce": [
-        Pose(scale=0.9, scale_y=0.92),  # crouch
-        Pose(scale=0.9, lift=12),
-        Pose(scale=0.9, lift=20),  # top of the hop
-        Pose(scale=0.9, lift=8),
-        Pose(scale=0.9, scale_y=0.92),  # land
-    ],
-    "trick_sit": [
-        Pose(),
-        Pose(angle=-4, scale_y=0.98),
-        Pose(angle=-8, scale_y=0.96),
-        Pose(angle=-9, scale_y=0.96),
-        Pose(angle=-8, scale_y=0.96),
-    ],
-    "trick_dance": [
-        Pose(scale=0.92),
-        Pose(scale=0.92, shift_x=-6, lift=6),
-        Pose(scale=0.92, lift=14),
-        Pose(scale=0.92, shift_x=6, lift=6),
-        Pose(scale=0.92, lift=12),
-    ],
-    "pet_enjoy": [
-        Pose(),
-        Pose(shift_x=-3, lift=2),
-        Pose(shift_x=-5, lift=3),
-        Pose(shift_x=-2, lift=1),
-    ],
-    "pet_end": [
-        Pose(),
-        Pose(shift_x=-6),
-        Pose(shift_x=6),
-        Pose(shift_x=-3),
-        Pose(),
-    ],
-}
+# Body motion layered onto generated frames — retired. Every clip that used this
+# path has been regenerated with the motion drawn instead, because layering a
+# transform over generated art has all the problems of COMPOSED (a resample
+# distorts rather than bends) *plus* one of its own: it re-centres the bounding
+# box, so it throws away the lean or step the frame was drawn with.
+#
+# The numbers were unambiguous. `play_bounce` posed lost 26% of the pig's mass,
+# `trick_sit` 23%, `trick_dance` 17% — the pig visibly shrank mid-clip, which is
+# what a uniform `scale` does when the pose needs headroom the frame does not have.
+# Regenerated, the same clips hold mass within 3%.
+#
+# The machinery stays because `Pose` is still what COMPOSED rotations are built
+# from. Nothing should be added here.
+POSED: dict[str, list[Pose]] = {}
 
 
 def reference_box() -> tuple[int, int, int, int]:
@@ -306,9 +224,51 @@ class Poser:
         return self._cache[key]
 
 
-def cropped(path: Path) -> Image.Image:
-    """A generated frame cropped to its own pixels (raw/ path only)."""
-    im = Image.open(path).convert("RGBA")
+@dataclass
+class Cleanup:
+    """What had to be repaired across one clip, for the build log."""
+
+    alpha: int = 0
+    strays: int = 0
+    regrounded: int = 0
+
+    def __bool__(self) -> bool:
+        return bool(self.alpha or self.strays or self.regrounded)
+
+    def __str__(self) -> str:
+        parts = []
+        if self.alpha:
+            parts.append(f"{self.alpha}px alpha hardened")
+        if self.strays:
+            parts.append(f"{self.strays}px strays erased")
+        if self.regrounded:
+            parts.append(f"{self.regrounded} frames re-grounded")
+        return ", ".join(parts)
+
+
+def clean(im: Image.Image, tally: Cleanup) -> Image.Image:
+    """Repair a generated frame's mechanical defects, before anything is posed.
+
+    Strictly mechanical: nothing here has an opinion about the drawing. Colour is
+    deliberately left alone — snapping off-ramp colours onto the idle pose's
+    palette sounds tidy and destroys the art, because a clip that draws a new
+    feature legitimately needs colours the idle pose does not have. Snapping the
+    eat clip turned the dark red inside the pig's mouth into the near-black of its
+    eye, so the open mouth read as a hole. `review.py` reports foreign colours
+    instead, and a human decides whether they are a mouth or a mistake.
+
+    Order matters: strays have to go before any crop, because a loose pixel out in
+    the grass grows the bounding box and would drag the whole pig off centre.
+    """
+    im, alpha = harden_alpha(im)
+    im, strays = drop_strays(im)
+    tally.alpha += alpha
+    tally.strays += strays
+    return im
+
+
+def cropped(im: Image.Image) -> Image.Image:
+    """A frame cropped to its own pixels, for the POSED path."""
     box = im.getbbox()
     return im.crop(box) if box else im
 
@@ -383,31 +343,68 @@ def build_composed(poser: Poser, meta: dict) -> None:
             "loop": clip.loop,
             "downloaded_frames": len(images),
         }
-        chomps = chomp_frames(clip)
-        if chomps:
-            meta["clips"][name]["chomps"] = chomps
         detail = f"idle + {', '.join(used)}" if used else "idle pose only"
         print(f"{name}: {len(images)} frames (composed from {detail})")
 
 
-def build_posed(ground: int) -> None:
+def keep_count(info: dict, available: int) -> int:
+    """How many of a job's frames the clip should use.
+
+    A pinned job returns one more frame than it was asked for, and that extra frame
+    is the canonical pose again. Whether to keep it depends entirely on whether the
+    clip loops, which is why this is derived rather than hand-set:
+
+    - **A loop must drop it.** Frame N duplicates frame 0, so playing both holds the
+      canonical pose for two frame-times every cycle — a visible hitch in the
+      breathing.
+    - **A one-shot must keep it.** For a one-shot the pin is not a duplicate, it is
+      the *resolution*: the landing after a hop, the pig standing back up after a
+      scratch. Dropping it strands the clip on its most extreme frame, and
+      `play_bounce` ends 9px off the ground — a jump that never lands.
+    """
+    explicit = info.get("keep_frames")
+    if explicit:
+        return min(explicit, available)
+    if info.get("pinned_last_frame") and info.get("loop"):
+        return available - 1
+    return available
+
+
+def build_generated(ground: int, meta: dict) -> None:
+    """Turn raw generations into clips: clean every frame, then ground or pose it."""
     for raw in sorted(RAW_DIR.glob("*")):
         if not raw.is_dir() or raw.name in COMPOSED:
             continue
         files = sorted(raw.glob("frame-*.png"))
+        info = meta.get(raw.name, {})
+        files = files[: keep_count(info, len(files))]
         if not files:
             continue
         poses = POSED.get(raw.name)
+        # A clip whose action leaves the ground must not be re-grounded: the lift is
+        # the whole point, and re-grounding is indistinguishable from deleting it.
+        # There is no way to tell a 9px hop from 9px of generator jitter by
+        # measurement, so it is declared per clip rather than inferred.
+        airborne = bool(meta.get(raw.name, {}).get("airborne"))
+        tally = Cleanup()
         frames = []
         for i, path in enumerate(files):
+            im = clean(Image.open(path).convert("RGBA"), tally)
             if poses is None:
-                # Nothing to add — the drawn frames already carry the motion.
-                frames.append(Image.open(path).convert("RGBA"))
+                # The drawn frames already carry the motion; all they need is a
+                # shared baseline, since the generator drifts a few pixels of
+                # ground line between frames and that plays back as sinking.
+                if not airborne:
+                    grounded = reground(im, ground)
+                    tally.regrounded += grounded is not im
+                    im = grounded
+                frames.append(im)
                 continue
             pose = poses[min(i, len(poses) - 1)]
-            frames.append(render(cropped(path), pose, ground, f"{raw.name} frame-{i:02d}"))
+            frames.append(render(cropped(im), pose, ground, f"{raw.name} frame-{i:02d}"))
         write_clip(raw.name, frames)
-        print(f"{raw.name}: {len(frames)} frames ({'posed' if poses else 'as generated'})")
+        how = "posed" if poses else "airborne" if airborne else "generated"
+        print(f"{raw.name}: {len(frames)} frames ({how})" + (f" — {tally}" if tally else ""))
 
 
 def adopt_existing_downloads() -> None:
@@ -427,7 +424,7 @@ def main() -> None:
     meta = json.loads(JOBS.read_text()) if JOBS.exists() else {"clips": {}}
     meta.setdefault("clips", {})
 
-    build_posed(poser.ground)
+    build_generated(poser.ground, meta["clips"])
     build_composed(poser, meta)
 
     JOBS.write_text(json.dumps(meta, indent=2) + "\n")

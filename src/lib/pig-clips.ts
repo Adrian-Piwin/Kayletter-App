@@ -33,20 +33,15 @@ export function clipForState(args: {
   state: PigActorState;
   mood: "happy" | "okay" | "sad" | "hungry";
   hasLetter: boolean;
-  hunger: number;
   flourish?: ClipName | null;
 }): PigClip {
-  const { state, mood, hasLetter, hunger, flourish } = args;
+  const { state, mood, hasLetter, flourish } = args;
 
   switch (state) {
     case "walk":
       return available(["walk", "play_chase", "idle_breathe"]);
     case "eat":
-      return available(
-        hunger >= 70
-          ? ["feed_gobble", "feed_munch", "idle_breathe"]
-          : ["feed_munch", "feed_gobble", "idle_breathe"]
-      );
+      return available(["feed", "idle_breathe"]);
     case "play":
       return available(["play_chase", "walk", "idle_breathe"]);
     case "spin":
@@ -70,12 +65,15 @@ export function clipForState(args: {
 }
 
 /**
- * Times, in ms from the clip's start, at which the pig's jaw shuts — repeated for
+ * Times, in ms from the clip's start, at which the pig takes a bite — repeated for
  * as long as the clip is held on screen.
  *
- * The chewing frames are marked by the build (see `chomp_frames` in derive.py) and
- * carried in the manifest, so retiming or re-cutting a feed clip moves the beats
- * with it instead of leaving hand-typed numbers behind.
+ * Which frames those are is recorded against the generation that produced them
+ * (`chomps` in jobs.json) and carried into the manifest by the build, so retiming
+ * the clip moves the beats with it rather than leaving hand-typed numbers behind
+ * in the scene. Note they have to be *measured* off a generated clip — the model
+ * decides where the mouth opens — so jobs.json records the pixel counts that
+ * justify them.
  */
 export function chompTimes(clip: PigClip, holdMs: number): number[] {
   const info = PIG_CLIPS[clip];
@@ -124,17 +122,19 @@ export function randomFlourish(): PigClip | null {
 /**
  * How long the scene stays in an action before returning to idle.
  *
- * Clips are short on purpose, so these are a little longer than the clip: the
- * last frame holds for the remainder, which lets a pose land instead of
- * snapping straight back to the idle loop.
+ * Every clip is 6 frames, so these are all longer than the clip they cover. Since
+ * each clip is generated with the idle pose pinned as its own last frame, the
+ * remainder holds on that pose — the pig has already settled by the time the state
+ * changes, so returning to the idle loop cannot snap.
  */
 export function actionHoldMs(state: PigActorState): number {
   switch (state) {
-    // Two whole cycles of the 8-frame, 150ms feed loop. Holding a multiple of the
-    // cycle matters: both clips start and end upright on the idle pose, so the pig
-    // is never yanked out of the crouch mid-chew.
+    // Two whole cycles of the 6-frame, 167ms feed loop. Holding a multiple of the
+    // cycle matters: the clip starts and ends upright on the idle pose, so every
+    // cycle boundary is a safe place to stop and the pig is never yanked out of
+    // the bend mid-chew.
     case "eat":
-      return 2400;
+      return 2000;
     // Covers the three-leg run plus whichever finisher clip plays at the end.
     case "play":
       return 3300;

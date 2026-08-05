@@ -1,6 +1,6 @@
 # Kayletter
 
-Little letters, delivered by pig. Write a stack of love notes; a pixel pig delivers one a day
+Little letters, delivered by a pig. Write a stack of love notes; a pixel pig delivers one a day
 to someone you love, in a garden that grows a sunflower for every letter they read.
 
 ## Stack

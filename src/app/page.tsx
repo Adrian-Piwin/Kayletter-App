@@ -18,7 +18,7 @@ export default function LandingPage() {
           <PigStill clip={heroClip} alt="A pixel pig carrying a letter" height={140} />
         </div>
         <h1 className="font-pixel text-3xl sm:text-5xl text-ink max-w-xl leading-tight text-balance">
-          Little letters, delivered by <span className="text-pig-deep">pig</span>
+          Little letters, delivered by a <span className="text-pig-deep">pig</span>
         </h1>
         <p className="text-base sm:text-lg text-ink/70 max-w-md text-pretty">
           Write a stack of notes for someone you love. A tiny pig delivers one a day in a garden
