@@ -48,7 +48,7 @@ const PIG_LEAD = 9;
 /** Crumb flight time — must match the `crumb-fly` animation in globals.css. */
 const CRUMB_MS = 620;
 /** Taken from the strawberry sprite's palette so the bits match the fruit. */
-const CRUMB_COLOURS = ["#ee6060", "#d63e4a", "#7ab66a"];
+const CRUMB_COLOURS = ["#ea4f5e", "#c4364f", "#6faa55"];
 
 const actionButtonClass =
   "font-pixel text-xs sm:text-sm min-h-11 px-3 bg-cream border-2 border-ink shadow-[3px_3px_0_0_var(--ink)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] hover:bg-white disabled:opacity-50 cursor-pointer touch-manipulation";
@@ -304,9 +304,9 @@ export default function GardenScene({
       setShowFood(true);
       setPigState("eat");
       const hold = actionHoldMs("eat");
-      // Ask for the clip the actor will actually play, so the crumbs land on that
-      // clip's chews rather than an assumed rhythm.
-      const eating = clipForState({ state: "eat", mood, hasLetter: false });
+      // Ask for the clip the actor will pick for this hunger, so the crumbs land
+      // on that clip's chews rather than an assumed rhythm.
+      const eating = clipForState({ state: "eat", mood, hasLetter: false, hunger: pet.hunger });
       for (const at of chompTimes(eating, hold)) {
         endAction(at, () => spitCrumbs(3));
       }
@@ -476,6 +476,7 @@ export default function GardenScene({
           <PigActor
             name={petName}
             mood={mood}
+            hunger={pet.hunger}
             hasLetter={unlock.canUnlock}
             state={actorState}
             flip={pigFlip}

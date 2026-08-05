@@ -26,6 +26,7 @@ type Mood = "happy" | "okay" | "sad" | "hungry";
 type Props = {
   name: string;
   mood: Mood;
+  hunger: number;
   hasLetter: boolean;
   state: PigActorState;
   flip: boolean;
@@ -51,6 +52,7 @@ type Props = {
 export default function PigActor({
   name,
   mood,
+  hunger,
   hasLetter,
   state,
   flip,
@@ -95,7 +97,7 @@ export default function PigActor({
     asClip(playFinisher) ??
     petOutro ??
     (petting ? asClip("pet_enjoy") : null) ??
-    clipForState({ state: petting ? "pet" : state, mood, hasLetter, flourish });
+    clipForState({ state: petting ? "pet" : state, mood, hasLetter, hunger, flourish });
 
   const { frame } = useSpriteAnimation(clip, {
     reducedMotion: reduceMotion,

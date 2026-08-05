@@ -16,116 +16,68 @@
       "downloaded_frames": 8
     },
     "idle_breathe": {
-      "job_id": "1c9eb6b2-a894-461e-9753-661a8a047283",
-      "status": "downloaded",
-      "frames": 6,
-      "ms": 167,
-      "loop": true,
-      "skip_input": false,
-      "action": "standing still and breathing, its body swelling slightly on the inhale and settling on the exhale",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Regenerated at the house 6/167 standard with the idle pose pinned as both first and last frame, so the loop closes on the canonical pig. Replaces 0abadf03, an 8-frame job whose blink frames had to be hand-deleted down to 6.",
-      "rejected": {
-        "0abadf03-2bc4-4587-8677-16e0766a7954": "blinked mid-loop and drifted off the canonical pose by the last frame"
-      },
-      "downloaded_frames": 7
-    },
-    "idle_sniff": {
-      "job_id": "0ac06d86-fcd2-429e-8188-59d27009ad86",
-      "status": "downloaded",
-      "frames": 7,
-      "ms": 167,
-      "loop": false,
-      "skip_input": false,
-      "action": "lowering its snout to the ground to sniff, nudging it along, then raising its head back up",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Regenerated on the house recipe: 6 frames, idle pose pinned as both first and last frame.",
-      "rejected": {
-        "6d3071fd-ac41-4684-9b91-e87d9667dd87": "12 frames, of which 6 held an identical squint - the action stalled in the middle; 840px of strays"
-      },
-      "downloaded_frames": 7
-    },
-    "idle_look": {
-      "job_id": "5c64f168-6e4d-4fdc-8b86-e41efeda1a14",
-      "status": "downloaded",
-      "frames": 7,
-      "ms": 167,
-      "loop": false,
-      "skip_input": false,
-      "action": "turning its head to look up and to the side, then bringing it back to face forward",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Regenerated at the house 6/167 standard. Replaces 7199aa4d, a 12-frame job that spent most of its length drifting.",
-      "rejected": {
-        "7199aa4d-ab16-40b3-94a8-3afe7743b1d2": "12 frames of slow drift; the head barely turned and the pig thinned out"
-      },
-      "downloaded_frames": 7
-    },
-    "idle_blink": {
-      "job_id": "34098c41-f888-4680-a8d2-b0ebafd499e7",
-      "status": "downloaded",
-      "frames": 7,
-      "ms": 90,
-      "loop": false,
-      "skip_input": false,
-      "action": "closing its eye all the way shut and opening it again in a single quick blink",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "6 frames at 90ms: the house frame count, but the fastest tempo in the set, because a blink that takes a second is a wince.",
-      "rejected": {
-        "a8b7fc25-f588-4eb0-a22b-6d6f9f77ea9a": "4-frame job from before the house standard; clean, but the only generated clip left off 6 frames"
-      },
-      "downloaded_frames": 7
-    },
-    "idle_scratch": {
-      "job_id": "81f8e901-780c-4e64-b20b-f6f764c15ac2",
-      "status": "downloaded",
-      "frames": 7,
-      "ms": 167,
-      "loop": false,
-      "skip_input": false,
-      "action": "lifting a hind leg up to scratch behind its ear, then setting the leg back down",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Regenerated on the house recipe: 6 frames, idle pose pinned as both first and last frame.",
-      "rejected": {
-        "cd2132d1-8a97-47d9-ac24-344c60483803": "9 frames, off the house standard; frame 2 lost most of the eye"
-      },
-      "downloaded_frames": 7
-    },
-    "idle_sad": {
-      "job_id": "99cf8f7e-38b8-4769-add2-75c9f3529d02",
-      "status": "downloaded",
-      "frames": 6,
-      "ms": 250,
-      "loop": true,
-      "skip_input": false,
-      "action": "hanging its head down low and slumping its whole body toward the ground, then slowly lifting back up",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Regenerated on the house recipe: 6 frames, idle pose pinned as both first and last frame.",
-      "rejected": {
-        "4c9e4869-e61b-456e-aba3-a87feac18ee3": "generated on a 195x183 canvas, so the pig is 30px short and grounds 15px above the grass; prompt was a mood ('head low, ears drooped') rather than a posture"
-      },
-      "downloaded_frames": 7
-    },
-    "idle_hungry": {
-      "job_id": "f5b4358e-7d25-47bd-a330-f92acb1f6927",
+      "job_id": "0abadf03-2bc4-4587-8677-16e0766a7954",
       "status": "downloaded",
       "frames": 6,
       "ms": 200,
       "loop": true,
       "skip_input": false,
-      "action": "sniffing the air with its snout raised, shifting its weight from side to side, then settling back down",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Regenerated on the house recipe: 6 frames, idle pose pinned as both first and last frame.",
-      "rejected": {
-        "962270fe-4ad9-4baa-b9cf-c491e7ab1822": "generated on a 195x183 canvas, same size defect as idle_sad; prompt was a mood ('tummy rumble, stares at you')"
-      },
-      "downloaded_frames": 7
+      "downloaded_frames": 6,
+      "note": "blink frames removed; blink is idle_blink flourish only"
+    },
+    "idle_sniff": {
+      "job_id": "6d3071fd-ac41-4684-9b91-e87d9667dd87",
+      "status": "downloaded",
+      "frames": 13,
+      "ms": 125,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 13
+    },
+    "idle_look": {
+      "job_id": "7199aa4d-ab16-40b3-94a8-3afe7743b1d2",
+      "status": "downloaded",
+      "frames": 13,
+      "ms": 125,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 13
+    },
+    "idle_blink": {
+      "job_id": "a8b7fc25-f588-4eb0-a22b-6d6f9f77ea9a",
+      "status": "downloaded",
+      "frames": 5,
+      "ms": 125,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "idle_scratch": {
+      "job_id": "cd2132d1-8a97-47d9-ac24-344c60483803",
+      "status": "downloaded",
+      "frames": 9,
+      "ms": 140,
+      "loop": false,
+      "skip_input": false,
+      "downloaded_frames": 9
+    },
+    "idle_sad": {
+      "job_id": "4c9e4869-e61b-456e-aba3-a87feac18ee3",
+      "status": "downloaded",
+      "frames": 5,
+      "ms": 200,
+      "loop": true,
+      "skip_input": false,
+      "downloaded_frames": 5
+    },
+    "idle_hungry": {
+      "job_id": "962270fe-4ad9-4baa-b9cf-c491e7ab1822",
+      "status": "downloaded",
+      "frames": 5,
+      "ms": 180,
+      "loop": true,
+      "skip_input": false,
+      "downloaded_frames": 5
     },
     "idle_letter": {
       "job_id": "736fb7cc-3929-4699-90ac-11ccf44c1459",
@@ -134,30 +86,6 @@
       "ms": 150,
       "loop": true,
       "skip_input": false,
-      "downloaded_frames": 7
-    },
-    "feed": {
-      "job_id": "1df1f2f3-344f-4391-8303-b60d9dbbefdc",
-      "status": "downloaded",
-      "frames": 6,
-      "ms": 167,
-      "loop": true,
-      "skip_input": false,
-      "chomps": [
-        1,
-        4
-      ],
-      "action": "bending its head down to the ground, opening and closing its mouth wide to gobble food, then lifting its head back up",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Idle pose pinned as BOTH first and last frame, so frame 6 comes back to the canonical pose and only frames 0-5 are kept as a 1s loop. chomps have to be read off the art after the fact: counting mouth-interior pixels per frame gives 0/464/110/328/339/340, so the mouth is widest on 1 and 4 \u2014 evenly spaced in the loop, which is where the crumbs look best.",
-      "rejected": {
-        "e9075608-52c5-4939-96cf-0f7bcbcc09ca": "same prompt and seed at 8 frames: bends deepest (12px) but the chewing barely reads",
-        "437589bb-fff8-4e53-8c6b-1487ac1388cf": "same prompt and seed at 4 frames: clearest mouth, but only bends 6px",
-        "cb2e3091-40f4-48de-a24b-34883fcc2616": "no pinned last frame: ends on a drifted pose (eye 271px vs 410px)",
-        "c06a74e2-6f39-4fc2-addc-e58023a1d131": "'crouching low so its snout touches the ground': barely moved, and softened the pig",
-        "eff0b421-58b1-4fe3-8731-e41a0a8ee238": "'bending forward and down to nibble food off the ground': strays and a wandering ground line"
-      },
       "downloaded_frames": 7
     },
     "play_chase": {
@@ -257,36 +185,70 @@
       "downloaded_frames": 7
     },
     "pet_enjoy": {
-      "job_id": "c342743e-7380-43ef-9da0-122b40c9745c",
+      "job_id": "c23daa82-cbd8-44d3-acac-82b6d9abf2a8",
       "status": "downloaded",
-      "frames": 6,
+      "frames": 4,
       "ms": 160,
       "loop": true,
-      "skip_input": false,
-      "action": "tilting its head up and to the side with its eyes squeezed shut, leaning its whole body into the touch, then straightening",
-      "seed": 55,
-      "pinned_last_frame": true,
-      "note": "Regenerated on the house recipe: 6 frames, idle pose pinned as both first and last frame.",
-      "rejected": {
-        "c23daa82-cbd8-44d3-acac-82b6d9abf2a8": "posed: a shift+lift over generated frames; 10-13% width drift and a wandering ground line"
-      },
-      "downloaded_frames": 7
+      "skip_input": true,
+      "downloaded_frames": 4
     },
     "pet_end": {
-      "job_id": "4465cfff-96da-4423-8a16-7ad9ee9dd1df",
+      "job_id": "0503c943-bb3c-4fd9-ada0-31cf3844c5a7",
       "status": "downloaded",
-      "frames": 7,
+      "frames": 5,
       "ms": 150,
       "loop": false,
       "skip_input": false,
-      "action": "shaking its whole body quickly from side to side, ears flapping, then settling square",
+      "downloaded_frames": 5
+    },
+    "feed_munch": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [
+        "eye_shut",
+        "mouth_open"
+      ],
+      "frames": 8,
+      "ms": 150,
+      "loop": true,
+      "downloaded_frames": 8,
+      "chomps": [
+        3,
+        5
+      ]
+    },
+    "feed_gobble": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [
+        "eye_shut",
+        "mouth_open"
+      ],
+      "frames": 8,
+      "ms": 150,
+      "loop": true,
+      "downloaded_frames": 8,
+      "chomps": [
+        2,
+        4,
+        6
+      ]
+    },
+    "walk_letter": {
+      "job_id": "5581f9c3-4961-4b3b-a837-0fa0dff743c6",
+      "status": "downloaded",
+      "frames": 8,
+      "ms": 120,
+      "loop": true,
+      "skip_input": false,
+      "action": "walking forward in a steady side-view walk cycle, legs stepping contact-pass-contact, body bobbing one pixel, curly tail swinging, while firmly holding the white heart-sealed envelope in its mouth the entire time so the letter never drops or changes shape",
       "seed": 55,
       "pinned_last_frame": true,
-      "note": "Regenerated on the house recipe: 6 frames, idle pose pinned as both first and last frame.",
-      "rejected": {
-        "0503c943-bb3c-4fd9-ada0-31cf3844c5a7": "posed: open-ended generation finished as a different pig (eye 497px vs 410px)"
-      },
-      "downloaded_frames": 7
+      "note": "8-frame gait with idle_letter frame-00 pinned as both first and last frame, so the walk loops on the letter-holding pose and the intro can play this instead of bare walk when a note is ready.",
+      "downloaded_frames": 9
     }
   },
   "pending": []

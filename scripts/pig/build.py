@@ -28,6 +28,7 @@ MANIFEST_PATH = ROOT / "src" / "lib" / "pig-anim.generated.ts"
 CLIP_ORDER = [
     "idle_breathe",
     "walk",
+    "walk_letter",
     "idle_blink",
     "idle_sniff",
     "idle_look",
@@ -35,7 +36,8 @@ CLIP_ORDER = [
     "idle_sad",
     "idle_hungry",
     "idle_letter",
-    "feed",
+    "feed_munch",
+    "feed_gobble",
     "play_chase",
     "play_bounce",
     "play_roll",

@@ -2,18 +2,11 @@
   "_note": "Props generated with PixelLab. palette_base64 is the forced palette; re-running create_image_pixflux with the same seed + palette reproduces these.",
   "props": {
     "strawberry": {
-      "job": "8a5e2730-2815-4922-aac2-ef7ecd3eac9e",
       "tool": "create_image_pixflux",
       "canvas": [
         48,
         48
       ],
-      "seed": 91,
-      "trimmed_to": [
-        28,
-        34
-      ],
-      "display_height": 34,
       "description": "one simple cute strawberry, side view, rounded heart shape, two small leaves on top, a few chunky pale seeds, soft flat shading",
       "style": {
         "view": "side",
@@ -32,7 +25,14 @@
         "#6faa55",
         "#48733f"
       ],
-      "note": "48px canvas trims to 28x34, which is exactly the display height — so the berry renders 1:1 with no resampling at all. The previous 80px version was finer than the pig and rendered at 0.49, which dropped pixels unevenly and turned its seeds to mush. The palette is hand-built to the pig's own rules (outline is a deep red, never near-black; three shading steps; the pig's highlight tint as a shared anchor). The old berry's outline was #390a14 — the pig's *eye* colour — which is why it read as a harder art style than everything around it."
+      "display_height": 34,
+      "job": "df85f555-9b00-4335-83ef-fa85df271919",
+      "seed": 47,
+      "trimmed_to": [
+        26,
+        34
+      ],
+      "note": "48px canvas trims to 28x34, which is exactly the display height \u2014 so the berry renders 1:1 with no resampling at all. The previous 80px version was finer than the pig and rendered at 0.49, which dropped pixels unevenly and turned its seeds to mush. The palette is hand-built to the pig's own rules (outline is a deep red, never near-black; three shading steps; the pig's highlight tint as a shared anchor). The old berry's outline was #390a14 \u2014 the pig's *eye* colour \u2014 which is why it read as a harder art style than everything around it. Regenerated 2026-08-05; seed 47 won among four candidates for a clean silhouette at exactly 34px tall."
     }
   },
   "rejected": {
@@ -43,6 +43,22 @@
     "strawberry_56px": {
       "job": "331de3dd-07ca-4c02-b37d-145d85a36868",
       "why": "Same palette, 56px canvas. Shading skewed to the two darkest reds, so the berry read almost black at size."
+    },
+    "strawberry_seed91": {
+      "job": "8a5e2730-2815-4922-aac2-ef7ecd3eac9e",
+      "why": "Replaced by a fresh generation with the same recipe; kept for provenance."
+    },
+    "strawberry_seed73": {
+      "job": "081738ae-f6f5-4655-9d8e-8e4e9c23c0e7",
+      "why": "Bite taken out of the shoulder \u2014 reads as leftover food, not a fresh berry."
+    },
+    "strawberry_seed118": {
+      "job": "34c5b72b-fb4f-4442-b24f-945c887a699d",
+      "why": "Trimmed to 38px tall; would need a fractional downscale to the 34px display slot."
+    },
+    "strawberry_seed156": {
+      "job": "2c4a205b-eefc-4508-8a64-733af671e880",
+      "why": "Trimmed to 36px; close but not 1:1. Seed 47 hit the display height exactly."
     }
   }
 }
