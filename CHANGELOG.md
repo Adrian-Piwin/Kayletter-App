@@ -56,6 +56,35 @@ Clips stay the same pig end to end, the feed is a real bend and chew rather than
 - Document the recipe, frame-count finding, prop styling, and retired patch/squash approaches in the PixelLab and pig-sprite notes.
 
 
+### Let premium authors pick their garden's flower
+
+Gardens can grow roses, tulips, daisies, lilies or lavender instead of sunflowers, and signing in now lands you on your notes.
+
+#### Changes
+- Draw five new flowers at all three growth stages, matched to the sunflower's palette and pixel size.
+- Add a flower picker to Garden settings. Everyone sees all six; a free author can plant only the sunflower, and reaching for a locked one offers the $1 upgrade.
+- Signing in or signing up from the landing page now goes straight to `/notes` instead of back to the pitch.
+
+##### **garden**
+- The field plants whichever species the letter names, falling back to the sunflower for a value the app doesn't recognise, so a garden never breaks.
+
+##### **dashboard**
+- `FlowerPicker` shows each species by its bloom sprite; locked ones stay focusable so a keyboard can reach the upgrade they carry.
+
+##### **api**
+- `PATCH /api/letter` validates `flower_type` against the catalogue and answers 402 to a non-premium author asking for a paid flower — the dimmed swatch is the shop window, not the lock.
+
+##### **data**
+- New `letters.flower_type` column, defaulting to `sunflower`, with a migration.
+
+##### **sprites**
+- All flower art moves to `public/sprites/flowers/`, the sunflower included, so there is one convention.
+- `scripts/flowers/` builds the forced palettes, cleans the generated art, and composites contact sheets at true display height.
+
+##### **docs**
+- Record in the PixelLab notes that a forced palette silently overrides `no_background`, and that a white-petalled subject therefore can't use one.
+
+
 ## [0.2.0] - 2026-08-02
 
 ### Add a parallax scrolling flower field for gardens of any size
