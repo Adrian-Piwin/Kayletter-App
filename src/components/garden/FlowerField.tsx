@@ -4,6 +4,7 @@ import { memo } from "react";
 import Sprite from "@/components/Sprite";
 import ParallaxLayer from "./ParallaxLayer";
 import { entrance, INTRO, type IntroPhase } from "@/lib/garden-intro";
+import { REVEAL } from "@/lib/letter-reveal";
 import { FLOWERS, flowerSprite, type FlowerType } from "@/lib/flowers";
 import type { FieldLayout, FieldRow } from "@/lib/garden-layout";
 import type { CameraController } from "./useCamera";
@@ -34,6 +35,20 @@ function sproutStyle(stagePct: number, intro: IntroPhase) {
   });
 }
 
+/**
+ * The flower a letter just opened is planted the moment that letter is read,
+ * because the mailbox count and the pig's envelope both depend on it. It is
+ * kept out of sight until the reveal has finished with it, so it can break
+ * ground in front of the reader instead of appearing behind the open card.
+ */
+export type Sprouting = { noteId: string; playing: boolean };
+
+function newFlowerStyle({ playing }: Sprouting) {
+  return playing
+    ? { animation: `enter-sprout ${REVEAL.sprouting.duration}ms ease-out both` }
+    : { visibility: "hidden" as const };
+}
+
 function FieldBand({
   row,
   depthIndex,
@@ -41,6 +56,7 @@ function FieldBand({
   camera,
   onOpen,
   intro,
+  sprout,
 }: {
   row: FieldRow;
   /** Position of the row from the back of the field, which orders its entrance. */
@@ -50,6 +66,7 @@ function FieldBand({
   camera: CameraController;
   onOpen: (note: Note) => void;
   intro: IntroPhase;
+  sprout: Sprouting | null;
 }) {
   return (
     <ParallaxLayer
@@ -82,7 +99,9 @@ function FieldBand({
           style={{
             left: `${placement.xPct}%`,
             bottom: `${placement.bottomPct}%`,
-            ...sproutStyle(placement.xPct * row.widthScreens, intro),
+            ...(sprout?.noteId === placement.note.id
+              ? newFlowerStyle(sprout)
+              : sproutStyle(placement.xPct * row.widthScreens, intro)),
           }}
         >
           <button

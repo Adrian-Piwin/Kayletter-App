@@ -87,6 +87,20 @@ Gardens can grow roses, tulips, daisies, lilies or lavender instead of sunflower
 - Record in the PixelLab notes that resolution *is* the style — size a canvas from the display height and the pixel size you want, not from the neighbouring sprite's file — and that a forced palette silently overrides `no_background`.
 
 
+### Redraw the pig's animations from approved key poses
+
+Six clips showed a pig that blinked and did nothing else. They are drawn from hand-approved extreme poses now, so a scratch is a leg off the ground and a sit reaches the floor.
+
+#### Changes
+- Rebuild `idle_scratch`, `idle_sniff`, `play_bounce`, `play_roll`, `trick_sit` and `trick_dance` so each depicts the action it is named for.
+- Teach the pig to play dead, replacing the spin trick.
+- Drop the sad, hungry and look idles, the spin trick, and one of the two feed clips.
+
+##### **sprites**
+- A clip is built from key poses now: an extreme pose is harvested from the early frames of an open-ended generation and approved by hand, the leg from idle to that pose is generated between two *different* approved poses, and the return leg is those frames reversed. Pinning the same idle pose at both ends locks identity but averages the middle flat, which is why three attempts at a pinned sit all produced a crouch.
+- `review.py` records the motion of a clip that was approved by eye and fails the build if a later rebuild comes back materially flatter — the one failure every existing check missed, since mass, palette and eye area are all conserved by a clip in which nothing happens.
+
+
 ## [0.2.0] - 2026-08-02
 
 ### Add a parallax scrolling flower field for gardens of any size

@@ -4,6 +4,46 @@
     189,
     199
   ],
+  "poses": {
+    "scratch_up": {
+      "job_id": "65ac13b1-1d7b-4671-aacb-dc1561c6c6cd",
+      "action": "lifting one hind leg up off the ground and reaching it forward to scratch behind its ear, head tilting toward the leg",
+      "seed": 55,
+      "frame_count": 4,
+      "harvest": [
+        "scratch_up"
+      ]
+    },
+    "sniff_down": {
+      "job_id": "d31c73c8-05d0-4a4f-ace4-6bcf6d1c0601",
+      "action": "lowering its head all the way down until its snout touches the ground, front legs splaying forward and rear staying up",
+      "seed": 55,
+      "frame_count": 4,
+      "harvest": [
+        "sniff_down"
+      ]
+    },
+    "bounce": {
+      "job_id": "cba33f32-f27f-427d-98ae-59a840eaf4e3",
+      "action": "crouching down low then springing straight up off the ground with all four legs tucked up under its body",
+      "seed": 55,
+      "frame_count": 4,
+      "harvest": [
+        "bounce_crouch",
+        "bounce_tuck"
+      ]
+    },
+    "roll": {
+      "job_id": "78e399b9-343c-45ac-92c0-dbfd8180462b",
+      "action": "tipping over sideways onto its back with all four legs sticking up in the air and waving",
+      "seed": 55,
+      "frame_count": 4,
+      "harvest": [
+        "roll_tip",
+        "roll_back"
+      ]
+    }
+  },
   "clips": {
     "walk": {
       "job_id": "47e54f3e-4800-474d-8f5e-aef84397788c",
@@ -13,7 +53,8 @@
       "loop": true,
       "skip_input": true,
       "dir": "docs/previews/aseprite/pixellab-walk",
-      "downloaded_frames": 8
+      "downloaded_frames": 8,
+      "approved_change": 0.1148
     },
     "idle_breathe": {
       "job_id": "0abadf03-2bc4-4587-8677-16e0766a7954",
@@ -23,7 +64,8 @@
       "loop": true,
       "skip_input": false,
       "downloaded_frames": 6,
-      "note": "blink frames removed; blink is idle_blink flourish only"
+      "note": "blink frames removed; blink is idle_blink flourish only",
+      "approved_change": 0.0573
     },
     "idle_sniff": {
       "job_id": "6d3071fd-ac41-4684-9b91-e87d9667dd87",
@@ -50,7 +92,8 @@
       "ms": 125,
       "loop": false,
       "skip_input": false,
-      "downloaded_frames": 5
+      "downloaded_frames": 5,
+      "approved_change": 0.1167
     },
     "idle_scratch": {
       "job_id": "cd2132d1-8a97-47d9-ac24-344c60483803",
@@ -86,7 +129,8 @@
       "ms": 150,
       "loop": true,
       "skip_input": false,
-      "downloaded_frames": 7
+      "downloaded_frames": 7,
+      "approved_change": 0.1398
     },
     "play_chase": {
       "job_id": "c61dc36f-5e83-461e-97eb-8eb611d1609d",
@@ -102,7 +146,8 @@
       "rejected": {
         "e98d3771-6fc3-4841-a51b-35038388b1f7": "posed: 4 generated frames with a lift layered on, so the gait was a bob rather than a stride"
       },
-      "downloaded_frames": 9
+      "downloaded_frames": 9,
+      "approved_change": 0.0987
     },
     "play_bounce": {
       "job_id": "a044f254-df5c-4020-9cd8-9b6c0e1f374d",
@@ -149,7 +194,8 @@
       "frames": 6,
       "ms": 110,
       "loop": false,
-      "downloaded_frames": 6
+      "downloaded_frames": 6,
+      "approved_change": 0.5345
     },
     "trick_sit": {
       "job_id": "e61ecaa8-42df-43ed-9569-54f5bab1596a",
@@ -191,7 +237,8 @@
       "ms": 160,
       "loop": true,
       "skip_input": true,
-      "downloaded_frames": 4
+      "downloaded_frames": 4,
+      "approved_change": 0.1034
     },
     "pet_end": {
       "job_id": "0503c943-bb3c-4fd9-ada0-31cf3844c5a7",
@@ -200,7 +247,8 @@
       "ms": 150,
       "loop": false,
       "skip_input": false,
-      "downloaded_frames": 5
+      "downloaded_frames": 5,
+      "approved_change": 0.1304
     },
     "feed_munch": {
       "status": "downloaded",
@@ -217,7 +265,8 @@
       "chomps": [
         3,
         5
-      ]
+      ],
+      "approved_change": 0.2628
     },
     "feed_gobble": {
       "status": "downloaded",
@@ -248,7 +297,8 @@
       "seed": 55,
       "pinned_last_frame": true,
       "note": "8-frame gait with idle_letter frame-00 pinned as both first and last frame, so the walk loops on the letter-holding pose and the intro can play this instead of bare walk when a note is ready.",
-      "downloaded_frames": 9
+      "downloaded_frames": 9,
+      "approved_change": 0.0931
     }
   },
   "pending": []

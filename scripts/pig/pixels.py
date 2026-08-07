@@ -51,6 +51,21 @@ def islands(mask: list[list[bool]]) -> list[list[tuple[int, int]]]:
     return sorted(found, key=len, reverse=True)
 
 
+def silhouette_change(a: Image.Image, b: Image.Image) -> int:
+    """Pixels opaque in exactly one of two frames — how much the shape actually moved.
+
+    Every other probe in this file measures what the pig *is*: mass, palette, where
+    it stands. All of them are conserved by a clip in which nothing happens, which is
+    how six clips shipped showing a pig that blinked and did nothing else. This is
+    the one number that measures what the pig *did*.
+
+    A symmetric difference rather than a centroid or a bounding box, because a pose
+    can fold a leg under the body without moving either.
+    """
+    am, bm = opaque_mask(a), opaque_mask(b)
+    return sum(1 for y in range(len(am)) for x in range(len(am[0])) if am[y][x] != bm[y][x])
+
+
 def drop_strays(im: Image.Image) -> tuple[Image.Image, int]:
     """Erase everything not connected to the body. Returns the frame and px removed.
 

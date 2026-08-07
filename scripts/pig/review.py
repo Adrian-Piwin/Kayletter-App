@@ -4,6 +4,8 @@
     python3 scripts/pig/review.py feed walk        # only clips matching these
     python3 scripts/pig/review.py --dir some/path  # a candidate folder, e.g. a
                                                    # fresh download in raw/
+    python3 scripts/pig/review.py --record sit     # after judging it by eye, record
+                                                   # its motion as the floor to defend
 
 Why this exists
 ---------------
@@ -15,8 +17,9 @@ sheet to find them.
 The checks compare against the **canonical idle pose**, which is the identity
 every clip has to preserve. Two families:
 
-  hard    semi-transparent pixels and detached pixel islands. Neither is ever
-          intentional, on any clip, so these fail.
+  hard    semi-transparent pixels, detached pixel islands, and a clip coming back
+          flatter than the version that was approved. None is ever intentional, on
+          any clip, so these fail.
   soft    mass, width, ground line, eye and colour drift. A crouch is *supposed*
           to change height and a chewing mouth is *supposed* to introduce a dark
           red the idle pose never needed, so these are reported with a threshold
@@ -51,7 +54,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).parent))
 from frame import DISPLAY_HEIGHT, FRAME_H, FRAME_W  # noqa: E402
-from pixels import dist2, islands, opaque_mask, palette_of  # noqa: E402
+from pixels import dist2, islands, opaque_mask, palette_of, silhouette_change  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 IDLE_POSE = ROOT / "public" / "sprites" / "pig-idle.png"
@@ -76,6 +79,31 @@ EYE_DRIFT = 0.60
 # Foreign colour worth mentioning. A drawn feature the idle pose lacks — the dark
 # red inside an open mouth — is a few hundred pixels; a restyled pig is thousands.
 FOREIGN_COLOUR = 250
+
+# How much of frame 0's silhouette a clip is allowed to *lose* against the value
+# recorded when it was approved, before the build fails. 0.75 = a quarter flatter.
+#
+# Read what this check is and is not, because the obvious stronger version does not
+# work. It is tempting to gate on absolute motion — "a clip named after an action
+# must move at least N% of its silhouette" — and that was tried and measured across
+# the whole clip set before being abandoned:
+#
+#     walk         9.7%   reads perfectly    |  trick_sit    9.6%   dead
+#     play_chase   8.3%   reads perfectly    |  idle_sniff  17.0%   dead
+#
+# A gait reads beautifully while moving very little, because the body holds still
+# and only the legs travel; a dead clip can score high on a blink plus a whole-body
+# sink. Filtering the edge jitter out (erosion, box-downsampling) and switching to
+# the largest connected region of change both reproduced the same ranking. Amount of
+# motion is simply not correctness of motion — that judgement is semantic, and no
+# cheap geometric probe substitutes for looking at the clip.
+#
+# So this gates the thing that actually went wrong instead. Commit a93b79e replaced
+# several clips with flatter earlier versions and nothing complained, because every
+# check here measures what the pig *is* and all of them were conserved. A clip that
+# has been approved by eye records its measured motion as `approved_change` in
+# jobs.json, and any later rebuild that comes back materially flatter fails.
+FLATTEN_TOLERANCE = 0.75
 
 
 def reference_palette() -> tuple[tuple[int, int, int], ...]:
@@ -155,7 +183,26 @@ def measure(im: Image.Image, index: int, palette: tuple[tuple[int, int, int], ..
     )
 
 
-def problems(stats: list[FrameStats], base: FrameStats, airborne: bool = False) -> list[str]:
+def peak_change(frames: list[Image.Image]) -> float:
+    """The clip's largest silhouette change from frame 0, as a fraction of its mass.
+
+    How much the pig moved at the most extreme point of the clip. Reported for every
+    clip; gated only against a clip's own recorded `approved_change` — see
+    FLATTEN_TOLERANCE for why an absolute floor does not work.
+    """
+    if len(frames) < 2:
+        return 0.0
+    mass = sum(sum(row) for row in opaque_mask(frames[0])) or 1
+    return max(silhouette_change(frames[0], f) for f in frames[1:]) / mass
+
+
+def problems(
+    stats: list[FrameStats],
+    base: FrameStats,
+    airborne: bool = False,
+    change: float = 0.0,
+    approved: float | None = None,
+) -> list[str]:
     """Everything wrong with the clip, measured against the canonical pose.
 
     `airborne` suppresses the ground-line check only. A clip that jumps is *meant*
@@ -187,6 +234,12 @@ def problems(stats: list[FrameStats], base: FrameStats, airborne: bool = False) 
             out.append(f"SOFT {tag}: no eye — either a blink or a different pig")
         elif base.eye_mass and abs(s.eye_mass - base.eye_mass) > base.eye_mass * EYE_DRIFT:
             out.append(f"SOFT {tag}: eye {s.eye_mass}px vs {base.eye_mass}px — face redrawn?")
+    if approved is not None and change < approved * FLATTEN_TOLERANCE:
+        out.append(
+            f"HARD clip: silhouette moves {change * 100:.1f}% of mass at its most extreme "
+            f"frame, against {approved * 100:.1f}% when this clip was approved — a rebuild "
+            "flattened it"
+        )
     return out
 
 
@@ -226,7 +279,9 @@ def load(folder: Path) -> list[Image.Image]:
     return [Image.open(p).convert("RGBA") for p in sorted(folder.glob("frame-*.png"))]
 
 
-def review(name: str, folder: Path, ms: int, airborne: bool = False) -> list[str]:
+def review(
+    name: str, folder: Path, ms: int, airborne: bool = False, approved: float | None = None
+) -> list[str]:
     frames = load(folder)
     if not frames:
         return [f"HARD {name}: no frames in {folder}"]
@@ -248,8 +303,13 @@ def review(name: str, folder: Path, ms: int, airborne: bool = False) -> list[str
         transparency=255,
     )
 
-    found = problems(stats, base, airborne)
+    change = peak_change(frames)
+    found = problems(stats, base, airborne, change, approved)
     print(f"\n{name}: {len(frames)} frames @ {ms}ms" + (" (airborne)" if airborne else ""))
+    print(
+        f"  moves {change * 100:.1f}% of its silhouette at peak"
+        + (f" (approved {approved * 100:.1f}%)" if approved is not None else "")
+    )
     print(
         "  mass "
         + " ".join(f"{s.mass / base.mass:.2f}" for s in stats)
@@ -276,7 +336,13 @@ def main() -> None:
         print(f"\npreviews → {OUT_DIR.relative_to(ROOT)}")
         return
 
-    meta = json.loads(JOBS.read_text()).get("clips", {}) if JOBS.exists() else {}
+    # Recording is a separate verb on purpose: `approved_change` is a promise that a
+    # human watched the clip and was happy, so it must never be written as a side
+    # effect of a build. A run that quietly refreshed the floor it defends would
+    # defend nothing.
+    record = "--record" in sys.argv
+    data = json.loads(JOBS.read_text()) if JOBS.exists() else {"clips": {}}
+    meta = data.get("clips", {})
     names = sorted(p.name for p in CLIPS_DIR.iterdir() if p.is_dir())
     if args:
         names = [n for n in names if any(a in n for a in args)]
@@ -292,9 +358,22 @@ def main() -> None:
     for name in names:
         info = meta.get(name, {})
         found = review(
-            name, CLIPS_DIR / name, int(info.get("ms", 150)), bool(info.get("airborne"))
+            name,
+            CLIPS_DIR / name,
+            int(info.get("ms", 150)),
+            bool(info.get("airborne")),
+            None if record else info.get("approved_change"),
         )
+        if record:
+            frames = load(CLIPS_DIR / name)
+            meta.setdefault(name, {})["approved_change"] = round(peak_change(frames), 4)
+            print(f"  recorded approved_change {meta[name]['approved_change']}")
         failures += sum(1 for f in found if f.startswith("HARD"))
+
+    if record:
+        data["clips"] = meta
+        JOBS.write_text(json.dumps(data, indent=2) + "\n")
+        print(f"\napproved motion → {JOBS.relative_to(ROOT)}")
     print(f"\npreviews → {OUT_DIR.relative_to(ROOT)}")
     print(f"{failures} hard problem(s)")
     # Non-zero so `npm run sprites` stops on a hard problem. Only hard ones gate:

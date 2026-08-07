@@ -174,6 +174,144 @@ body {
   }
 }
 
+/* --- Opening a letter ---
+   The ceremony around a freshly unlocked letter: the garden dims, the envelope
+   leaves the pig for the middle of the screen, its seal gives way, and the
+   paper unfolds into the card. Distances for the flight and the petal scatter
+   are passed in as custom properties, so one keyframe serves every screen size
+   and every petal. Only `transform` is animated — the elements are centred with
+   the `translate` property, which these must leave alone. */
+
+@keyframes reveal-dim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.62;
+  }
+}
+
+@keyframes reveal-undim {
+  from {
+    opacity: 0.62;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Lifted off the snout and carried to the centre, overshooting upwards on the
+   way so it arcs rather than slides. */
+@keyframes letter-fly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5) rotate(-10deg);
+  }
+  18% {
+    opacity: 1;
+  }
+  55% {
+    transform: translate(calc(var(--fly-x) * 0.5), calc(var(--fly-y) * 1.15)) scale(0.92)
+      rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(var(--fly-x), var(--fly-y)) scale(1) rotate(0deg);
+  }
+}
+
+/* Light behind the seal, breathing while the letter waits to be opened. */
+@keyframes seal-glow {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 0.48;
+    transform: scale(0.84);
+  }
+}
+
+@keyframes seal-flash {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes letter-burst {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+/* Thrown out and up, then pulled down — petals fall, they don't fly off. */
+@keyframes petal-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(calc(var(--petal-x) * 0.55), calc(var(--petal-y) * -0.25))
+      rotate(calc(var(--petal-spin) * 0.3)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--petal-x), var(--petal-y)) rotate(var(--petal-spin)) scale(0.85);
+  }
+}
+
+/* Paper falling open from its top fold. */
+@keyframes letter-unfold {
+  0% {
+    opacity: 0;
+    transform: perspective(900px) rotateX(-82deg) scaleY(0.6);
+  }
+  55% {
+    opacity: 1;
+    transform: perspective(900px) rotateX(9deg) scaleY(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(900px) rotateX(0deg) scaleY(1);
+  }
+}
+
+/* Folding shut and drifting down to the soil, where its flower comes up. */
+@keyframes letter-fold {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-14px) scale(0.96) rotate(-2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(34svh) scale(0.12) rotate(7deg);
+  }
+}
+
 /* --- Opening sequence ---
    The garden builds itself back to front on load: sky, then ground, then the
    field sprouting row by row, with the pig walking in last. Every step fills
