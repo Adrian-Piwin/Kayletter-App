@@ -4,12 +4,24 @@ import Link from "next/link";
 import { Show, SignInButton, SignUpButton } from "@clerk/nextjs";
 import { track } from "@/lib/analytics";
 
+/** Where an author lands once they're signed in — their notes, not the pitch. */
+const AFTER_AUTH = "/notes";
+
 export default function LandingCtas() {
   return (
     <>
       <nav className="flex items-center gap-3">
         <Show when="signed-out">
-          <SignInButton mode="modal">
+          {/*
+         * Signing in lands on the notes page rather than back here. Both URLs
+         * are set because the modal lets you swap to sign-up without closing,
+         * and the flow you finish in is the one that picks the redirect.
+         */}
+        <SignInButton
+          mode="modal"
+          forceRedirectUrl={AFTER_AUTH}
+          signUpForceRedirectUrl={AFTER_AUTH}
+        >
             <button
               type="button"
               onClick={() => track("landing_sign_in_clicked")}
@@ -37,7 +49,11 @@ export function LandingHeroCta() {
   return (
     <div className="flex gap-4 mt-2">
       <Show when="signed-out">
-        <SignUpButton mode="modal">
+        <SignUpButton
+          mode="modal"
+          forceRedirectUrl={AFTER_AUTH}
+          signInForceRedirectUrl={AFTER_AUTH}
+        >
           <button
             type="button"
             onClick={() => track("landing_cta_clicked", { cta: "write_first_note" })}
