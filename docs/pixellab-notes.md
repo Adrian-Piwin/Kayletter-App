@@ -324,6 +324,32 @@ on a character whose darkest line is a mid pink is the single biggest reason the
 berry read as a different, harder medium. The eye is a *spot* colour, not a ramp
 member; sharing it is how you get an asset that clashes.
 
+### 1a. A forced palette costs you transparency
+
+`color_image` and `no_background` do not compose: ask for both and the art comes
+back **opaque, flattened onto the palette's lightest colour**. Nothing warns
+about it — `no_background: True` is echoed back in the job — and the frames look
+right in the preview, because the backdrop is a plausible pastel.
+
+Keying it out afterwards works, with one condition, and the flower set is where
+the condition bites. The key has to be a flood from the border, never a
+whole-image colour match: that lightest tint is a legitimate highlight *inside*
+the art, and on a white flower it is most of the petal. Anything an outline
+encloses is unreachable from the edge and survives.
+
+Which is exactly why **a white or cream subject cannot use a forced palette at
+all**. The daisy's petals were the backdrop colour and connected to the border
+through the gaps between them, so the key took the petals and left a yellow disc
+floating on a stem. Both white-flowered species are generated palette-free, with
+their greens named in the prompt instead; the backdrop then comes back a pale
+green the subject never uses, and keys cleanly.
+
+There is a second, cheaper lesson in the same set: **a near-white subject is a
+bad idea regardless of how it is generated.** The white lily survived the key on
+its second attempt and still had to be thrown away — at 92px on light-green
+grass its petals had no edges left and the whole flower read as a smudge. It
+ships as a pink stargazer.
+
 ### 2. Pixel density — or better, don't resample at all
 
 Apparent pixel size on screen is `display_height / source_height`:

@@ -49,3 +49,5 @@ Repo secrets: `DROPLET_HOST`, `DROPLET_SSH_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_
 
 - `scripts/migrate-firebase.mjs [--dry-run]` — one-time Firestore/Auth → Postgres migration
 - `scripts/process-sprites.py` — background removal + crop for generated sprite art
+- `scripts/flowers/palettes.py` — forced palettes for the flower sprites
+- `scripts/flowers/finish.py` — clean up generated flowers and write the contact sheets
