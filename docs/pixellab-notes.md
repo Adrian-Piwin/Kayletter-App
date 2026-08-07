@@ -360,6 +360,43 @@ sides must be multiples of 4, and the canvas **must be square if either side is
 under 32**, which is why the bud is 32×44 rather than the 24×36 its proportions
 wanted.
 
+### 0a. Fix the shared parts in code, not in the prompt
+
+Right resolution is not the same as right palette, and the flower set needed
+both. Generated small, the five new flowers read as pixel art immediately — and
+still looked like a different game, because their greens were nothing like the
+sunflower's:
+
+| | saturation | luminance |
+|---|---|---|
+| Sunflower leaves | 0.39–0.45 | 0.38–0.47 |
+| Generated leaves | 0.77–1.00 | 0.13–0.26 |
+
+Asking the prompt for "soft sage leaves" is not a fix — the style knobs nudge,
+and you would be re-rolling fifteen sprites hoping for a colour. The reliable
+move is to **decide which parts of an asset are shared, and repaint those in
+code** (`scripts/flowers/restyle.py`). A flower's petals are meant to differ;
+its stem, leaves and soil are not, and letting each generation invent its own
+green is exactly what makes a set look like six art styles.
+
+Three things make the repaint safe:
+
+- **Map by luminance rank, not nearest colour.** Nearest-RGB snapping is the trap
+  documented further down this file — it collapses whatever happens to sit close
+  in RGB. Ranking preserves the order the generator drew: darkest source green
+  becomes darkest ramp green, and the steps keep their spacing.
+- **Hue alone does not identify a leaf.** A daisy's grey petal shadows carry a
+  nominal hue in the greens, so the first version painted grass through its
+  petals. A leaf is never near-grey and never near-white; both floors are needed.
+  On a *sprout* the opposite holds — there are no petals to protect, so hue alone
+  is right there, and applying the saturation floor anyway speckled dirt across
+  every seedling's leaves.
+- **Reassign black outlines by what they surround.** Pixen reaches for pure black
+  freely and the sunflower never uses it. One black serves leaf, dirt and petal
+  outlines in the same sprite, so neighbours have to decide which dark colour
+  each pixel becomes — and those neighbours must be read from an untouched copy,
+  or pixels the pass already repainted start voting on the next ones.
+
 ### 1a. A forced palette costs you transparency
 
 `color_image` and `no_background` do not compose: ask for both and the art comes

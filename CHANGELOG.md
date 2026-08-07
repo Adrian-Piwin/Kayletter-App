@@ -79,8 +79,9 @@ Gardens can grow roses, tulips, daisies, lilies or lavender instead of sunflower
 
 ##### **sprites**
 - The new flowers are drawn at genuinely low resolution (36x48 blooms) and shipped at native size, so the browser upscales them into chunky pixels. Generated at the sunflower's own 174x244 first, they came back as smooth illustrations that read as a different medium beside it — a big canvas buys detail, not big pixels.
+- Stems, leaves and soil are repainted in the sunflower's own colour ramps, because every species grows the same greenery out of the same ground — generated foliage came back roughly twice as saturated and half as bright, which made six gardens look like six art styles. Petals are left alone; they are meant to differ.
 - All flower art moves to `public/sprites/flowers/`, the sunflower included, so there is one convention.
-- `scripts/flowers/` cleans the generated art and composites contact sheets at true display height, which is the only honest way to judge a sprite that ships at 34px.
+- `scripts/flowers/` cleans and repaints the generated art and composites contact sheets at true display height, which is the only honest way to judge a sprite that ships at 34px.
 
 ##### **docs**
 - Record in the PixelLab notes that resolution *is* the style — size a canvas from the display height and the pixel size you want, not from the neighbouring sprite's file — and that a forced palette silently overrides `no_background`.
