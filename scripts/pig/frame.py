@@ -17,12 +17,14 @@ SIZE = FRAME_W
 GROUND = FRAME_H - 2
 CENTER = FRAME_W // 2
 
-# Display: ~0.55× would match old CSS heights, but we keep source pixels and
-# size the box with integer CSS pixels close to the current look.
-DISPLAY_HEIGHT = 110
+# Must match `src/components/garden/pig-display.ts`, which is what the app
+# actually renders at. The review previews are only worth anything if they are
+# the size a recipient sees — these drifted to 110/102 at one point and every
+# clip was being judged 11% small.
+DISPLAY_HEIGHT = 124
 """CSS height of the pig box on desktop."""
 
-DISPLAY_HEIGHT_MOBILE = 102
+DISPLAY_HEIGHT_MOBILE = 114
 """CSS height of the pig box on mobile."""
 
 ATLAS_COLS = 12

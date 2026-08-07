@@ -68,6 +68,7 @@ export default function GardenScene({
   initialNotes,
   initialPet,
   serverNow,
+  pinnedSky,
 }: {
   token: string;
   title: string;
@@ -78,6 +79,12 @@ export default function GardenScene({
   initialPet: PetStats;
   /** SSR timestamp so the first client render matches the server markup. */
   serverNow: number;
+  /**
+   * Holds the sky at one time of day instead of following the clock. Only the
+   * dev sandbox passes it — a recipient's sky is whatever hour they open the
+   * letter at, and there is no way to reach this from the product.
+   */
+  pinnedSky?: SkyPhase;
 }) {
   const [notes, setNotes] = useState(initialNotes);
   const [pet, setPet] = useState(initialPet);
@@ -93,7 +100,7 @@ export default function GardenScene({
   const [openNote, setOpenNote] = useState<Note | null>(null);
   const [mailboxOpen, setMailboxOpen] = useState(false);
   const [now, setNow] = useState(serverNow);
-  const [phase, setPhase] = useState<SkyPhase>("day");
+  const [phase, setPhase] = useState<SkyPhase>(pinnedSky ?? "day");
   const [showFood, setShowFood] = useState(false);
   const [introPhase, setIntroPhase] = useState<IntroPhase>("waiting");
   const heartId = useRef(0);
@@ -271,6 +278,7 @@ export default function GardenScene({
   useEffect(() => {
     const tick = () => {
       setNow(Date.now());
+      if (pinnedSky) return;
       const hour = new Date().getHours();
       setPhase(hour >= 20 || hour < 6 ? "night" : hour >= 17 ? "sunset" : "day");
     };
@@ -282,7 +290,7 @@ export default function GardenScene({
       cancelAnimationFrame(first);
       clearInterval(t);
     };
-  }, []);
+  }, [pinnedSky]);
 
   /* --- pig wandering when idle --- */
   useEffect(() => {

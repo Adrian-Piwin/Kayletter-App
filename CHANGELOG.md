@@ -102,6 +102,7 @@ Six clips showed a pig that blinked and did nothing else. They are drawn from ha
 - `harvest.py` cuts a key pose out of an open-ended generation. Open-ended drift is cumulative, so it lives in the last frame; early frames are usable, and the rule is to keep the deepest frame that still measures as the same pig.
 - Open-ended runs want *more* frames, not fewer — the opposite of the pinned six-frame standard. At 4 frames the pig would not reach the ground or leave it; at 12 it does.
 - `trick_sit` adopts `pig-sit.png`, the pre-rework hand-drawn art. Five generations failed to draw a sit, and the pre-rework PNGs turn out to be a pose library worth checking before prompting for one.
+- A dev-only sandbox at `/dev/pig` (every clip, play/pause, frame stepping, speed) and `/dev/garden` (flower species, time of day, note count, growth stage). Both live under a `/dev` layout that calls `notFound()` in production, so a new tool is dev-only by default rather than by remembering to gate it.
 - `review.py` records the motion of a clip approved by eye and fails the build if a rebuild comes back more than a quarter flatter. An absolute motion floor was measured and abandoned: `walk` reads perfectly at 9.7% while a dead `trick_sit` scored 9.6%, so amount of motion is not correctness of motion.
 
 ### Make opening a letter a ceremony, with sound
