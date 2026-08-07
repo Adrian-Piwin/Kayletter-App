@@ -34,6 +34,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pig.pixels import harden_alpha, islands, opaque_mask  # noqa: E402
+from flowers.restyle import restyle  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "assets/pixellab/flowers"
@@ -176,12 +177,14 @@ def strip_ground_line(im: Image.Image) -> tuple[Image.Image, int]:
     return im, bottom - top + 1
 
 
-def finish(src: Path, dest: Path) -> dict:
+def finish(src: Path, dest: Path, stage: str | None = None) -> dict:
     im = Image.open(src).convert("RGBA")
     im, cleared = key_background(im)
     im, softened = harden_alpha(im)
     im, strays = drop_specks(im)
     im, peeled = strip_ground_line(im)
+    # Last, so it repaints only pixels that survive to ship.
+    im, repainted = restyle(im, stage)
     box = im.getbbox()
     im = im.crop(box)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -191,6 +194,7 @@ def finish(src: Path, dest: Path) -> dict:
         "softened": softened,
         "strays": strays,
         "peeled": peeled,
+        "repainted": repainted,
         "size": list(im.size),
     }
 
@@ -237,11 +241,12 @@ def main() -> None:
         for name, stages in data["flowers"].items():
             for stage, job in stages.items():
                 raw = download(job["job"], RAW / f"{name}-{stage}.png")
-                report = finish(raw, SPRITES / f"{name}-{stage}.png")
+                report = finish(raw, SPRITES / f"{name}-{stage}.png", stage)
                 print(f"{name}-{stage}: {report['size'][0]}x{report['size'][1]}px "
                       f"({report['cleared']} backdrop px keyed, "
                       f"{report['softened']} soft px hardened, {report['strays']} strays dropped, "
-                      f"{report['peeled']} ground rows peeled)")
+                      f"{report['peeled']} ground rows peeled, "
+                      f"{report['repainted']} px repainted to the sunflower's greens)")
 
     for stage in STAGES:
         out = PREVIEWS / f"flowers-{stage}.png"

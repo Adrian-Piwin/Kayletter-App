@@ -87,13 +87,13 @@
     },
     "daisy": {
       "bloom": {
-        "job": "7c109349-39a5-4a92-8bb7-6c079a9db2a7",
-        "seed": 11,
+        "job": "4cb02c4f-391d-481a-adee-ed78c5bfd58a",
+        "seed": 113,
         "canvas": [
           36,
           48
         ],
-        "description": "one white daisy flower with a big round yellow centre on a green stem with two leaves, side view, simple chunky pixel art, whole plant fills the canvas from bottom to top"
+        "description": "one white daisy flower with a big round yellow centre, symmetrical head facing the viewer, on one straight vertical green stem with two leaves, side view, simple chunky pixel art, whole plant fills the canvas from bottom to top"
       },
       "bud": {
         "job": "40ee4209-c42f-4898-afc4-d8e328e272f1",
@@ -248,6 +248,17 @@
     "daisy-bud@seed67": {
       "job": "71c3d3ee-fcaa-46d8-9b48-3fd6975dc927",
       "why": "A mottled blue-green ball on a stalk \u2014 a thistle, not a daisy about to open."
+    },
+    "daisy-bloom@slanted": {
+      "job": "7c109349-39a5-4a92-8bb7-6c079a9db2a7",
+      "why": "Head and stem both leaned right. Every other species stands straight, so the daisy read as the one flower being blown over."
+    },
+    "daisy-bloom@seed101,127": {
+      "jobs": [
+        "4d8faa3c-279b-4c6a-be7d-46458ecaa35d",
+        "9318a05e-4bd1-4470-bf28-f876fa5c5bda"
+      ],
+      "why": "Both upright, both drawn with a heavy pure-black outline. The sunflower outlines in a dark version of its own colours and never in black, so they read as a harder art style \u2014 the same mistake the strawberry made (see pixellab-notes)."
     }
   },
   "_sprout_note": "Seedlings are where the prompt matters most and the species matters least: at 34px a rose seedling and a lily seedling are the same two leaves. Asking for 'exactly two seed leaves in a V shape' is what reliably produces a sprout rather than a leggy young plant, and naming brown soil explicitly stops the mound coming back near-black blue."
