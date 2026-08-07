@@ -43,6 +43,13 @@ export type RevealPhase =
   | "closing"
   | "sprouting";
 
+/**
+ * How far above the pig's feet the envelope starts its flight, as a share of
+ * the scene — near enough to the snout that it reads as being let go of rather
+ * than rising off the ground.
+ */
+export const ENVELOPE_LIFT_PCT = 7;
+
 /** Enough to fill the burst without turning the middle of the screen to soup. */
 const PETAL_COUNT = 18;
 

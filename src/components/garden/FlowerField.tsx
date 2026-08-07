@@ -155,12 +155,14 @@ function FlowerField({
   camera,
   onOpen,
   intro,
+  sprout = null,
 }: {
   layout: FieldLayout;
   flower: FlowerType;
   camera: CameraController;
   onOpen: (note: Note) => void;
   intro: IntroPhase;
+  sprout?: Sprouting | null;
 }) {
   return layout.rows.map((row, i) => (
     <FieldBand
@@ -171,6 +173,7 @@ function FlowerField({
       camera={camera}
       onOpen={onOpen}
       intro={intro}
+      sprout={sprout}
     />
   ));
 }

@@ -6,13 +6,17 @@ import Backdrop, { SKY_GRADIENT, type SkyPhase } from "./Backdrop";
 import FieldNav from "./FieldNav";
 import FlowerField from "./FlowerField";
 import LetterModal from "./LetterModal";
+import LetterReveal from "./LetterReveal";
 import Mailbox from "./Mailbox";
 import PigActor, { pickTrick, trickToState } from "./PigActor";
+import SoundToggle from "./SoundToggle";
 import { snoutOffset } from "./pig-display";
 import { useCamera, type ScrollDirection } from "./useCamera";
 import { analyticsFetch, track } from "@/lib/analytics";
-import type { FlowerType } from "@/lib/flowers";
+import { petalColours, type FlowerType } from "@/lib/flowers";
 import { entrance, INTRO, INTRO_MS, type IntroPhase } from "@/lib/garden-intro";
+import { ENVELOPE_LIFT_PCT } from "@/lib/letter-reveal";
+import { useLetterReveal } from "@/lib/useLetterReveal";
 import { FIELD_REFRESH_MS, nominalViewport, planField } from "@/lib/garden-layout";
 import { useElementSize, useIsMobile, usePrefersReducedMotion } from "@/lib/hooks";
 import { getUnlockState } from "@/lib/unlock";
@@ -160,12 +164,75 @@ export default function GardenScene({
     transitionDuration: `${pigMove.ms}ms`,
   };
 
+  const burstHearts = useCallback((count: number, kind: Heart["kind"] = "heart") => {
+    const burst: Heart[] = Array.from({ length: count }, () => ({
+      id: heartId.current++,
+      x: clamp(pigXRef.current - 8 + Math.random() * 16, 2, 96),
+      y: 30 + Math.random() * 20,
+      kind,
+    }));
+    setHearts((h) => [...h, ...burst]);
+    setTimeout(() => setHearts((h) => h.filter((x) => !burst.includes(x))), 1600);
+  }, []);
+
+  /**
+   * Scatter crumbs from the snout. Called on the chew frames of the feed clip, so
+   * the bits come off the berry on the beat the jaw actually shuts.
+   */
+  const spitCrumbs = useCallback((count: number) => {
+    const burst: Crumb[] = Array.from({ length: count }, () => ({
+      id: heartId.current++,
+      x: -5 + Math.random() * 10,
+      bottom: 12 + Math.random() * 10,
+      size: Math.random() < 0.4 ? 4 : 3,
+      // Thrown forward, away from the pig, and always ending below the start so
+      // gravity reads even over a short flight.
+      dx: -14 - Math.random() * 12,
+      rise: -10 - Math.random() * 8,
+      fall: 6 + Math.random() * 6,
+      colour: CRUMB_COLOURS[Math.floor(Math.random() * CRUMB_COLOURS.length)],
+    }));
+    setCrumbs((c) => [...c, ...burst]);
+    setTimeout(() => setCrumbs((c) => c.filter((x) => !burst.includes(x))), CRUMB_MS);
+  }, []);
+
+  /* --- opening today's letter --- */
+
+  const reveal = useLetterReveal({
+    reduceMotion,
+    petalColours: petalColours(flower),
+    onOpen: (note) => {
+      setNotes((ns) => ns.map((n) => (n.id === note.id ? note : n)));
+      setOpenNote(note);
+      track("letter_opened", {
+        delivery_index: readNotes.length + 1,
+        note_count: notes.length,
+        source: "unlock",
+      });
+      setPet((p) => ({
+        ...p,
+        tricks_unlocked: Math.max(p.tricks_unlocked, Math.floor((readNotes.length + 1) / 2)),
+      }));
+    },
+    // Nothing to undo: the letter was never marked read, so the pig simply
+    // still has it and the button can be pressed again.
+    onFail: () => {},
+    onLanded: () => setOpenNote(null),
+  });
+
   const { camera, surfaceRef } = useCamera({
     screens: layout.screens,
     viewportWidth: scene.width,
-    enabled: scrollable && !openNote && !mailboxOpen,
+    // A ceremony in progress owns the screen; the overlay swallows pointers on
+    // its own, but arrow keys are bound to the window and would still pan.
+    enabled: scrollable && !openNote && !mailboxOpen && reveal.phase === "idle",
     onDirection: handleScroll,
   });
+
+  /* Walk out to the new flower as the letter drifts down to become it. */
+  useEffect(() => {
+    if (reveal.phase === "sprouting") camera.panToEnd();
+  }, [reveal.phase, camera]);
 
   useEffect(() => {
     track("garden_viewed", {
@@ -250,38 +317,6 @@ export default function GardenScene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlock.canUnlock]);
 
-  const burstHearts = useCallback((count: number, kind: Heart["kind"] = "heart") => {
-    const burst: Heart[] = Array.from({ length: count }, () => ({
-      id: heartId.current++,
-      x: clamp(pigXRef.current - 8 + Math.random() * 16, 2, 96),
-      y: 30 + Math.random() * 20,
-      kind,
-    }));
-    setHearts((h) => [...h, ...burst]);
-    setTimeout(() => setHearts((h) => h.filter((x) => !burst.includes(x))), 1600);
-  }, []);
-
-  /**
-   * Scatter crumbs from the snout. Called on the chew frames of the feed clip, so
-   * the bits come off the berry on the beat the jaw actually shuts.
-   */
-  const spitCrumbs = useCallback((count: number) => {
-    const burst: Crumb[] = Array.from({ length: count }, () => ({
-      id: heartId.current++,
-      x: -5 + Math.random() * 10,
-      bottom: 12 + Math.random() * 10,
-      size: Math.random() < 0.4 ? 4 : 3,
-      // Thrown forward, away from the pig, and always ending below the start so
-      // gravity reads even over a short flight.
-      dx: -14 - Math.random() * 12,
-      rise: -10 - Math.random() * 8,
-      fall: 6 + Math.random() * 6,
-      colour: CRUMB_COLOURS[Math.floor(Math.random() * CRUMB_COLOURS.length)],
-    }));
-    setCrumbs((c) => [...c, ...burst]);
-    setTimeout(() => setCrumbs((c) => c.filter((x) => !burst.includes(x))), CRUMB_MS);
-  }, []);
-
   /* --- actions --- */
 
   async function petAction(action: "feed" | "play" | "trick" | "pet") {
@@ -308,9 +343,9 @@ export default function GardenScene({
       setShowFood(true);
       setPigState("eat");
       const hold = actionHoldMs("eat");
-      // Ask for the clip the actor will pick for this hunger, so the crumbs land
-      // on that clip's chews rather than an assumed rhythm.
-      const eating = clipForState({ state: "eat", mood, hasLetter: false, hunger: pet.hunger });
+      // Ask for the clip the actor will pick, so the crumbs land on that clip's
+      // own chews rather than an assumed rhythm.
+      const eating = clipForState({ state: "eat", mood, hasLetter: false });
       for (const at of chompTimes(eating, hold)) {
         endAction(at, () => spitCrumbs(3));
       }
@@ -370,36 +405,20 @@ export default function GardenScene({
     setPet((p) => ({ ...p, ...saved }));
   }
 
-  /** Set when a letter is opened, so the camera can walk out to its new flower. */
-  const showNewFlower = useRef(false);
-
-  async function openTodaysLetter() {
+  /**
+   * Hands the request to the ceremony rather than awaiting it: every beat is
+   * scheduled from this click, and the letter is raced against the opening of
+   * the envelope. `useLetterReveal` owns what happens with either outcome.
+   */
+  function openTodaysLetter() {
     if (!unlock.canUnlock || busy) return;
-    const res = await analyticsFetch(`/api/l/${token}/unlock`, { method: "POST" });
-    if (!res.ok) return;
-    const { note } = await res.json();
-    sounds.unlock();
-    burstHearts(6);
-    showNewFlower.current = true;
-    setNotes((ns) => ns.map((n) => (n.id === note.id ? note : n)));
-    setOpenNote(note);
-    track("letter_opened", {
-      delivery_index: readNotes.length + 1,
-      note_count: notes.length,
-      source: "unlock",
-    });
-    setPet((p) => ({
-      ...p,
-      tricks_unlocked: Math.max(p.tricks_unlocked, Math.floor((readNotes.length + 1) / 2)),
-    }));
+    void reveal.begin(
+      analyticsFetch(`/api/l/${token}/unlock`, { method: "POST" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((body) => body?.note ?? null)
+        .catch(() => null)
+    );
   }
-
-  // Runs after the new flower has been planted and the world resized.
-  useEffect(() => {
-    if (!showNewFlower.current) return;
-    showNewFlower.current = false;
-    camera.panToEnd();
-  }, [camera, readNotes.length]);
 
   async function toggleFavorite(note: Note) {
     sounds.pop();
@@ -468,6 +487,7 @@ export default function GardenScene({
           camera={camera}
           onOpen={openFlower}
           intro={intro}
+          sprout={reveal.sprout}
         />
 
         {/*
@@ -486,8 +506,8 @@ export default function GardenScene({
           <PigActor
             name={petName}
             mood={mood}
-            hunger={pet.hunger}
-            hasLetter={unlock.canUnlock}
+            /* Let go of it the moment the ceremony lifts it away. */
+            hasLetter={unlock.canUnlock && reveal.phase === "idle"}
             state={actorState}
             flip={pigFlip}
             isMobile={isMobile}
@@ -505,7 +525,7 @@ export default function GardenScene({
               if (clip === "pet_end") setPigState("idle");
             }}
           />
-          {unlock.canUnlock && (
+          {unlock.canUnlock && reveal.phase === "idle" && (
             <div className="absolute -top-9 left-1/2 -translate-x-1/2 font-pixel text-xs bg-sunflower border-2 border-ink px-2 py-1 whitespace-nowrap [animation:bob_1.4s_ease-in-out_infinite]">
               a letter for you!
             </div>
@@ -614,17 +634,26 @@ export default function GardenScene({
           </span>
         </h1>
 
-        {/* mailbox */}
-        <button
-          onClick={() => {
-            track("mailbox_opened", { letters_count: readNotes.length });
-            setMailboxOpen(true);
-          }}
-          className="pointer-events-auto justify-self-end min-h-11 bg-cream/90 border-2 border-ink px-3 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink hover:bg-cream cursor-pointer touch-manipulation"
-          style={entrance(intro, "enter-drop", INTRO.hud, { extraDelay: INTRO.hud.stagger * 2 })}
-        >
-          ✉ <span className="hidden sm:inline">letters </span>({readNotes.length})
-        </button>
+        {/* sound and mailbox share the last column */}
+        <div className="justify-self-end flex items-start gap-2">
+          <SoundToggle
+            style={entrance(intro, "enter-drop", INTRO.hud, {
+              extraDelay: INTRO.hud.stagger * 2,
+            })}
+          />
+          <button
+            onClick={() => {
+              track("mailbox_opened", { letters_count: readNotes.length });
+              setMailboxOpen(true);
+            }}
+            className="pointer-events-auto min-h-11 bg-cream/90 border-2 border-ink px-3 shadow-[3px_3px_0_0_var(--ink)] font-pixel text-xs sm:text-sm text-ink hover:bg-cream cursor-pointer touch-manipulation"
+            style={entrance(intro, "enter-drop", INTRO.hud, {
+              extraDelay: INTRO.hud.stagger * 3,
+            })}
+          >
+            ✉ <span className="hidden sm:inline">letters </span>({readNotes.length})
+          </button>
+        </div>
       </div>
 
       {/* status chip: countdown / all delivered / no notes — clears the action bar on short screens */}
@@ -664,8 +693,25 @@ export default function GardenScene({
         </button>
       </div>
 
+      <LetterReveal
+        phase={reveal.phase}
+        petals={reveal.petals}
+        originX={pigMove.x}
+        originBottom={layout.pig.bottomPct + ENVELOPE_LIFT_PCT}
+        isMobile={isMobile}
+        onSkip={reveal.skip}
+      />
+
       {openNote && (
-        <LetterModal note={openNote} onClose={() => setOpenNote(null)} onToggleFavorite={toggleFavorite} />
+        <LetterModal
+          note={openNote}
+          /* A re-read closes on the spot; a fresh letter folds itself away and
+             plants its flower on the way out. */
+          onClose={reveal.ceremonial ? reveal.dismiss : () => setOpenNote(null)}
+          onToggleFavorite={toggleFavorite}
+          ceremonial={reveal.ceremonial}
+          closing={reveal.phase === "closing"}
+        />
       )}
       {mailboxOpen && (
         <Mailbox

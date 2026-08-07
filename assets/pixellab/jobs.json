@@ -76,15 +76,6 @@
       "skip_input": false,
       "downloaded_frames": 13
     },
-    "idle_look": {
-      "job_id": "7199aa4d-ab16-40b3-94a8-3afe7743b1d2",
-      "status": "downloaded",
-      "frames": 13,
-      "ms": 125,
-      "loop": false,
-      "skip_input": false,
-      "downloaded_frames": 13
-    },
     "idle_blink": {
       "job_id": "a8b7fc25-f588-4eb0-a22b-6d6f9f77ea9a",
       "status": "downloaded",
@@ -104,24 +95,6 @@
       "skip_input": false,
       "downloaded_frames": 9
     },
-    "idle_sad": {
-      "job_id": "4c9e4869-e61b-456e-aba3-a87feac18ee3",
-      "status": "downloaded",
-      "frames": 5,
-      "ms": 200,
-      "loop": true,
-      "skip_input": false,
-      "downloaded_frames": 5
-    },
-    "idle_hungry": {
-      "job_id": "962270fe-4ad9-4baa-b9cf-c491e7ab1822",
-      "status": "downloaded",
-      "frames": 5,
-      "ms": 180,
-      "loop": true,
-      "skip_input": false,
-      "downloaded_frames": 5
-    },
     "idle_letter": {
       "job_id": "736fb7cc-3929-4699-90ac-11ccf44c1459",
       "status": "downloaded",
@@ -131,6 +104,24 @@
       "skip_input": false,
       "downloaded_frames": 7,
       "approved_change": 0.1398
+    },
+    "feed": {
+      "status": "downloaded",
+      "source": "composed",
+      "script": "scripts/pig/derive.py",
+      "patches": [
+        "eye_shut",
+        "mouth_open"
+      ],
+      "frames": 8,
+      "ms": 150,
+      "loop": true,
+      "downloaded_frames": 8,
+      "chomps": [
+        3,
+        5
+      ],
+      "approved_change": 0.2628
     },
     "play_chase": {
       "job_id": "c61dc36f-5e83-461e-97eb-8eb611d1609d",
@@ -176,16 +167,6 @@
       "loop": false,
       "downloaded_frames": 6
     },
-    "trick_spin": {
-      "status": "downloaded",
-      "source": "composed",
-      "script": "scripts/pig/derive.py",
-      "patches": [],
-      "frames": 7,
-      "ms": 90,
-      "loop": false,
-      "downloaded_frames": 7
-    },
     "trick_backflip": {
       "status": "downloaded",
       "source": "composed",
@@ -194,8 +175,7 @@
       "frames": 6,
       "ms": 110,
       "loop": false,
-      "downloaded_frames": 6,
-      "approved_change": 0.5345
+      "downloaded_frames": 6
     },
     "trick_sit": {
       "job_id": "e61ecaa8-42df-43ed-9569-54f5bab1596a",
@@ -249,42 +229,6 @@
       "skip_input": false,
       "downloaded_frames": 5,
       "approved_change": 0.1304
-    },
-    "feed_munch": {
-      "status": "downloaded",
-      "source": "composed",
-      "script": "scripts/pig/derive.py",
-      "patches": [
-        "eye_shut",
-        "mouth_open"
-      ],
-      "frames": 8,
-      "ms": 150,
-      "loop": true,
-      "downloaded_frames": 8,
-      "chomps": [
-        3,
-        5
-      ],
-      "approved_change": 0.2628
-    },
-    "feed_gobble": {
-      "status": "downloaded",
-      "source": "composed",
-      "script": "scripts/pig/derive.py",
-      "patches": [
-        "eye_shut",
-        "mouth_open"
-      ],
-      "frames": 8,
-      "ms": 150,
-      "loop": true,
-      "downloaded_frames": 8,
-      "chomps": [
-        2,
-        4,
-        6
-      ]
     },
     "walk_letter": {
       "job_id": "5581f9c3-4961-4b3b-a837-0fa0dff743c6",

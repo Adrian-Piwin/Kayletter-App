@@ -59,13 +59,14 @@ export function useLetterReveal({
   const wait = useCallback(
     (ms: number) =>
       new Promise<void>((resolve) => {
-        let timer: ReturnType<typeof setTimeout>;
+        // `finish` only ever runs from the timer or from a skip, both of which
+        // are after this line, so reading `timer` from inside it is safe.
         const finish = () => {
           clearTimeout(timer);
           beat.current = beat.current.filter((f) => f !== finish);
           resolve();
         };
-        timer = setTimeout(finish, ms);
+        const timer = setTimeout(finish, ms);
         beat.current.push(finish);
       }),
     []

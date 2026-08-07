@@ -54,7 +54,6 @@ Rules that survive from the composed era
 from __future__ import annotations
 
 import json
-import math
 import shutil
 import sys
 from dataclasses import dataclass, field
@@ -70,6 +69,7 @@ from pixels import drop_strays, harden_alpha, reground  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 IDLE_POSE = ROOT / "public" / "sprites" / "pig-idle.png"
 FACES_DIR = ROOT / "assets" / "pixellab" / "faces"
+POSES_DIR = ROOT / "assets" / "pixellab" / "poses"
 RAW_DIR = ROOT / "assets" / "pixellab" / "raw"
 CLIPS_DIR = ROOT / "assets" / "pixellab" / "clips"
 JOBS = ROOT / "assets" / "pixellab" / "jobs.json"
@@ -106,28 +106,50 @@ class Clip:
     frames: list[Frame]
 
 
-def _spin_frames() -> list[Frame]:
-    """A turn read as a horizontal squeeze: 90° is edge-on, and beyond that we
-    are looking at the pig's other side so the pose is mirrored. Never squeezes
-    below a third of its width — past that it stops being a pig."""
-    frames: list[Frame] = []
-    for step in range(7):  # 0…360 inclusive, so the clip ends facing forward
-        radians = math.radians(step * 60)
-        cos = math.cos(radians)
-        frames.append(
-            Frame(
-                pose=Pose(
-                    scale_x=max(0.32, abs(cos)),
-                    lift=round(3 * abs(math.sin(radians))),
-                    mirror=cos < 0,
-                ),
-            )
-        )
-    return frames
+@dataclass(frozen=True)
+class Shift:
+    """A whole-pixel translation of a full frame. The only motion applied to a pose.
+
+    Deliberately *not* a `Pose`. The retired POSED path failed for two reasons this
+    file already records, and translation has neither:
+
+      - "A resample distorts, it does not bend." Translation does not resample, so
+        mass is conserved *exactly* rather than within a few percent. The posed
+        clips lost 17-26% of the pig and nobody caught it by eye for months.
+      - Re-centring the bounding box throws away the lean the frame was drawn with.
+        Translation moves the whole canvas and never reads a bounding box at all.
+
+    So there is no scale and no rotation here, on purpose. Anything that has to bend
+    gets drawn as a pose; this only moves what was drawn.
+    """
+
+    dx: int = 0
+    dy: int = 0
+    """Negative dy is up. Negative dx is toward the pig's face — it faces left."""
+
+
+@dataclass
+class PoseClip:
+    """A clip assembled from hand-approved key poses.
+
+    The third way to make a clip, and the one that fixes what GENERATED could not.
+    A generated clip pins the canonical pose at both ends, which locks identity but
+    averages the middle flat — the model interpolates between two *identical*
+    endpoints, so the pose meant to carry the action is the one that gets weakened.
+    That is why three attempts at a pinned "sit" all came back a crouch.
+
+    Here the extreme is a pose approved by hand (see harvest.py), so the amplitude
+    is real, and the clip still starts and ends on canonical art.
+    """
+
+    ms: int
+    loop: bool
+    frames: list[tuple[str, Shift]]
+    """(pose name, translation). "idle" resolves to the canonical pose."""
+    airborne: bool = False
 
 
 COMPOSED: dict[str, Clip] = {
-    "trick_spin": Clip(ms=90, loop=False, frames=_spin_frames()),
     # A jump only has headroom if the airborne frames shrink a little — which
     # happens to read as height anyway.
     "trick_backflip": Clip(
@@ -140,18 +162,6 @@ COMPOSED: dict[str, Clip] = {
             Frame(pose=Pose(angle=270, scale=0.8, lift=26)),
             Frame(pose=Pose(angle=360, scale=0.9, lift=10)),
             Frame(pose=Pose(scale_x=1.08, scale_y=0.86)),  # land squash
-        ],
-    ),
-    "play_roll": Clip(
-        ms=130,
-        loop=False,
-        frames=[
-            Frame(),
-            Frame(pose=Pose(angle=90, scale=0.95, shift_x=-4)),
-            Frame(pose=Pose(angle=180, scale=0.95, shift_x=-8)),  # on its back
-            Frame(pose=Pose(angle=180, scale=0.95, shift_x=-2)),  # hooves wiggle
-            Frame(pose=Pose(angle=90, scale=0.95, shift_x=-4)),
-            Frame(),
         ],
     ),
 }
@@ -170,6 +180,8 @@ COMPOSED: dict[str, Clip] = {
 # The machinery stays because `Pose` is still what COMPOSED rotations are built
 # from. Nothing should be added here.
 POSED: dict[str, list[Pose]] = {}
+
+POSE_CLIPS: dict[str, PoseClip] = {}
 
 
 def reference_box() -> tuple[int, int, int, int]:
@@ -347,6 +359,47 @@ def build_composed(poser: Poser, meta: dict) -> None:
         print(f"{name}: {len(images)} frames (composed from {detail})")
 
 
+def build_pose_clips(meta: dict) -> None:
+    """Assemble clips from approved key poses, moved by whole-pixel translation."""
+    for name, clip in POSE_CLIPS.items():
+        missing = sorted(
+            {p for p, _ in clip.frames if p != "idle" and not (POSES_DIR / f"{p}.png").exists()}
+        )
+        if missing:
+            print(f"{name}: skipped, harvest these poses first ({missing})")
+            continue
+        cache: dict[str, Image.Image] = {}
+        images: list[Image.Image] = []
+        for pose_name, shift in clip.frames:
+            if pose_name not in cache:
+                src = IDLE_POSE if pose_name == "idle" else POSES_DIR / f"{pose_name}.png"
+                im = Image.open(src).convert("RGBA")
+                if im.size != (FRAME_W, FRAME_H):
+                    raise SystemExit(f"{src.name}: expected {(FRAME_W, FRAME_H)}, got {im.size}")
+                cache[pose_name] = im
+            frame = cache[pose_name]
+            if shift.dx or shift.dy:
+                canvas = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+                canvas.paste(frame, (shift.dx, shift.dy), frame)
+                frame = canvas
+            images.append(frame)
+        write_clip(name, images)
+        used = sorted({p for p, _ in clip.frames})
+        meta["clips"][name] = {
+            **meta["clips"].get(name, {}),
+            "status": "downloaded",
+            "source": "poses",
+            "script": "scripts/pig/derive.py",
+            "poses": used,
+            "frames": len(images),
+            "ms": clip.ms,
+            "loop": clip.loop,
+            "downloaded_frames": len(images),
+            **({"airborne": True} if clip.airborne else {}),
+        }
+        print(f"{name}: {len(images)} frames (poses: {', '.join(used)})")
+
+
 def keep_count(info: dict, available: int) -> int:
     """How many of a job's frames the clip should use.
 
@@ -373,7 +426,11 @@ def keep_count(info: dict, available: int) -> int:
 def build_generated(ground: int, meta: dict) -> None:
     """Turn raw generations into clips: clean every frame, then ground or pose it."""
     for raw in sorted(RAW_DIR.glob("*")):
-        if not raw.is_dir() or raw.name in COMPOSED:
+        # `pose_*` folders are harvest downloads — the raw material a key pose was cut
+        # from, kept for provenance. They are not clips and must never be packed.
+        if not raw.is_dir() or raw.name in COMPOSED or raw.name in POSE_CLIPS:
+            continue
+        if raw.name.startswith("pose_"):
             continue
         files = sorted(raw.glob("frame-*.png"))
         info = meta.get(raw.name, {})
@@ -426,6 +483,7 @@ def main() -> None:
 
     build_generated(poser.ground, meta["clips"])
     build_composed(poser, meta)
+    build_pose_clips(meta)
 
     JOBS.write_text(json.dumps(meta, indent=2) + "\n")
     print(f"jobs → {JOBS.relative_to(ROOT)}")

@@ -6,7 +6,7 @@ const HAPPINESS_DECAY_PER_HOUR = 1.5;
 
 /** A new trick is unlocked for every N notes read. */
 export const NOTES_PER_TRICK = 2;
-export const TRICKS = ["spin", "backflip", "dance", "sit"] as const;
+export const TRICKS = ["backflip", "dance", "sit", "playdead"] as const;
 export type Trick = (typeof TRICKS)[number];
 
 const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));

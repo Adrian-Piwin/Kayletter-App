@@ -3,7 +3,7 @@ import PigStill from "@/components/PigStill";
 import { PIG_CLIPS } from "@/lib/pig-anim.generated";
 
 export default function NotFound() {
-  const clip = "idle_sad" in PIG_CLIPS ? "idle_sad" : "idle_breathe";
+  const clip = "pose_sad" in PIG_CLIPS ? "pose_sad" : "idle_breathe";
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-5 sm:px-6 py-12 sm:py-20">

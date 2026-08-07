@@ -6,7 +6,7 @@ export type PigActorState =
   | "walk"
   | "eat"
   | "play"
-  | "spin"
+  | "playdead"
   | "backflip"
   | "sit"
   | "dance"
@@ -31,12 +31,12 @@ function available(preferred: ClipName[], fallback: ClipName = "idle_breathe"): 
 /** Map mood + actor state → the clip the pig should be playing. */
 export function clipForState(args: {
   state: PigActorState;
+  /** Kept in the signature even though no branch reads it — see the idle case. */
   mood: "happy" | "okay" | "sad" | "hungry";
   hasLetter: boolean;
-  hunger: number;
   flourish?: ClipName | null;
 }): PigClip {
-  const { state, mood, hasLetter, hunger, flourish } = args;
+  const { state, hasLetter, flourish } = args;
 
   switch (state) {
     case "walk":
@@ -44,31 +44,30 @@ export function clipForState(args: {
       if (hasLetter) return available(["walk_letter", "idle_letter", "walk", "idle_breathe"]);
       return available(["walk", "play_chase", "idle_breathe"]);
     case "eat":
-      // Hungrier pig gobbles; otherwise a slower munch. Both clips start/end on the
-      // upright idle pose so swapping mid-hold never snaps posture.
-      return available(
-        hunger >= 70
-          ? ["feed_gobble", "feed_munch", "idle_breathe"]
-          : ["feed_munch", "feed_gobble", "idle_breathe"]
-      );
+      // One clip, not two. Two variants of the same chew is twice the surface to
+      // keep consistent for a difference nobody can see at 110px, and it forced a
+      // hunger argument through the actor and the scene to choose between them.
+      return available(["feed", "idle_breathe"]);
     case "play":
       return available(["play_chase", "walk", "idle_breathe"]);
-    case "spin":
-      return available(["trick_spin", "idle_breathe"]);
     case "backflip":
-      return available(["trick_backflip", "trick_spin", "idle_breathe"]);
+      return available(["trick_backflip", "idle_breathe"]);
     case "sit":
       return available(["trick_sit", "idle_breathe"]);
     case "dance":
-      return available(["trick_dance", "trick_spin", "idle_breathe"]);
+      return available(["trick_dance", "idle_breathe"]);
+    case "playdead":
+      return available(["trick_playdead", "play_roll", "idle_breathe"]);
     case "pet":
       return available(["pet_enjoy", "idle_breathe"]);
     case "idle":
     default:
       if (hasLetter) return available(["idle_letter", "idle_breathe"]);
       if (flourish) return available([flourish, "idle_breathe"]);
-      if (mood === "hungry") return available(["idle_hungry", "idle_sad", "idle_breathe"]);
-      if (mood === "sad") return available(["idle_sad", "idle_breathe"]);
+      // Mood no longer picks a clip. The two mood idles this replaces were prompted
+      // as adjectives rather than postures and came back as a differently
+      // proportioned pig; mood reads from the stat bars instead. `mood` stays in the
+      // signature so a properly drawn mood pose has an obvious home.
       return available(["idle_breathe"]);
   }
 }
@@ -102,14 +101,13 @@ export function clipForTrick(trick: Trick): PigActorState {
   if (trick === "backflip") return "backflip";
   if (trick === "sit") return "sit";
   if (trick === "dance") return "dance";
-  return "spin";
+  return "playdead";
 }
 
 /** One-shot flourishes the idle scheduler may inject. Blink is rare on purpose. */
 const FLOURISH_WEIGHTS: { name: ClipName; weight: number }[] = [
   { name: "idle_sniff", weight: 3 },
-  { name: "idle_look", weight: 3 },
-  { name: "idle_scratch", weight: 2 },
+  { name: "idle_scratch", weight: 3 },
   { name: "idle_blink", weight: 1 },
 ];
 
@@ -135,7 +133,7 @@ export function randomFlourish(): PigClip | null {
 export function actionHoldMs(state: PigActorState): number {
   switch (state) {
     // Two whole cycles of the 8-frame, 150ms feed loop. Holding a multiple of the
-    // cycle matters: both clips start and end upright on the idle pose, so the pig
+    // cycle matters: the clip starts and ends upright on the idle pose, so the pig
     // is never yanked out of the crouch mid-chew.
     case "eat":
       return 2400;
@@ -143,12 +141,13 @@ export function actionHoldMs(state: PigActorState): number {
     case "play":
       return 3300;
     case "sit":
-      return 1700;
+      return 1400;
+    case "playdead":
+      return 1400;
     case "backflip":
       return 1000;
-    case "spin":
     case "dance":
-      return 1100;
+      return 1200;
     case "pet":
       return 0; // gesture-driven
     default:
