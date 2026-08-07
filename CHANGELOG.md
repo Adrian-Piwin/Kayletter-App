@@ -92,13 +92,17 @@ Gardens can grow roses, tulips, daisies, lilies or lavender instead of sunflower
 Six clips showed a pig that blinked and did nothing else. They are drawn from hand-approved extreme poses now, so a scratch is a leg off the ground and a sit reaches the floor.
 
 #### Changes
-- Rebuild `idle_scratch`, `idle_sniff`, `play_bounce`, `play_roll`, `trick_sit` and `trick_dance` so each depicts the action it is named for.
-- Teach the pig to play dead, replacing the spin trick.
-- Drop the sad, hungry and look idles, the spin trick, and one of the two feed clips.
+- Rebuild `idle_scratch`, `idle_sniff`, `play_bounce`, `play_roll`, `trick_sit` and `trick_dance` so each depicts the action it is named for. The pig now gets its snout into the grass, leaves the ground on a jump, curls up and rolls along it, and sits all the way down.
+- Teach the pig to play dead, replacing the spin trick. Still four tricks, so nothing about unlocking them changes.
+- Drop the sad, hungry and look idles and one of the two feed clips. Mood no longer changes the pig's animation — the two mood idles were prompted as adjectives rather than postures and came back as a differently proportioned pig — and it still reads from the stat bars.
+- The 404 page gets its own drawn pose instead of borrowing a mood loop.
 
 ##### **sprites**
-- A clip is built from key poses now: an extreme pose is harvested from the early frames of an open-ended generation and approved by hand, the leg from idle to that pose is generated between two *different* approved poses, and the return leg is those frames reversed. Pinning the same idle pose at both ends locks identity but averages the middle flat, which is why three attempts at a pinned sit all produced a crouch.
-- `review.py` records the motion of a clip that was approved by eye and fails the build if a later rebuild comes back materially flatter — the one failure every existing check missed, since mass, palette and eye area are all conserved by a clip in which nothing happens.
+- A clip whose payoff is an extreme pose is now assembled from hand-approved key poses rather than generated in one job. Pinning the canonical pose at *both* ends locks identity and flattens the motion, because the model averages the middle back toward two identical endpoints — which is how six clips shipped showing a pig that blinked and did nothing else while passing every check.
+- `harvest.py` cuts a key pose out of an open-ended generation. Open-ended drift is cumulative, so it lives in the last frame; early frames are usable, and the rule is to keep the deepest frame that still measures as the same pig.
+- Open-ended runs want *more* frames, not fewer — the opposite of the pinned six-frame standard. At 4 frames the pig would not reach the ground or leave it; at 12 it does.
+- `trick_sit` adopts `pig-sit.png`, the pre-rework hand-drawn art. Five generations failed to draw a sit, and the pre-rework PNGs turn out to be a pose library worth checking before prompting for one.
+- `review.py` records the motion of a clip approved by eye and fails the build if a rebuild comes back more than a quarter flatter. An absolute motion floor was measured and abandoned: `walk` reads perfectly at 9.7% while a dead `trick_sit` scored 9.6%, so amount of motion is not correctness of motion.
 
 ### Make opening a letter a ceremony, with sound
 

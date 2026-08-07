@@ -1,6 +1,8 @@
 # Pig sprite rework — real animation sheets
 
-Status: **Shipped — every clip generated whole, 6 frames, reviewed clean**
+Status: **Shipped.** Clips that return to neutral are generated whole and pinned at
+both ends; clips whose payoff is an extreme pose are assembled from hand-approved key
+poses. See §4.
 Owner: agent + Adrian
 Target version: `0.3.0` (new user-facing capability)
 
@@ -14,11 +16,17 @@ named clips. Rebuild with `npm run sprites`.
 60s server-side cooldown; the landing page, 404 and dashboard pig all move to
 the new art in the same pass.
 
-**Two approaches were built and abandoned before this one landed** — a nine-part
-translation rig, then feature patches composited over squashed bodies. Both are
+**Three approaches were built and abandoned before this one landed** — a nine-part
+translation rig, feature patches composited over squashed bodies, and then one
+`animate_image` job per clip pinned to the idle pose at *both* ends. All are
 documented in §4 rather than deleted, because each failed for a reason that is easy
-to rediscover, and the second one is the direct cause of the defects this rework was
-reopened to fix (a nose that changed shape, a squash standing in for a crouch).
+to rediscover.
+
+The third is the subtlest and the reason this was reopened a second time: pinning the
+same pose at both ends locks identity **and flattens the motion**, because the model
+averages the middle back toward two identical endpoints. Six clips shipped that way
+and every one showed a pig that blinked and did nothing else, while passing every
+check in §7.
 
 ---
 
@@ -89,7 +97,9 @@ The contract is only as good as what is fed to it. Three clips in this set were
 generated against a differently-sized reference (195×183, 192×201) and the pig inside
 them is a *different size*: `idle_sad` and `idle_hungry` measured 4% light and 30px
 short, and ground 15px above the grass, because re-grounding aligns to the canvas
-bottom and their canvas bottom was in the wrong place. Both have been regenerated.
+bottom and their canvas bottom was in the wrong place. Both are retired now, but the
+trap is not — it applies to any pose adopted from `public/sprites/`, which is why
+`harvest.py --adopt` reports the pose's mass against canonical before you keep it.
 **Always check the reference is the canonical pose at its exact dimensions** —
 `jobs.json` pins one URL for the whole project, and it points at `main`, so it
 silently follows the branch.
@@ -137,14 +147,23 @@ canonical pose, cleaned mechanically and shipped.
 
 | Kind | Clips | How |
 |---|---|---|
-| Generated | everything not listed below | One `animate_image` job, pinned both ends, cleaned |
-| Composed | `trick_spin`, `trick_backflip`, `play_roll` | The idle pose under a per-frame `Pose`. Kept **only** for rotations |
-| Posed *(legacy)* | `play_chase`, `pet_enjoy`, `pet_end` | Generated frames with a transform layered on. Being retired |
+| Generated | `walk`, `walk_letter`, `play_chase`, `idle_breathe`, `idle_blink`, `idle_letter`, `pet_enjoy`, `pet_end` | One `animate_image` job, pinned both ends, cleaned |
+| **Key poses** | `idle_scratch`, `idle_sniff`, `play_bounce`, `play_roll`, `trick_sit`, `trick_dance`, `trick_playdead`, `pose_sad` | Hand-approved extreme poses, assembled with whole-pixel translation |
+| Composed | `trick_backflip` | The idle pose under a per-frame `Pose`. Kept **only** for rotations |
+| Legacy | `feed` | Survives from the patch era; its snout still shifts on the open-mouth frames |
 
-Composing survives for exactly one job: **rotations**. A spin or a backflip is a
-rigid-body turn, so a 90° rotate is lossless and identity cannot drift — the pixels
-are the idle pose's own. Everything postural is generated, because a transform
-cannot bend a character (see below).
+Composing survives for exactly one job: **rotations**. A backflip is a rigid-body
+turn, so a 90° rotate is lossless and identity cannot drift — the pixels are the idle
+pose's own. Everything postural is drawn, because a transform cannot bend a character
+(see below).
+
+**Key poses are the third path, added because generation alone could not carry
+anything postural.** Pinning the canonical pose at *both* ends locks identity and
+flattens the motion — the model interpolates between two identical endpoints, so the
+frame meant to carry the action is the one it weakens most. Six clips shipped
+looking like a pig that blinks. A key-pose clip pins against a *different* approved
+pose, or skips generation entirely and moves an approved pose by whole-pixel
+translation. Full reasoning in [pixellab-notes.md](./pixellab-notes.md).
 
 #### Why a squash is not a crouch
 
@@ -186,8 +205,9 @@ public/sprites/pig-idle.png    the base pose
 assets/pixellab/faces/raw/     inpaint results, cached
   -> faces.py                  keeps each patch's footprint, asserts no drift
 assets/pixellab/faces/<p>.png  feature patches
+assets/pixellab/poses/<p>.png  hand-approved key poses (harvest.py)
 assets/pixellab/raw/<clip>/    generated frames, exactly as downloaded
-  -> derive.py                 composes clips / poses generated frames
+  -> derive.py                 composes clips / assembles key poses
 assets/pixellab/clips/<clip>/  what the atlas is packed from
   -> build.py                  pig-v2.png + pig-anim.generated.ts
 ```
@@ -225,16 +245,23 @@ big enough to mask around. Not this face.
 
 ### Idle — a resting loop plus flourishes
 
-| Clip | Frames | fps | Loop | Description |
-|---|---|---|---|---|
-| `idle_breathe` ✅ | 6 | 167 | ∞ | Body swells on the inhale, settles on the exhale |
-| `idle_look` ✅ | 6 | 167 | once | Head turns up and to the side, then back to forward |
-| `idle_sniff` ✅ | 6 | 167 | once | Snout lowers to the ground, nudges along, head rises |
-| `idle_scratch` ✅ | 6 | 167 | once | Hind leg lifts to scratch behind the ear, then down |
-| `idle_blink` ✅ | 6 | 125 | once | Quick blink |
+| Clip | Frames | ms | Loop | Built from | Description |
+|---|---|---|---|---|---|
+| `idle_breathe` ✅ | 6 | 200 | ∞ | generated | Body swells on the inhale, settles on the exhale |
+| `idle_sniff` ✅ | 7 | 140 | once | poses | Snout goes down into the grass, snuffles along, head rises |
+| `idle_scratch` ✅ | 9 | 90 | once | poses | Hind leg lifts and the body shakes with the scratch |
+| `idle_blink` ✅ | 5 | 125 | once | generated | Quick blink |
 
 A scheduler holds `idle_breathe` and injects a random flourish every 4–9s. That's
 what makes a pet read as alive rather than looped.
+
+`idle_look` is **retired** — one flourish fewer is not a loss when the two that
+remain now actually do something.
+
+`idle_scratch` is worth reading the numbers on, because the pose is not what carries
+it. The generator will raise this pig's hind leg and no further; the action reads
+because two nearly identical lifted-leg poses alternate at 90ms with a 1px body
+shake. **Rhythm is a lever the prompt does not have.**
 
 `idle_breathe` is the one clip where the pin does double duty: it loops
 continuously, so *every* cycle boundary landing on the canonical pose is what stops
@@ -242,20 +269,20 @@ the resting pig from slowly becoming a different pig over a long session.
 
 ### Mood + state idles
 
-Moods are prompted as **postures**, never as adjectives — the old "head low, ears
-drooped, slow tail" style of prompt is what produced a differently proportioned
-pig, because asking for a character gets you a new one drawn.
+**Mood no longer picks a clip.** `idle_sad` and `idle_hungry` are retired: both were
+prompted as adjectives rather than postures and came back as a differently
+proportioned pig, and neither ever read as the mood it was named for. Mood shows in
+the stat bars instead. `mood` stays in `clipForState`'s signature so a properly drawn
+mood pose has an obvious home.
 
-| Clip | Frames | ms | Prompted action |
-|---|---|---|---|
-| `idle_sad` ✅ | 6 | 250 | Head hangs low, whole body slumps toward the ground, slowly lifts |
-| `idle_hungry` ✅ | 6 | 200 | Snout raised sniffing the air, weight shifts side to side, settles |
-| `idle_letter` ⚠️ | 6 | 150 | Holds the envelope, wiggles, taps a hoof |
+| Clip | Frames | ms | Loop | Built from | Description |
+|---|---|---|---|---|---|
+| `idle_letter` ⚠️ | 7 | 150 | ∞ | generated | Holds the envelope, wiggles, taps a hoof |
+| `pose_sad` ✅ | 1 | — | — | pose | A still, for the 404 page |
 
-Each of these ends where it starts, which is what lets a mood loop against a pinned
-canonical pose without the pin cancelling the mood: the pig droops and recovers on a
-cycle rather than holding a pose that keeps getting reset. Their `ms` is slower than
-the 167 default because that is the tempo difference between sulking and hopping.
+`pose_sad` is `public/sprites/pig-sad.png` — the pre-rework hand-drawn art, adopted
+onto the frame contract. A still is the honest shape for it: the 404 wants a pig that
+looks like it lost something, not a pig performing sadness on a loop.
 
 `idle_letter` ⚠️ is the **one clip that cannot use the recipe as written**, because
 the envelope is a prop the canonical pose does not contain — pinning both ends to
@@ -284,7 +311,7 @@ within 3%.
 
 | Clip | Frames | ms | Loop |
 |---|---|---|---|
-| `feed` ✅ | 6 generated | 167 | ∞ |
+| `feed` ✅ | 8 | 150 | ∞ |
 
 There used to be two, `feed_munch` and `feed_gobble`, selected on a hunger
 threshold. **Collapsed to one.** Two variants of the same action is twice the
@@ -375,16 +402,23 @@ clip needs that measurement redone; it is two lines of Pillow, not a guess.
 
 ### Play (3)
 
-| Clip | Frames | ms | Description |
-|---|---|---|---|
-| `play_chase` ✅ | 8 generated | 110 | Fast trot — pairs with the back-and-forth `movePig` |
-| `play_bounce` ✅ | 7 generated | 120 | Crouch, hop 9px clear of the ground, land |
-| `play_roll` ✅ | 6 rotated | 130 | Tips onto its back, hooves wiggle, rights itself |
+| Clip | Frames | ms | Built from | Description |
+|---|---|---|---|---|
+| `play_chase` ✅ | 8 | 110 | generated | Fast trot — pairs with the back-and-forth `movePig` |
+| `play_bounce` ✅ | 6 | 110 | poses | Crouch, then one drawn tuck pose lifted 20px and set back down |
+| `play_roll` ✅ | 7 | 120 | poses | Tucks into a ball, rolls out along the ground and back |
 
 `play_chase` while travelling, one of the other two at the far end of the run. It is
 8 frames for the same reason `walk` is — it is a gait, not a gesture.
 
-`play_bounce` is the only clip flagged **`airborne`** in `jobs.json`, which switches
+`play_roll` used to rotate the idle sprite in place, so the pig tipped over rigidly
+and came back **without going anywhere** — a roll reads as *travel*, and it had none.
+It is now three drawn poses of the pig tucked into a ball, translated out and back.
+The tucked poses measure 15-18% light, which is honest: a pig curled into a ball
+really is a smaller silhouette than one standing with a snout and four legs sticking
+out.
+
+`play_bounce` is flagged **`airborne`** in `jobs.json`, which switches
 off re-grounding for it. That flag exists because its absence silently deleted the
 animation: the raw frames hop 9px clear of the ground, re-grounding slid all of them
 back down, and the clip reviewed *clean* while being a pig that never jumped. No
@@ -392,33 +426,51 @@ measurement can tell a 9px hop from 9px of generator jitter, so it is declared.
 
 ### Tricks (4 — one per `TRICKS` entry)
 
-| Clip | Frames | ms | Description |
-|---|---|---|---|
-| `trick_spin` ✅ | 7 rotated | 90 | Turn read as a horizontal squeeze through edge-on, mirrored past 90° |
-| `trick_backflip` ✅ | 6 rotated | 110 | Crouch, quarter-turns around a jump arc, land squash |
-| `trick_sit` ⚠️ | 7 generated | 167 | Hunkers down with its eyes shut — reads as a crouch, not a sit |
-| `trick_dance` ✅ | 7 generated | 130 | Bobs and leans side to side, ears flicking |
+| Clip | Frames | ms | Built from | Description |
+|---|---|---|---|---|
+| `trick_backflip` ✅ | 6 | 110 | rotated | Crouch, quarter-turns around a jump arc, land squash |
+| `trick_sit` ✅ | 7 | 150 | poses | Folds down onto its rear, holds it, stands back up |
+| `trick_dance` ✅ | 8 | 120 | poses | Up on the hind legs, hopping side to side |
+| `trick_playdead` ✅ | 7 | 140 | poses | Flops flat on its side, lies rigid, springs back up |
 
-The two rotations stay **composed**, and their review numbers look alarming on
-purpose: `trick_spin` loses 51% of its width at the edge-on frames, which is the
-entire point of the pose, and `trick_backflip` loses 36% of its mass because a
-rotated sprite has to shrink to fit a 189×199 frame whose diagonal is 272px. Those
-are accepted costs of a rigid-body turn, not defects — and a rotation is the one
-motion where composing beats generating outright, because the pixels are the idle
-pose's own so identity cannot drift at all.
+`trick_spin` is **retired** and `trick_playdead` replaces it, so `TRICKS` is still
+four long and `tricks_unlocked` needs no migration — only a count is ever persisted,
+never a trick name.
 
-`trick_sit` ⚠️ is **the one action generation cannot carry.** Three prompts, two
-seeds, increasingly explicit anatomy ("folding its hind legs underneath and dropping
-its rear all the way to the ground so its back slopes up to the shoulders") — every
-one produced a crouch. The giveaway is measurable rather than a matter of taste: the
-rear-to-front height gap held at +16px on every frame, so the whole pig sank instead
-of its rear dropping. It is still a large improvement on the posed version it
-replaces, which lost 23% of the pig's mass; it just is not a sit.
+The one rotation left, `trick_backflip`, has review numbers that look alarming on
+purpose: it loses 36% of its mass because a rotated sprite has to shrink to fit a
+189×199 frame whose diagonal is 272px. That is an accepted cost of a rigid-body turn,
+not a defect — and a rotation is the one motion where composing beats generating
+outright, because the pixels are the idle pose's own so identity cannot drift at all.
 
-Doing it properly needs `pig-sit.png` pinned as the last frame. That pose exists and
-is drawn at the same scale (eye within 11%, body width within 2%) — but it is 202px
-tall against a 199px frame contract, so it is blocked on raising the contract, not on
-prompting.
+#### `trick_sit` — the clip generation could not draw
+
+This was the longest-standing open item in this document, and the resolution is not
+the one it predicted.
+
+Five attempts failed: three pinned (all crouches, with the rear-to-front height gap
+holding at +16px across every frame, meaning the whole pig sank rather than its rear)
+and then two more under the new key-pose recipe — twelve open-ended frames of
+"sitting down on its rear" produced a pig that shut its eyes and shrank slightly. The
+model's prior for "round pig standing side-on" is simply stronger than any prompt.
+
+**The answer was already in the repo.** `public/sprites/pig-sit.png` is the
+pre-rework hand-drawn art: a real sit, rear on the ground, back sloping up to the
+shoulders — and measurably the same pig, mass within 1% of canonical and the eye
+20×25 against 21×26. It is worth more than anything a generation returns because the
+pixels are the same artist's.
+
+This document used to say adopting it was blocked on raising the 199px frame contract,
+since the pose is 202px tall. That is the cleaner fix and it is still available, but
+it ripples into the atlas, `SpriteSheet` and every display height in the app. Scaling
+0.985 to fit costs three pixel rows and ~3% mass — well inside the 15% the review
+tolerates, and far inside the **23%** the posed sit it replaces was losing.
+
+The general lesson, which cost more generations than it should have: **before
+prompting for a pose, check whether someone already drew it.** The pre-rework PNGs
+are a pose library, not dead weight. Check the mass first, though — `pig-eat` (0.93)
+and `pig-happy` (1.08) are the pig at visibly the wrong size, which is the exact
+defect this rework exists to undo.
 
 ### Petting (new)
 
@@ -432,22 +484,17 @@ while it runs; `pet_end` is a happy shake-off back to idle.
 
 ### What is still open
 
-Everything a transform or a patch was going to be needed for is now drawn by the
-generator, so the old list of pending part variants is gone. Two things remain, and
-both are the *same* problem:
-
 | Clip | Blocked on |
 |---|---|
-| `trick_sit` | A sitting canonical pose to pin as the last frame. `pig-sit.png` exists at the right scale but is 202px tall, so the 199px frame contract has to be raised first |
-| `idle_letter` | An idle-holding-envelope canonical pose. Until then it is the one clip generated open-ended, so it is the one clip whose identity is not guaranteed |
+| `idle_letter` | An idle-holding-envelope canonical pose. It is the one clip still generated open-ended end to end, so it is the one clip whose identity is not guaranteed. Harvesting is now the mechanism for making that pose — this is no longer blocked on an idea, only on doing it |
+| `feed` | Still the patch-era clip: its snout shifts on the open-mouth frames. Untouched by this pass because it is the one clip whose action already reads |
 
-The general rule this exposes: **a clip whose payoff is a held end-pose needs its own
-approved end pose.** The pin cannot be prompted around, and both attempts to do so
-produced a clip that returns to neutral when it should stay put.
+The rule the sit exposed, generalised: **a clip whose payoff is a held end-pose needs
+its own approved end pose.** The pin cannot be prompted around. What changed is that
+making such a pose is now routine — harvest it from an open-ended run, or adopt one
+somebody already drew.
 
-Current atlas: **128 frames** across 19 clips, packed 12-wide at 2268 × 2189 px.
-
----
+Current atlas: **117 frames** across 18 clips, packed 12-wide at 2268 × 1990 px.
 
 ## 5. Sheet + manifest
 
@@ -539,6 +586,7 @@ Implemented in `src/lib/useRubGesture.ts`.
 scripts/pig/frame.py          the frame contract - one source of truth
 scripts/pig/pixels.py         pixel ops shared by the build and the review
 scripts/pig/download_clips.py completed PixelLab jobs -> raw/
+scripts/pig/harvest.py        open-ended job -> one approved key pose in poses/
 scripts/pig/faces.py          inpaint jobs -> faces/ (registry now empty)
 scripts/pig/derive.py         idle + raw/ -> clips/  (clean, ground, compose)
 scripts/pig/build.py          clips/ -> atlas + typed manifest
@@ -557,7 +605,23 @@ ground line" that disagree is a bug that looks like a mystery.
 
 - any pixel with alpha not in {0, 255} — halos over the sky gradient,
 - any opaque island not connected to the body — every part of the pig, tail curl
-  included, touches the rest, so a second island is always invented.
+  included, touches the rest, so a second island is always invented,
+- a clip coming back **more than 25% flatter** than when it was approved.
+
+That last one is the check this rework added, and it is worth being precise about
+what it does *not* do. An absolute motion floor — "a clip named after an action must
+move at least N% of its silhouette" — was tried and measured across the whole set,
+and the good clips and the dead ones interleave: `walk` reads perfectly at 9.7% while
+`trick_sit` was dead at 9.6%. Amount of motion is not correctness of motion, and two
+attempts to filter the signal (box-downsampling, largest connected region) reproduced
+the same ranking. Details in [pixellab-notes.md](./pixellab-notes.md).
+
+So it gates the failure that actually happened instead. Commit `a93b79e` replaced
+several clips with flatter earlier versions and nothing complained, because every
+other check measures what the pig *is* and all of them are conserved by a clip in
+which nothing happens. A clip approved by eye records its motion as `approved_change`
+— written only by an explicit `review.py --record`, never as a build side effect, or
+it would defend nothing.
 
 **Soft — reported with a threshold, never enforced:** mass, width, height, ground
 line, eye area and foreign colours. Each of these has a legitimate reason to move —

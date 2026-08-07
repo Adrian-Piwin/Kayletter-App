@@ -8,9 +8,23 @@ from that — and from the one trick that mostly cancels the third problem.
 For how the pig's clips are actually cut, see
 [pig-sprite-rework.md](./pig-sprite-rework.md). This file is about the tool.
 
-## The recipe
+## Two recipes, and which one a clip needs
 
-For a new clip of an existing character, in order:
+**Read this first.** There are two ways to build a clip here, and picking the wrong
+one wastes generations on a clip that comes back dead.
+
+| The clip is… | Use | Why |
+|---|---|---|
+| A motion the pig can do **without leaving its standing silhouette** — a breath, a blink, a gait, a chew, a lean into a rub | **One pinned job** (below) | Cheap, one job, identity locked |
+| A motion that **ends somewhere the canonical pose cannot reach** — sitting, snout on the ground, on its back, up on two legs, flat out | **Key poses** ([below](#build-a-clip-from-key-poses-when-the-pin-flattens-it)) | The pin cannot produce an extreme, and no prompt gets around it |
+
+The dividing line is not how big the motion is, it is whether the *end pose* exists
+in the pig's standing vocabulary. Everything that shipped dead was on the wrong side
+of it.
+
+## The pinned recipe
+
+For a clip in the first row above, in order:
 
 1. **One `animate_image` job per clip.** Not a rig, not a per-frame composition.
 2. **Pin the canonical pose as `first_frame_url` *and* `last_frame_url`.** This is
@@ -64,23 +78,114 @@ ways:
 So `derive.py` derives it from `loop` rather than taking a hand-set count, which is
 one fewer thing to get wrong per clip.
 
-### The pin's one real limit
+### The pin's real limit: it costs amplitude
 
-Pinning forces the clip back to neutral, so **any clip whose payoff is a held
-end-pose cannot use it.** Two clips here hit that wall:
+Pinning the *same* pose at both ends locks identity **and flattens the motion**, and
+the second half of that took a long time to see because the first half is so
+valuable.
 
-- `idle_letter` needs to hold an envelope the canonical pose does not contain, so
-  pinning would pin the letter away.
-- `trick_sit` should end sitting and stay sitting.
+The mechanism is the one the frame-count section describes: the model interpolates
+between two fixed endpoints, so the extremes get averaged toward the middle. When the
+two endpoints are *identical*, "the middle" is the canonical pose, and the frame
+meant to carry the action is the one that gets weakened most. The clip comes back
+technically perfect — mass conserved, identity held, no strays — and showing a pig
+that blinks.
 
-Both need a *second* hand-approved canonical pose to pin against, not a different
-prompt. `public/sprites/pig-sit.png` already exists and is drawn at the same scale
-(eye within 11%, body width within 2%) — but it is 202px tall against a 199px frame
-contract, so adopting it means raising the contract, not just pointing at the file.
-Worth knowing before you try to prompt your way around this: three attempts at
-"sit" produced a *crouch* every time. The giveaway is measurable — the rear-to-front
-height gap held at +16px across every frame, meaning the whole pig dropped rather
-than its rear.
+Six clips shipped that way (`idle_scratch`, `idle_sniff`, `play_bounce`, `play_roll`,
+`trick_sit`, `trick_dance`). The tell was always available and nobody had a name for
+it: **the pig never left its standing silhouette.**
+
+So the rule is not "always pin". It is:
+
+- **Pin against a *different* approved pose** and the same mechanism works *for* you:
+  the interpolation now has somewhere to go, and both ends are still art you approved.
+- **Pin against the same pose** only when the clip genuinely returns to neutral — a
+  breath, a blink, a gait, a chew.
+
+Do not try to prompt around this. Three attempts at a pinned "sit" produced a crouch
+every time, with a measurable giveaway: the rear-to-front height gap held at +16px
+across every frame, so the whole pig dropped rather than its rear.
+
+## Build a clip from key poses when the pin flattens it
+
+The recipe for anything in the second row of the table at the top.
+
+1. **Harvest an extreme pose from an *open-ended* run.** No `last_frame_url`,
+   `frame_count: 12`. Then measure every frame against the canonical and keep the
+   **deepest frame that still passes** — never simply the deepest frame.
+2. **Approve it by eye at display size**, and save it to `assets/pixellab/poses/`.
+3. **Assemble the clip from poses in code**, with whole-pixel translation for motion.
+   The return leg is the outbound frames reversed: it costs no generation and lands
+   on the canonical pose *exactly*.
+
+`scripts/pig/harvest.py` does 1 and 2; `POSE_CLIPS` in `derive.py` does 3.
+
+### Why open-ended is safe here, given everything above
+
+Because **drift is cumulative, so it lives at the end.** Every open-ended failure
+recorded on this page is an end-of-clip failure — `pet_end` and `play_bounce`
+"finished as a different pig", `idle_look` turned into a chunkier pig facing the
+other way. Early and middle frames have not accumulated the error yet.
+
+So an open-ended run is a *pose generator*, not a clip generator. You are mining it
+for one good frame and throwing the rest away, which makes the thing it is bad at
+irrelevant.
+
+### Ask for more frames, not fewer — this is the opposite of the pinned rule
+
+The six-frame standard below is a statement about **pinned** clips, where more frames
+means the same motion spread thinner. Open-ended has nothing pulling it home, so more
+frames means **more travel**. The same prompt at both lengths, measured:
+
+| Action | 4 frames | 12 frames |
+|---|---|---|
+| snout to the ground | head dips ~3px, eyes close | snout reaches the grass ✓ |
+| onto its back | pig stands still | tucks into a ball and rolls over ✓ |
+| scratch behind the ear | no leg leaves the ground | hind leg lifts ✓ |
+
+Getting this backwards is what made the first harvest batch useless.
+
+### When the model simply will not draw the pose
+
+It sometimes won't, and no frame count fixes it. **`trick_sit` is the case**: twelve
+open-ended frames of "sitting down on its rear" produced a pig that shut its eyes and
+shrank slightly, on top of the three earlier pinned attempts. The prior for "round pig
+standing side-on" is stronger than the prompt.
+
+The answer was sitting in the repo. **`public/sprites/pig-*.png` — the pre-rework art
+— is a set of hand-drawn poses of this exact pig**, including a real sit and a real
+dejected slump, and they are worth more than anything a generation returns because
+the pixels are the same artist's. Measured against the canonical pose:
+
+| | mass | eye | verdict |
+|---|---|---|---|
+| `pig-sit` | 0.99 | 20×25 vs 21×26 | **Use it.** Same pig, same scale |
+| `pig-sad` | 1.00 | frowning, closed | **Use it** |
+| `pig-eat` | 0.93 | — | Too light — the pig is visibly smaller |
+| `pig-happy` | 1.08 | — | Too heavy |
+
+What made these unusable as *rendered art* — each is a different canvas with the pig
+at a different size, so the pig jumped between states — is a normalisation problem,
+not an art problem. `harvest.py --adopt` crops to the subject, scales down only if it
+genuinely does not fit, and stands it on the ground line.
+
+Two cautions. **Check the mass before adopting one**; 7-8% is the pig visibly
+changing size, which is the original sin this whole rework exists to undo. And note
+that `pig-sit` is 202px tall against a 199px contract: this file used to say adopting
+it meant raising the frame contract, and that is the *cleaner* fix but it ripples
+into the atlas, `SpriteSheet` and every display height in the app. A 0.985 scale costs
+three pixel rows and ~3% mass — well inside the 15% the review tolerates, and far
+inside the 23% the posed sit it replaces was losing.
+
+### Motion the model refuses can often be faked by repetition
+
+A scratch is a **vibration**, not a lift, and the generator would raise this pig's
+hind leg and no further. Alternating two nearly identical lifted-leg poses at 90ms,
+with a 1px body shake, reads as scratching far better than a deeper single pose would.
+The same trick carries `trick_dance`: the drawn rear-up is shallow, but hopping it
+5px clear on each beat turns a lean into a dance.
+
+Rhythm is a lever the prompt does not have. Reach for it before re-rolling.
 
 ## Six frames, and why not four or eight
 
@@ -101,9 +206,15 @@ gets weaker. Four frames is too few to reach a real extreme; eight has room but
 spends it on in-betweens. Six is where the extreme is deep enough to read and
 still held for a sixth of the cycle.
 
-So: **6 frames is the standard for every clip**, and it is not negotiable per
+So: **6 frames is the standard for every pinned clip**, and it is not negotiable per
 clip, because the whole point of a standard is that the pig's animations all feel
 like they came from one hand.
+
+**This applies to pinned generation only.** A clip built from key poses has a *drawn*
+count and a *played* count, and only the drawn count costs anything: three approved
+poses replayed out-and-back is six or seven played frames from three generations'
+worth of art. And an open-ended harvest wants 12, for the opposite reason — see the
+key-pose recipe above.
 
 **Frame *duration* is not part of the standard**, and conflating the two is a
 mistake worth avoiding. 6 frames is a statement about how the motion is drawn; ms
@@ -282,6 +393,42 @@ these clips; one column of numbers made it obvious.
 mass conserved, identity held, no strays — while being an animation of a pig that
 never left the ground, because the build had re-grounded the hop away. A metric
 that measures the pig cannot tell you the pig did the wrong thing.
+
+### There is no metric for "the action reads". This was tested properly.
+
+The obvious fix to the paragraph above is a motion floor: *a clip named after an
+action must move at least N% of its silhouette.* It does not work, and it is worth
+recording that it does not, because it will look like a good idea again.
+
+Measured across the whole clip set — peak change in the opaque silhouette against
+frame 0, as a fraction of mass:
+
+| Reads perfectly | | Dead on arrival | |
+|---|---|---|---|
+| `play_chase` | 8.3% | `trick_sit` | 9.6% |
+| `walk_letter` | 8.3% | `idle_scratch` | 8.6% |
+| `walk` | 9.7% | `idle_sniff` | 17.0% |
+
+The good clips and the dead ones **interleave**, and the worst clip in the set scores
+nearly double the best one. A gait reads beautifully while moving very little,
+because the body holds still and only the legs travel; a dead clip scores high on a
+blink plus a whole-body sink.
+
+Two attempts to rescue it by filtering also failed, both reproducing the same
+ranking: box-downsampling the mask to kill the 1px edge fringe the generator leaves
+on every redraw, and taking the largest *connected* region of change on the theory
+that a real action makes one big blob while noise makes many small ones.
+
+The conclusion is not subtle: **amount of motion is not correctness of motion.** That
+judgement is semantic and there is no cheap geometric proxy for it.
+
+So `review.py` gates the thing that actually went wrong instead. Commit `a93b79e`
+replaced several clips with flatter earlier versions and nothing complained, because
+every check measures what the pig *is* and all of them are conserved by a clip in
+which nothing happens. A clip approved by eye now records its motion
+(`approved_change`, written only by an explicit `--record`, never as a build side
+effect) and any later rebuild that comes back more than 25% flatter fails. It cannot
+tell you a new clip is good. It will not let a good one silently rot.
 
 Then look at it at **true display size**, not zoomed. The pig ships at 110px from
 a 189px source, and defects that are obvious at 6× — a softened ear, a thinner

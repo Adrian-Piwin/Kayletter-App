@@ -5,43 +5,107 @@
     199
   ],
   "poses": {
-    "scratch_up": {
-      "job_id": "65ac13b1-1d7b-4671-aacb-dc1561c6c6cd",
-      "action": "lifting one hind leg up off the ground and reaching it forward to scratch behind its ear, head tilting toward the leg",
-      "seed": 55,
-      "frame_count": 4,
-      "harvest": [
-        "scratch_up"
-      ]
+    "scratch": {
+      "job_id": "bbf9becc-fa5e-49ef-b096-156c0a74f870",
+      "open_ended": true,
+      "frame_count": 12,
+      "seed": 7,
+      "action": "raising one hind leg up off the ground and scratching rapidly behind its ear with the hoof, head tilted down toward the scratching leg",
+      "kept": {
+        "scratch_mid": 2,
+        "scratch_up": 7,
+        "scratch_up2": 8
+      },
+      "rejected": {
+        "65ac13b1-1d7b-4671-aacb-dc1561c6c6cd": "4 frames: too little runway, no leg left the ground"
+      }
     },
-    "sniff_down": {
-      "job_id": "d31c73c8-05d0-4a4f-ace4-6bcf6d1c0601",
-      "action": "lowering its head all the way down until its snout touches the ground, front legs splaying forward and rear staying up",
-      "seed": 55,
-      "frame_count": 4,
-      "harvest": [
-        "sniff_down"
-      ]
+    "sniff": {
+      "job_id": "ebcd7b1e-3e61-411e-a3f4-f9cf2c1f8f1d",
+      "open_ended": true,
+      "frame_count": 12,
+      "seed": 7,
+      "action": "pushing its snout down into the grass at its feet, head all the way down to the floor, front legs bending, rear end raised high in the air",
+      "kept": {
+        "sniff_mid": 3,
+        "sniff_down": 4
+      },
+      "note": "frames 6+ rejected on foreign colour, which is grass the model drew rather than a restyled pig",
+      "rejected": {
+        "d31c73c8-05d0-4a4f-ace4-6bcf6d1c0601": "4 frames: head dipped ~3px and the eyes closed, never reached the ground"
+      }
     },
     "bounce": {
       "job_id": "cba33f32-f27f-427d-98ae-59a840eaf4e3",
-      "action": "crouching down low then springing straight up off the ground with all four legs tucked up under its body",
-      "seed": 55,
+      "open_ended": true,
       "frame_count": 4,
-      "harvest": [
-        "bounce_crouch",
-        "bounce_tuck"
-      ]
+      "seed": 55,
+      "action": "crouching down low then springing straight up off the ground with all four legs tucked up under its body",
+      "kept": {
+        "bounce_crouch": 2,
+        "bounce_tuck": 3,
+        "bounce_land": 4
+      },
+      "note": "the one pose that came back usable at 4 frames \u2014 a tuck stays inside the pig's standing silhouette"
     },
     "roll": {
-      "job_id": "78e399b9-343c-45ac-92c0-dbfd8180462b",
-      "action": "tipping over sideways onto its back with all four legs sticking up in the air and waving",
-      "seed": 55,
-      "frame_count": 4,
-      "harvest": [
-        "roll_tip",
-        "roll_back"
-      ]
+      "job_id": "3bb61c47-d6e1-4feb-81a0-6c1edfeab2ab",
+      "open_ended": true,
+      "frame_count": 12,
+      "seed": 7,
+      "action": "rolling over onto its back, ending upside down with its belly facing up and all four legs pointing straight up at the sky",
+      "kept": {
+        "roll_tuck": 4,
+        "roll_ball": 5,
+        "roll_ball2": 6
+      },
+      "note": "frames 9-12 reach a genuine upside-down pose and were still rejected: the pig is unrecognisable, a pink blob with no face",
+      "rejected": {
+        "78e399b9-343c-45ac-92c0-dbfd8180462b": "4 frames: the pig stood still with its eyes shut"
+      }
+    },
+    "dance": {
+      "job_id": "9cd00346-6f31-4046-92c1-139d6702a2df",
+      "open_ended": true,
+      "frame_count": 12,
+      "seed": 7,
+      "action": "standing up tall on its two hind legs with both front legs lifted off the ground into the air, body upright and swaying",
+      "kept": {
+        "dance_mid": 4,
+        "dance_up": 7
+      },
+      "note": "the rear-up is shallow; the clip reads because each up-beat is hopped 5px clear, not because the pose is deep"
+    },
+    "playdead": {
+      "job_id": "c68dd1b2-c54c-4675-ba57-2142892302d1",
+      "open_ended": true,
+      "frame_count": 12,
+      "seed": 7,
+      "action": "collapsing sideways onto the ground and lying flat on its side, all four legs stretched straight out stiffly, head resting flat on the floor",
+      "kept": {
+        "playdead_mid": 2,
+        "playdead_flop": 7
+      }
+    },
+    "sit": {
+      "source": "public/sprites/pig-sit.png",
+      "adopted": true,
+      "kept": {
+        "sit_down": "adopted, scaled 0.985 to fit the 199px contract",
+        "sit_mid": 5
+      },
+      "note": "sit_mid is frame 5 of job 77fcbf65-a44b-427d-9123-2626437779d6, kept only as an in-between. Five generations failed to draw the sit itself: three pinned (all crouches) and two open-ended at 12 frames. pig-sit.png is hand-drawn, mass within 1% of canonical.",
+      "rejected": {
+        "77fcbf65-a44b-427d-9123-2626437779d6": "12 open-ended frames: the pig shut its eyes and shrank; the rear never dropped"
+      }
+    },
+    "sad": {
+      "source": "public/sprites/pig-sad.png",
+      "adopted": true,
+      "kept": {
+        "sad_droop": "adopted, scaled 0.979 to fit"
+      },
+      "note": "hand-drawn, mass 1.00 of canonical. Ships as the single-frame pose_sad for the 404 page."
     }
   },
   "clips": {
