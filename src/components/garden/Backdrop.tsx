@@ -38,6 +38,56 @@ const HILL_COLORS: Record<SkyPhase, [string, string]> = {
   night: ["#37496f", "#2b3a57"],
 };
 
+/**
+ * The ground, per time of day.
+ *
+ * These used to be the fixed `--leaf` / `--leaf-deep` / `--soil` tokens, so the
+ * sky and the hills went to dusk and the field stayed in full daylight — the
+ * horizon line was where the time of day changed.
+ *
+ * The field takes the *nearest hill band's* colour in every phase, which is the
+ * rule the day palette already followed (`day.grass` is `HILL_COLORS.day[1]`
+ * exactly): the field is the hill you are standing on, and the lip is a darker
+ * step of it rather than a separate colour. Day is unchanged.
+ *
+ * Night is the exception, and steps one shade darker than its hills. Matching
+ * them exactly is what the rule says, and it flattened the horizon into nothing:
+ * with the sky no longer bright behind them, hills the same colour as the field
+ * simply vanish into it. Ground nearer the viewer catches less skylight anyway,
+ * so darkening it is both what brings the horizon back and what a night field
+ * actually looks like.
+ */
+const GROUND_COLORS: Record<SkyPhase, { grass: string; lip: string; soil: string }> = {
+  day: { grass: "#7fb069", lip: "#5d8a4a", soil: "#8a6647" },
+  sunset: { grass: "#879659", lip: "#66753f", soil: "#7a5638" },
+  night: { grass: "#223049", lip: "#161f30", soil: "#332a3a" },
+};
+
+/**
+ * A veil over the whole world at dusk and after dark.
+ *
+ * The ground can be repainted but the *sprites* cannot: the pig, the flowers and
+ * the strawberry are pixel art drawn under one fixed daylight, so darkening only
+ * the scenery leaves them glowing on top of it like cut-outs. The veil puts them
+ * under the same light as everything else.
+ *
+ * Plain alpha rather than `multiply`: multiply darkens by scaling each channel,
+ * which crushes the pig's mid pinks toward its outline colour and costs the art
+ * its internal contrast. A flat wash shifts everything the same distance toward
+ * the sky's own colour, which is what dusk actually does, and leaves the ramps
+ * intact.
+ */
+const WORLD_TINT: Record<SkyPhase, string | null> = {
+  day: null,
+  sunset: "rgba(247, 150, 88, 0.16)",
+  night: "rgba(29, 42, 82, 0.42)",
+};
+
+/** The wash over the world at this time of day, or null in daylight. */
+export function worldTint(phase: SkyPhase): string | null {
+  return WORLD_TINT[phase];
+}
+
 const CLOUDS_PER_SCREEN = 1.3;
 const CLOUD_FACTOR = 0.1;
 const STAR_COUNT = 24;
@@ -235,12 +285,20 @@ function Backdrop({
 
       {/* the ground itself is flat colour, so it needs no parallax */}
       <div
-        className="absolute inset-x-0 bottom-0 bg-leaf border-t-8 border-leaf-deep"
-        style={{ height: `${horizonPct}%`, ...entrance(intro, "enter-ground", INTRO.ground) }}
+        className="absolute inset-x-0 bottom-0 border-t-8"
+        style={{
+          height: `${horizonPct}%`,
+          background: GROUND_COLORS[phase].grass,
+          borderTopColor: GROUND_COLORS[phase].lip,
+          ...entrance(intro, "enter-ground", INTRO.ground),
+        }}
       />
       <div
-        className="absolute inset-x-0 bottom-0 h-[5%] bg-soil border-t-4 border-black/10"
-        style={entrance(intro, "enter-ground", INTRO.ground)}
+        className="absolute inset-x-0 bottom-0 h-[5%] border-t-4 border-black/10"
+        style={{
+          background: GROUND_COLORS[phase].soil,
+          ...entrance(intro, "enter-ground", INTRO.ground),
+        }}
       />
     </>
   );

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Sprite from "@/components/Sprite";
-import Backdrop, { SKY_GRADIENT, type SkyPhase } from "./Backdrop";
+import Backdrop, { SKY_GRADIENT, worldTint, type SkyPhase } from "./Backdrop";
 import FieldNav from "./FieldNav";
 import FlowerField from "./FlowerField";
 import LetterModal from "./LetterModal";
@@ -460,6 +460,7 @@ export default function GardenScene({
   }, [unlock.unlocksAt, now]);
 
   const allDelivered = !unlock.nextNote && notes.length > 0;
+  const tint = worldTint(phase);
 
   return (
     /*
@@ -601,6 +602,23 @@ export default function GardenScene({
             {h.kind === "heart" ? "♥" : "✦"}
           </span>
         ))}
+
+        {/*
+         * Dusk and darkness, laid over the whole world.
+         *
+         * It has to be the last thing in here and above the z-[14] the food and
+         * hearts use, because it is light rather than scenery — the point is that
+         * the pig and the flowers are under it too. Everything past this div is
+         * HUD at z-20, which stays legible: a dimmed stat card would just be
+         * harder to read, not more atmospheric.
+         */}
+        {tint && (
+          <div
+            aria-hidden
+            className="absolute inset-0 z-[15] pointer-events-none"
+            style={{ background: tint }}
+          />
+        )}
       </div>
 
       {scrollable && <FieldNav camera={camera} intro={intro} />}
