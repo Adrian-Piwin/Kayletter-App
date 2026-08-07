@@ -4,6 +4,7 @@ import { memo } from "react";
 import Sprite from "@/components/Sprite";
 import ParallaxLayer from "./ParallaxLayer";
 import { entrance, INTRO, type IntroPhase } from "@/lib/garden-intro";
+import { FLOWERS, flowerSprite, type FlowerType } from "@/lib/flowers";
 import type { FieldLayout, FieldRow } from "@/lib/garden-layout";
 import type { CameraController } from "./useCamera";
 import type { Note } from "@/lib/types";
@@ -36,6 +37,7 @@ function sproutStyle(stagePct: number, intro: IntroPhase) {
 function FieldBand({
   row,
   depthIndex,
+  flower,
   camera,
   onOpen,
   intro,
@@ -43,6 +45,8 @@ function FieldBand({
   row: FieldRow;
   /** Position of the row from the back of the field, which orders its entrance. */
   depthIndex: number;
+  /** Species the whole garden grows. */
+  flower: FlowerType;
   camera: CameraController;
   onOpen: (note: Note) => void;
   intro: IntroPhase;
@@ -71,42 +75,45 @@ function FieldBand({
         </span>
       ))}
 
-      {row.flowers.map((flower) => (
+      {row.flowers.map((placement) => (
         <div
-          key={flower.note.id}
+          key={placement.note.id}
           className="absolute -translate-x-1/2 origin-bottom"
           style={{
-            left: `${flower.xPct}%`,
-            bottom: `${flower.bottomPct}%`,
-            ...sproutStyle(flower.xPct * row.widthScreens, intro),
+            left: `${placement.xPct}%`,
+            bottom: `${placement.bottomPct}%`,
+            ...sproutStyle(placement.xPct * row.widthScreens, intro),
           }}
         >
           <button
             // A drag across the field shouldn't count as tapping the flower it ended on.
-            onClick={() => !camera.suppressClick() && onOpen(flower.note)}
+            onClick={() => !camera.suppressClick() && onOpen(placement.note)}
             // Tabbing through the letters walks the camera along with it.
             onFocus={(e) =>
               e.currentTarget.matches(":focus-visible") &&
-              camera.revealAt(flower.xPct, row.widthScreens, row.factor)
+              camera.revealAt(placement.xPct, row.widthScreens, row.factor)
             }
             className="pointer-events-auto block origin-bottom cursor-pointer hover:brightness-110 touch-manipulation"
             style={
-              flower.sways
-                ? { animation: `sway 4s ease-in-out ${flower.swayDelay}s infinite` }
+              placement.sways
+                ? { animation: `sway 4s ease-in-out ${placement.swayDelay}s infinite` }
                 : undefined
             }
             title="re-read this letter"
             aria-label="re-read this letter"
           >
             <Sprite
-              name={`sunflower-${flower.stage}`}
-              alt="a sunflower grown from a letter"
-              height={flower.heightPx}
+              name={flowerSprite(flower, placement.stage)}
+              alt={`a ${FLOWERS[flower].label.toLowerCase()} grown from a letter`}
+              height={placement.heightPx}
             />
-            {flower.note.is_favorite && (
+            {placement.note.is_favorite && (
               <span
                 className="absolute left-1/2 -translate-x-1/2 text-pig-deep leading-none"
-                style={{ bottom: flower.heightPx, fontSize: Math.max(9, flower.heightPx * 0.14) }}
+                style={{
+                  bottom: placement.heightPx,
+                  fontSize: Math.max(9, placement.heightPx * 0.14),
+                }}
               >
                 ♥
               </span>
@@ -119,16 +126,19 @@ function FieldBand({
 }
 
 /**
- * Every delivered letter as a sunflower, spread across the depth rows of the
- * field. Memoised because the scene above it re-renders on a one-second clock.
+ * Every delivered letter as a flower, spread across the depth rows of the
+ * field. One species for the whole garden, chosen by its author. Memoised
+ * because the scene above it re-renders on a one-second clock.
  */
 function FlowerField({
   layout,
+  flower,
   camera,
   onOpen,
   intro,
 }: {
   layout: FieldLayout;
+  flower: FlowerType;
   camera: CameraController;
   onOpen: (note: Note) => void;
   intro: IntroPhase;
@@ -138,6 +148,7 @@ function FlowerField({
       key={row.depth}
       row={row}
       depthIndex={i}
+      flower={flower}
       camera={camera}
       onOpen={onOpen}
       intro={intro}

@@ -31,11 +31,11 @@ export default function LandingPage() {
       <footer className="relative h-32 sm:h-40 overflow-hidden" aria-hidden>
         <div className="absolute inset-x-0 bottom-0 h-12 sm:h-16 bg-leaf border-t-4 border-leaf-deep" />
         <div className="absolute inset-x-0 bottom-10 sm:bottom-14 flex items-end justify-center gap-3 sm:gap-14">
-          <Sprite name="sunflower-bloom" alt="" height="clamp(54px, 17vw, 90px)" className="translate-y-2" />
-          <Sprite name="sunflower-bud" alt="" height="clamp(42px, 13vw, 70px)" className="translate-y-2" />
+          <Sprite name="flowers/sunflower-bloom" alt="" height="clamp(54px, 17vw, 90px)" className="translate-y-2" />
+          <Sprite name="flowers/sunflower-bud" alt="" height="clamp(42px, 13vw, 70px)" className="translate-y-2" />
           <PigStill clip="idle_breathe" alt="" height={72} flip className="translate-y-3" />
-          <Sprite name="sunflower-bloom" alt="" height="clamp(60px, 19vw, 100px)" className="translate-y-2" />
-          <Sprite name="sunflower-sprout" alt="" height="clamp(22px, 7vw, 36px)" className="translate-y-2" />
+          <Sprite name="flowers/sunflower-bloom" alt="" height="clamp(60px, 19vw, 100px)" className="translate-y-2" />
+          <Sprite name="flowers/sunflower-sprout" alt="" height="clamp(22px, 7vw, 36px)" className="translate-y-2" />
         </div>
       </footer>
     </main>

@@ -63,12 +63,13 @@ export async function getLetterByLegacyDisplayId(displayId: string): Promise<Let
 export async function updateLetter(
   letterId: string,
   ownerClerkId: string,
-  fields: { title?: string; pet_name?: string }
+  fields: { title?: string; pet_name?: string; flower_type?: string }
 ): Promise<Letter | null> {
   const [letter] = await sql<Letter[]>`
     update letters set
       title = coalesce(${fields.title ?? null}, title),
       pet_name = coalesce(${fields.pet_name ?? null}, pet_name),
+      flower_type = coalesce(${fields.flower_type ?? null}, flower_type),
       updated_at = now()
     where id = ${letterId} and owner_clerk_id = ${ownerClerkId}
     returning *

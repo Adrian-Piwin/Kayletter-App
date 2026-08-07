@@ -11,6 +11,7 @@ import PigActor, { pickTrick, trickToState } from "./PigActor";
 import { snoutOffset } from "./pig-display";
 import { useCamera, type ScrollDirection } from "./useCamera";
 import { analyticsFetch, track } from "@/lib/analytics";
+import type { FlowerType } from "@/lib/flowers";
 import { entrance, INTRO, INTRO_MS, type IntroPhase } from "@/lib/garden-intro";
 import { FIELD_REFRESH_MS, nominalViewport, planField } from "@/lib/garden-layout";
 import { useElementSize, useIsMobile, usePrefersReducedMotion } from "@/lib/hooks";
@@ -59,6 +60,7 @@ export default function GardenScene({
   token,
   title,
   petName,
+  flower,
   initialNotes,
   initialPet,
   serverNow,
@@ -66,6 +68,8 @@ export default function GardenScene({
   token: string;
   title: string;
   petName: string;
+  /** Species this garden grows, chosen by its author. */
+  flower: FlowerType;
   initialNotes: Note[];
   initialPet: PetStats;
   /** SSR timestamp so the first client render matches the server markup. */
@@ -458,7 +462,13 @@ export default function GardenScene({
           intro={intro}
         />
 
-        <FlowerField layout={layout} camera={camera} onOpen={openFlower} intro={intro} />
+        <FlowerField
+          layout={layout}
+          flower={flower}
+          camera={camera}
+          onOpen={openFlower}
+          intro={intro}
+        />
 
         {/*
          * The pig — held on screen while the field slides past underneath.

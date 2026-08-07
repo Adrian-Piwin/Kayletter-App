@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLetterByToken, getOrCreatePet, listNotes } from "@/lib/data";
+import { asFlowerType } from "@/lib/flowers";
 import { decayedStats, tricksUnlockedFor } from "@/lib/pet";
 import GardenScene from "@/components/garden/GardenScene";
 
@@ -32,6 +33,7 @@ export default async function RecipientPage({ params }: Props) {
       token={token}
       title={letter.title}
       petName={letter.pet_name}
+      flower={asFlowerType(letter.flower_type)}
       initialNotes={notes}
       initialPet={{ ...stats, tricks_unlocked: tricksUnlockedFor(notes) }}
       serverNow={serverNow}

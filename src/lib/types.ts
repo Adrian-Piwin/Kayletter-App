@@ -13,6 +13,8 @@ export type Letter = {
   legacy_display_id: string | null;
   title: string;
   pet_name: string;
+  /** Narrow with `asFlowerType` before use — this is whatever the column holds. */
+  flower_type: string;
   claim_email: string | null;
   created_at: string;
 };

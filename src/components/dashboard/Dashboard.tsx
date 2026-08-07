@@ -8,8 +8,10 @@ import Pagination, { usePagination } from "@/components/Pagination";
 import Sprite from "@/components/Sprite";
 import PigStill from "@/components/PigStill";
 import { PIG_CLIPS } from "@/lib/pig-anim.generated";
+import FlowerPicker from "./FlowerPicker";
 import NoteCard from "./NoteCard";
 import NoteComposer from "./NoteComposer";
+import { asFlowerType, type FlowerType } from "@/lib/flowers";
 import { analyticsFetch, track } from "@/lib/analytics";
 import { useOrigin } from "@/lib/hooks";
 import { FREE_NOTE_LIMIT, NOTES_PER_PAGE } from "@/lib/plan";
@@ -29,6 +31,9 @@ export default function Dashboard({
   const [notes, setNotes] = useState(initialNotes);
   const [title, setTitle] = useState(letter.title);
   const [petName, setPetName] = useState(letter.pet_name);
+  const [flower, setFlower] = useState(asFlowerType(letter.flower_type));
+  /** Revealed once a free author reaches for a flower they haven't paid for. */
+  const [flowerUpsell, setFlowerUpsell] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -89,11 +94,33 @@ export default function Dashboard({
     const res = await analyticsFetch("/api/letter", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, pet_name: petName }),
+      body: JSON.stringify({ title, pet_name: petName, flower_type: flower }),
     });
     setBusy(false);
-    if (res.ok) track("letter_settings_saved");
-    showToast(res.ok ? "Saved!" : "Couldn't save settings");
+    if (res.ok) {
+      track("letter_settings_saved", { flower });
+      showToast("Saved!");
+      return;
+    }
+    // The server has the last word on which flowers this author may plant, so a
+    // refused one is put back rather than left looking saved.
+    if (res.status === 402) {
+      setFlower(asFlowerType(letter.flower_type));
+      setFlowerUpsell(true);
+      showToast("Upgrade to plant that flower");
+    } else {
+      showToast("Couldn't save settings");
+    }
+  }
+
+  function pickFlower(next: FlowerType) {
+    setFlower(next);
+    track("flower_selected", { flower: next });
+  }
+
+  function offerFlowerUpgrade(locked: FlowerType) {
+    setFlowerUpsell(true);
+    track("flower_locked_clicked", { flower: locked, note_count: notes.length });
   }
 
   async function addNote(content: string) {
@@ -289,6 +316,29 @@ export default function Dashboard({
             />
           </label>
         </div>
+
+        <FlowerPicker
+          value={flower}
+          onChange={pickFlower}
+          isPremium={isPremium}
+          onLockedClick={offerFlowerUpgrade}
+        />
+
+        {!isPremium && flowerUpsell && (
+          <div className="border-2 border-ink bg-sunflower/40 p-3 flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+            <p className="flex-1 text-sm text-ink">
+              Every flower — and unlimited notes — for a single dollar, once.
+            </p>
+            <PixelButton
+              onClick={upgrade}
+              disabled={busy}
+              className="w-full sm:w-auto min-h-11 shrink-0"
+            >
+              Unlock every flower — $1
+            </PixelButton>
+          </div>
+        )}
+
         <PixelButton
           variant="leaf"
           onClick={saveSettings}

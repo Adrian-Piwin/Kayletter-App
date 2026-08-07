@@ -23,6 +23,8 @@ create table if not exists letters (
   pet_name text not null default 'Truffle',
   -- email of the legacy author; letter is auto-claimed when they sign up with it
   claim_email text,
+  -- which flower the garden grows; changing it is part of the $1 upgrade
+  flower_type text not null default 'sunflower',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
