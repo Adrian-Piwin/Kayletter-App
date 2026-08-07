@@ -78,11 +78,12 @@ Gardens can grow roses, tulips, daisies, lilies or lavender instead of sunflower
 - New `letters.flower_type` column, defaulting to `sunflower`, with a migration.
 
 ##### **sprites**
+- The new flowers are drawn at genuinely low resolution (36x48 blooms) and shipped at native size, so the browser upscales them into chunky pixels. Generated at the sunflower's own 174x244 first, they came back as smooth illustrations that read as a different medium beside it — a big canvas buys detail, not big pixels.
 - All flower art moves to `public/sprites/flowers/`, the sunflower included, so there is one convention.
-- `scripts/flowers/` builds the forced palettes, cleans the generated art, and composites contact sheets at true display height.
+- `scripts/flowers/` cleans the generated art and composites contact sheets at true display height, which is the only honest way to judge a sprite that ships at 34px.
 
 ##### **docs**
-- Record in the PixelLab notes that a forced palette silently overrides `no_background`, and that a white-petalled subject therefore can't use one.
+- Record in the PixelLab notes that resolution *is* the style — size a canvas from the display height and the pixel size you want, not from the neighbouring sprite's file — and that a forced palette silently overrides `no_background`.
 
 
 ## [0.2.0] - 2026-08-02

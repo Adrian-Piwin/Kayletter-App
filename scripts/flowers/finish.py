@@ -77,6 +77,14 @@ def key_background(im: Image.Image) -> tuple[Image.Image, int]:
     im = im.convert("RGBA")
     w, h = im.size
     px = im.load()
+
+    # Small canvases come back genuinely transparent, and then there is nothing
+    # to key. Running anyway would be actively harmful: a cleared pixel keeps
+    # whatever RGB it was flattened from, so the corner reads as some dark green
+    # and the flood would erase every outline pixel of that colour it can reach.
+    if px[0, 0][3] == 0:
+        return im, 0
+
     backdrop = px[0, 0][:3]
 
     seen = [[False] * w for _ in range(h)]

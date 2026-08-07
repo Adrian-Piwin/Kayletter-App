@@ -324,12 +324,53 @@ on a character whose darkest line is a mid pink is the single biggest reason the
 berry read as a different, harder medium. The eye is a *spot* colour, not a ramp
 member; sharing it is how you get an asset that clashes.
 
+### 0. Resolution *is* the style — generate small
+
+This is the first thing to get right, and the flower set got it wrong twice
+before getting it right.
+
+The sunflower is 174×244 and reads as unmistakable pixel art. So the five new
+flowers were generated at 174×244 too, on the reasonable theory that matching
+the canvas would match the look. It did not, and the gap was not subtle — beside
+the sunflower they read as smooth little illustrations, a different medium
+entirely.
+
+**A big canvas does not buy you big pixels. It buys detail.** The sunflower's
+canvas holds art built from chunky blocks; a fresh generation at the same size
+holds smooth curves, 1px stair-stepping and speckle — and then gets downscaled
+2.3× to display, which mushes the detail into noise without ever producing a
+readable block. The same rose regenerated at **36×48** and shipped at native
+size was immediately right: the browser upscales it ~1.9× with
+`image-rendering: pixelated`, so one art pixel is two screen pixels and the
+shapes read as deliberate.
+
+So size the canvas from the **display height and the pixel size you want**, not
+from the neighbouring sprite's file:
+
+    canvas height ≈ display height ÷ screen-pixels-per-art-pixel
+
+At the garden's 92/66/34px stages and a target of ~1.8, that is 48/36/20 — which
+is how the set landed on 36×48 blooms, 32×44 buds and 44×32 sprouts.
+
+Two practical notes. **Prefer `create_image_pixen` at these sizes**: it is
+documented as holding up better on small sprites, and it does — all 15 flowers
+came back needing *zero* cleanup, no strays, no soft alpha, against constant
+repair work at the larger size. And its canvas rules differ from pixflux's:
+sides must be multiples of 4, and the canvas **must be square if either side is
+under 32**, which is why the bud is 32×44 rather than the 24×36 its proportions
+wanted.
+
 ### 1a. A forced palette costs you transparency
 
 `color_image` and `no_background` do not compose: ask for both and the art comes
 back **opaque, flattened onto the palette's lightest colour**. Nothing warns
 about it — `no_background: True` is echoed back in the job — and the frames look
 right in the preview, because the backdrop is a plausible pastel.
+
+This bit the flowers at the large canvas they were first drawn at. At the small
+canvases they ship at now, `no_background` works and the art arrives genuinely
+transparent — so the whole problem is avoidable by generating small, and the
+notes below matter only if you have a reason to force a palette anyway.
 
 Keying it out afterwards works, with one condition, and the flower set is where
 the condition bites. The key has to be a flood from the border, never a

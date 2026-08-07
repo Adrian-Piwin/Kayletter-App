@@ -1,163 +1,175 @@
 {
-  "_note": "The five paid flowers, generated with create_image_pixflux against the forced palettes in palettes.json (built by scripts/flowers/palettes.py). Every palette keeps the sunflower's own greens and stem brown and changes only the petal ramp, which is what makes six species read as one garden. Canvases match the sunflower stage each sprite stands in for (bloom 172x244, bud 136x220, sprout 108x76, all rounded to the pixel grid's multiple of 4), so at the same display height they carry the same apparent pixel size. Re-running with the same seed + palette reproduces these. The sunflower itself is older hand-kept art and has no job here.",
+  "_note": "The five paid flowers, generated with create_image_pixen at genuinely low resolution and shipped at native size \u2014 the browser upscales them with image-rendering: pixelated, so a 36x48 bloom draws at 92px with art pixels about two screen pixels across. That is the whole point: the first attempt generated the same flowers at the sunflower's 172x244 and they came back as smooth little illustrations that read as a different medium beside it, because a large canvas buys detail rather than pixels. Resolution is the style. Pixen is used rather than pixflux because it holds up better at these sizes and, unlike a forced palette, returns real transparency. The sunflower is older hand-kept art and has no job here.",
   "display_height": {
     "sprout": 34,
     "bud": 66,
     "bloom": 92
   },
+  "canvas": {
+    "bloom": [
+      36,
+      48
+    ],
+    "bud": [
+      32,
+      44
+    ],
+    "sprout": [
+      44,
+      32
+    ]
+  },
+  "constraints": "Pixen requires sides that are multiples of 4, and a square canvas if either side is under 32 \u2014 which is why the bud is 32x44 rather than the 24x36 its proportions wanted.",
   "style": {
+    "model": "pixen",
     "view": "side",
     "outline": "single color outline",
-    "shading": "basic shading",
-    "detail": "medium detail (low detail for sprouts)"
+    "detail": "low detail"
   },
   "flowers": {
     "rose": {
       "bloom": {
-        "job": "8c3f6bc0-5c6a-4afd-97d4-2acfdbc3f578",
+        "job": "e07c78b0-aec7-4f8e-aa7d-aee2bce726d4",
         "seed": 11,
         "canvas": [
-          172,
-          244
+          36,
+          48
         ],
-        "description": "one single red rose flower on a tall straight green stem, side view, layered rounded petals forming a cup at the top of the stem, two pointed leaves halfway down the stem, flat cute pixel art, whole plant fills the canvas from bottom to top"
+        "description": "one red rose flower on a green stem with two leaves, side view, simple chunky pixel art, whole plant fills the canvas from bottom to top"
       },
       "bud": {
-        "job": "a727a6e7-bad0-4a73-8184-1f3d9d45bdc0",
-        "seed": 31,
-        "canvas": [
-          136,
-          220
-        ],
-        "description": "a young rose plant, one fat closed rose bud wrapped in green sepals with red petal tips showing at the top, thick straight green stem, two broad green leaves either side of the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
-      },
-      "sprout": {
-        "job": "43232fd5-40b0-4c46-b53b-1eb1e78c96c6",
+        "job": "a487cd99-117f-470f-be0d-d62cf2e06188",
         "seed": 11,
         "canvas": [
-          108,
-          76
+          32,
+          44
         ],
-        "description": "a tiny seedling with two small toothed green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+        "description": "a young rose plant, one closed red flower bud on a green stem with two leaves, side view, simple chunky pixel art, plant fills the canvas from bottom to top"
+      },
+      "sprout": {
+        "job": "a8b404f1-b9f0-4ba1-ba93-38af8fc4dca6",
+        "seed": 11,
+        "canvas": [
+          44,
+          32
+        ],
+        "description": "a tiny green seedling with two small round leaves on a short stem, sitting in a small mound of brown soil, side view, simple chunky pixel art"
       }
     },
     "tulip": {
       "bloom": {
-        "job": "12c0d1d8-b535-473b-b958-a7abbb34a0b2",
+        "job": "e079dbd2-eb1e-45f5-bcb8-eca43403b472",
         "seed": 11,
         "canvas": [
-          172,
-          244
+          36,
+          48
         ],
-        "description": "one single red tulip flower on a tall straight green stem, side view, closed cup of smooth pointed petals at the top, two long slender leaves rising from the base of the stem, flat cute pixel art, whole plant fills the canvas from bottom to top"
+        "description": "one red tulip flower on a green stem with two long leaves, side view, simple chunky pixel art, whole plant fills the canvas from bottom to top"
       },
       "bud": {
-        "job": "e465f390-4b6a-4725-9226-4dd539f187e7",
+        "job": "e98183ae-4905-4058-862d-ecb04ec901c2",
         "seed": 11,
         "canvas": [
-          136,
-          220
+          32,
+          44
         ],
-        "description": "a young tulip plant, one closed pointed flower bud wrapped in green sepals with red petal tips just showing at the very top, straight green stem, two long slender leaves rising from the base, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+        "description": "a young tulip plant, one closed pointed red flower bud on a green stem with two long leaves, side view, simple chunky pixel art, plant fills the canvas from bottom to top"
       },
       "sprout": {
-        "job": "fd84bbfb-ea55-4194-9eeb-71a2b9ad655b",
-        "seed": 11,
+        "job": "619b6812-7c65-468b-8ace-4f41b8f8be55",
+        "seed": 83,
         "canvas": [
-          108,
-          76
+          44,
+          32
         ],
-        "description": "a tiny seedling with two long slender green leaves rising from a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+        "description": "a seedling sprout, exactly two rounded green seed leaves in a V shape on one short green stem, growing from a small mound of brown soil, side view, simple chunky pixel art"
       }
     },
     "daisy": {
       "bloom": {
-        "job": "5605cbaa-a2cd-435e-83c7-93b317b117a1",
-        "seed": 23,
+        "job": "7c109349-39a5-4a92-8bb7-6c079a9db2a7",
+        "seed": 11,
         "canvas": [
-          172,
-          244
+          36,
+          48
         ],
-        "palette": "none \u2014 see rejected",
-        "description": "one big white daisy flower, large round golden yellow centre with a ring of broad white petals, the flower head is huge and fills the whole top half of the image, short thick leaf-green stem below it, two green leaves on the stem, side view, flat cute pixel art, dark green outline"
+        "description": "one white daisy flower with a big round yellow centre on a green stem with two leaves, side view, simple chunky pixel art, whole plant fills the canvas from bottom to top"
       },
       "bud": {
-        "job": "ec642ed2-b89d-4337-8e08-69ddbfff4932",
-        "seed": 11,
+        "job": "40ee4209-c42f-4898-afc4-d8e328e272f1",
+        "seed": 83,
         "canvas": [
-          136,
-          220
+          32,
+          44
         ],
-        "description": "a young daisy plant, one round closed flower bud wrapped in green sepals with a hint of white petals at the very top, straight green stem, two small leaves on the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+        "description": "a young daisy plant, one small pointed white and green flower bud closed at the top of a green stem, two leaves lower down, side view, simple chunky pixel art, plant fills the canvas from bottom to top"
       },
       "sprout": {
-        "job": "eb48f4d3-e86f-4706-ba8a-54ca2ab2d1d7",
-        "seed": 11,
+        "job": "08311f9e-879d-4fe4-8794-3b149b01af6f",
+        "seed": 31,
         "canvas": [
-          108,
-          76
+          44,
+          32
         ],
-        "description": "a tiny seedling with two small round green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+        "description": "a tiny green seedling with two broad leaves on a short stem, sitting in a small mound of brown soil, side view, simple chunky pixel art"
       }
     },
     "lily": {
       "bloom": {
-        "job": "04848c65-eb8a-4ff5-8398-9ec63e5ec6ad",
-        "seed": 31,
-        "canvas": [
-          172,
-          244
-        ],
-        "palette": "none \u2014 white-petalled flowers can't use a forced palette; see rejected",
-        "description": "one big pink stargazer lily flower with six broad pointed deep pink petals with white edges flaring wide open, the flower head is huge and fills the whole top half of the image, short leaf-green stem below it, two narrow green leaves on the stem, side view, flat cute pixel art, dark outline"
-      },
-      "bud": {
-        "job": "a88f8228-3db1-4911-818b-ce7d66235fe6",
-        "seed": 31,
-        "canvas": [
-          136,
-          220
-        ],
-        "palette": "none \u2014 matches the palette-free pink bloom",
-        "description": "a young lily plant, one long closed pointed flower bud wrapped in green sepals with bright pink petal tips showing at the very top, thick straight green stem, two narrow green leaves on the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
-      },
-      "sprout": {
-        "job": "99c69b70-f752-4d85-8932-369817bc0332",
+        "job": "f496faeb-9883-4973-a584-16712ee7f845",
         "seed": 11,
         "canvas": [
-          108,
-          76
+          36,
+          48
         ],
-        "description": "a tiny seedling with two narrow pointed green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+        "description": "one pink lily flower with wide open pointed petals on a green stem with two narrow leaves, side view, simple chunky pixel art, whole plant fills the canvas from bottom to top"
+      },
+      "bud": {
+        "job": "127ee178-d4eb-4090-ab8d-e8c90f2ad182",
+        "seed": 11,
+        "canvas": [
+          32,
+          44
+        ],
+        "description": "a young lily plant, one long closed green flower bud with pink tips on a green stem with two narrow leaves, side view, simple chunky pixel art, plant fills the canvas from bottom to top"
+      },
+      "sprout": {
+        "job": "ce8f0af3-c9c4-41b8-aeea-1f79b53a55ea",
+        "seed": 97,
+        "canvas": [
+          44,
+          32
+        ],
+        "description": "a seedling sprout, exactly two pointed green seed leaves in a V shape on one short green stem, growing from a small mound of brown soil, side view, simple chunky pixel art"
       }
     },
     "lavender": {
       "bloom": {
-        "job": "40df8c91-f0fc-4a95-88a4-cc2660b60371",
+        "job": "3b8be655-a293-4571-bd28-39f70b92802a",
         "seed": 11,
         "canvas": [
-          172,
-          244
+          36,
+          48
         ],
-        "description": "one lavender plant, tall straight green stem, dense spike of small purple flower buds packed along the whole top half of the stem, two narrow leaves low on the stem, flat cute pixel art, plant fills the canvas from bottom to top"
+        "description": "one lavender plant, tall spike of small purple flowers on a green stem with two narrow leaves, side view, simple chunky pixel art, whole plant fills the canvas from bottom to top"
       },
       "bud": {
-        "job": "2f8de16c-0ec4-4be9-8ce0-b34882b4c5e9",
+        "job": "1c387b76-8dc0-4726-a09a-68fde7a1c6a5",
         "seed": 11,
         "canvas": [
-          136,
-          220
+          32,
+          44
         ],
-        "description": "a young lavender plant, short green spike of tightly closed buds at the top with only a hint of purple showing, straight green stem, two narrow leaves low on the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+        "description": "a young lavender plant, short green flower spike with a few purple buds on a green stem with two narrow leaves, side view, simple chunky pixel art, plant fills the canvas from bottom to top"
       },
       "sprout": {
-        "job": "8594679a-d8b4-4cdc-a88c-cb20d5fa6064",
-        "seed": 11,
+        "job": "575c873b-8de1-4ada-a2d5-773c9ad5ed95",
+        "seed": 53,
         "canvas": [
-          108,
-          76
+          44,
+          32
         ],
-        "description": "a tiny seedling with two thin narrow grey-green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+        "description": "a tiny green seedling with two thin grey-green leaves on a short stem, sitting in a small mound of brown soil, side view, simple chunky pixel art"
       }
     }
   },
@@ -209,6 +221,34 @@
     "lily-bud@cream": {
       "job": "3f41cad6-9783-4e44-bafa-a23401c902d7",
       "why": "Cream tips, drawn against the white lily this species used to be. Once the bloom became a pink stargazer the bud had to follow, or a garden changed colour as it grew."
+    },
+    "ALL@highres": {
+      "why": "Every sprite, generated at the sunflower's own canvas sizes (bloom 172x244, bud 136x220, sprout 108x76) on the theory that matching the canvas would match the apparent pixel size. It does not. The sunflower's canvas holds chunky blocks; a fresh generation at that size holds fine detail, and then gets downscaled 2.3x to display, which mushes it. Beside the sunflower they read as smooth illustrations rather than pixel art. Regenerated small. The old jobs, palettes and their own rejects are recorded in git history at c2595fd."
+    },
+    "tulip-sprout@seed23": {
+      "job": "608c07cd-93e2-4ce8-908f-9e11029c89f3",
+      "why": "Leaves drooping like a dying plant, with a blue fringe around them."
+    },
+    "lily-sprout@seed41": {
+      "job": "a9336816-7ae8-4c34-a521-ab7f0b734e1c",
+      "why": "Came out small and yellow \u2014 reads as a seedling that is already failing."
+    },
+    "daisy-bud@seed11": {
+      "job": "4cacc49c-2281-46ac-8a70-4cf7e36a4e11",
+      "why": "A green dome with white petals dangling under it; read as a lampshade rather than a bud about to open."
+    },
+    "tulip-sprout@seed67": {
+      "job": "d292c5e1-b8bb-4caa-925a-60ddc003f35b",
+      "why": "Leggy \u2014 four leaves up a tall stem, a young plant rather than a seedling just out of the ground."
+    },
+    "lily-sprout@seed71": {
+      "job": "259ebc43-ff9a-486e-8601-bb579ee2c3d7",
+      "why": "Soil came out near-black blue, and one leaf pale yellow."
+    },
+    "daisy-bud@seed67": {
+      "job": "71c3d3ee-fcaa-46d8-9b48-3fd6975dc927",
+      "why": "A mottled blue-green ball on a stalk \u2014 a thistle, not a daisy about to open."
     }
-  }
+  },
+  "_sprout_note": "Seedlings are where the prompt matters most and the species matters least: at 34px a rose seedling and a lily seedling are the same two leaves. Asking for 'exactly two seed leaves in a V shape' is what reliably produces a sprout rather than a leggy young plant, and naming brown soil explicitly stops the mound coming back near-black blue."
 }
