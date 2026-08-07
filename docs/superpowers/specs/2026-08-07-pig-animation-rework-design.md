@@ -1,6 +1,6 @@
 # Pig animation rework — pose-to-pose clips
 
-Status: **Approved, not yet implemented**
+Status: **Implemented, with two sections overturned by measurement — see §9.**
 Owner: agent + Adrian
 Target version: `0.3.0` (in progress)
 
@@ -279,3 +279,70 @@ nothing here changes that. Estimated cost is 8 harvest jobs plus 5 outbound jobs
 | The threshold is set so low it never fires | Calibrated against known-good clips (`walk`, `feed`, `play_chase`) and known-dead ones, not chosen by feel |
 | `play_roll` and `trick_playdead` read as the same trick | Deliberately differentiated: one travels on its back, the other is rigid on its side |
 | Removing a clip leaves a dangling reference | `clipForState` already guards with `available([...])`, and `PigClip` is a union type, so a stale name is a compile error |
+
+---
+
+## 9. What changed during implementation
+
+Two sections of this spec were wrong. Both were caught by measuring rather than by
+argument, and the shipped code follows the corrections, not the text above.
+
+### §4's review gate does not work as specified
+
+The spec proposed a hard floor on **absolute** silhouette motion, calibrated "above
+whatever the six dead clips score and below `walk`, `feed` and `play_chase`". No such
+threshold exists. Measured across the whole clip set, the two groups interleave:
+
+| Reads perfectly | | Dead on arrival | |
+|---|---|---|---|
+| `play_chase` | 8.3% | `trick_sit` | 9.6% |
+| `walk_letter` | 8.3% | `idle_scratch` | 8.6% |
+| `walk` | 9.7% | `idle_sniff` | 17.0% |
+
+A gait reads beautifully while moving very little; a dead clip scores high on a blink
+plus a whole-body sink. Two filtering attempts — box-downsampling to remove the
+generator's 1px edge fringe, and taking the largest *connected* region of change —
+reproduced the same ranking, so it is not a noise problem. **Amount of motion is not
+correctness of motion.**
+
+Shipped instead: a per-clip **regression** floor. A clip approved by eye records its
+motion as `approved_change` (written only by an explicit `review.py --record`, never
+as a build side effect), and a rebuild that comes back more than 25% flatter fails.
+It cannot tell you a new clip is good; it will not let a good one silently rot — which
+is the failure that actually happened, in commit `a93b79e`.
+
+### §2's harvest step needed the opposite frame count, and does not always work
+
+The spec specified `frame_count: 4` for harvesting, reasoning from the notes' finding
+that fewer frames force the model to commit to an extreme. That finding is about
+**pinned** generation, where the model interpolates between fixed endpoints. Open-ended
+generation has nothing pulling it home, so more frames means more *travel*:
+
+| Action | 4 frames | 12 frames |
+|---|---|---|
+| snout to the ground | dips ~3px, eyes close | reaches the grass ✓ |
+| onto its back | stands still | tucks into a ball and rolls ✓ |
+| scratch behind the ear | no leg leaves the ground | hind leg lifts ✓ |
+
+The whole first harvest batch was wasted on this.
+
+And for `trick_sit` it failed at any length: two open-ended attempts on top of the
+three pinned ones already recorded. **`pig-sit.png`, the pre-rework hand-drawn art, is
+what shipped** — mass within 1% of canonical, scaled 0.985 to fit the frame contract
+rather than raising it. `pose_sad` likewise adopts `pig-sad.png`. The lesson worth
+carrying: check whether someone already drew the pose before spending generations
+asking for it.
+
+### Smaller deviations
+
+- **`trick_dance` and `idle_scratch` are carried by rhythm, not pose depth.** The
+  generator would not rear this pig fully onto two legs or bring its hoof to its ear.
+  Hopping the dance 5px clear on each beat, and alternating two lifted-leg poses at
+  90ms with a 1px shake, read as the action where a deeper single pose did not.
+- **`play_roll` uses tucked-ball poses**, not the upside-down frames. The generator
+  did reach a genuine on-its-back pose at frames 9–12 — and it was unrecognisable, a
+  pink blob with no face, so it was rejected despite being exactly what was asked for.
+- **No outbound generation was needed.** §2 step 2 planned a pinned idle→extreme job
+  per clip; in practice the harvest runs already contained usable in-between frames,
+  so every clip was assembled from harvested poses alone. Five planned jobs, zero
+  spent.
