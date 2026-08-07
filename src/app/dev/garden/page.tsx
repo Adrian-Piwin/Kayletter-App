@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import GardenScene from "@/components/garden/GardenScene";
 import type { SkyPhase } from "@/components/garden/Backdrop";
@@ -26,6 +26,29 @@ type AgeMix = keyof typeof AGES;
 const HOUR_MS = 3_600_000;
 
 /**
+ * Whether a letter is waiting, and how long it has been waiting for.
+ *
+ * A garden has a letter ready when its newest note was read more than
+ * `UNLOCK_INTERVAL_MS` ago and an unread one is queued behind it, so these are
+ * expressed as an age floor on the read notes rather than as a flag — that is
+ * the actual shape of the state, and faking it any other way would let the
+ * sandbox show a garden the product cannot produce.
+ *
+ * The coupling is real and worth knowing: growth stage is read off the *same*
+ * `read_at`, so a garden with a letter ready cannot also be all sprouts. A
+ * sprout means you read it under 24h ago, which is exactly when the next letter
+ * is not due yet.
+ */
+const LETTER = {
+  none: null,
+  /** Last read comfortably over the 24h cadence, so the pig brings it now. */
+  ready: 25,
+  /** Read 18h ago — 6h still on the countdown. */
+  waiting: 18,
+} as const;
+type LetterState = keyof typeof LETTER;
+
+/**
  * Note counts worth looking at rather than a free slider. `planField` earns depth
  * from the count — rows are added only as there are flowers to fill them — so the
  * interesting values are the ones either side of a row being added, not every
@@ -33,10 +56,20 @@ const HOUR_MS = 3_600_000;
  */
 const COUNTS = [0, 1, 3, 8, 20, 45, 120, 200];
 
-/** Every note read, so all of them are planted — `planField` only plants read ones. */
-function makeNotes(count: number, mix: AgeMix, favourites: boolean, now: number): Note[] {
-  return Array.from({ length: count }, (_, i) => {
-    const hours = mix === "mixed" ? AGES.mixed(i, count) : AGES[mix]();
+/** Read notes are the planted ones — `planField` only plants those. */
+function makeNotes(
+  count: number,
+  mix: AgeMix,
+  favourites: boolean,
+  letter: LetterState,
+  now: number
+): Note[] {
+  const floor = LETTER[letter];
+  const notes: Note[] = Array.from({ length: count }, (_, i) => {
+    const raw = mix === "mixed" ? AGES.mixed(i, count) : AGES[mix]();
+    // The floor applies to every note, not just the newest, because the cadence
+    // keys off the *most recent* read — one fresher note would cancel it.
+    const hours = floor === null ? raw : Math.max(raw, floor);
     return {
       id: `dev-${i}`,
       letter_id: "dev",
@@ -48,6 +81,20 @@ function makeNotes(count: number, mix: AgeMix, favourites: boolean, now: number)
       is_favorite: favourites && i % 5 === 0,
     };
   });
+
+  // The letter itself: unread, so it grows no flower until it is opened.
+  if (letter !== "none") {
+    notes.push({
+      id: "dev-letter",
+      letter_id: "dev",
+      content: "This is the letter the pig is carrying.",
+      position: count,
+      created_at: new Date(now).toISOString(),
+      read_at: null,
+      is_favorite: false,
+    });
+  }
+  return notes;
 }
 
 export default function GardenDevPage() {
@@ -56,20 +103,33 @@ export default function GardenDevPage() {
   const [count, setCount] = useState(20);
   const [mix, setMix] = useState<AgeMix>("mixed");
   const [favourites, setFavourites] = useState(false);
+  const [letter, setLetter] = useState<LetterState>("none");
   const [open, setOpen] = useState(true);
 
   // Frozen once. `serverNow` is meant to be the SSR timestamp, and a clock that
   // advanced would re-plan the field underneath whatever is being looked at.
   const [now] = useState(() => Date.now());
   const notes = useMemo(
-    () => makeNotes(count, mix, favourites, now),
-    [count, mix, favourites, now]
+    () => makeNotes(count, mix, favourites, letter, now),
+    [count, mix, favourites, letter, now]
   );
+
+  /**
+   * Stands in for `POST /api/l/<token>/unlock`, which would 404 here.
+   *
+   * Returning the note marked read is the whole contract: the scene swaps it in,
+   * the ceremony lands, and the letter becomes a fresh sprout at the front of the
+   * field — the same thing a real unlock does, without a row to write.
+   */
+  const unlock = useCallback(async () => {
+    const next = notes.find((n) => n.read_at === null);
+    return next ? { ...next, read_at: new Date().toISOString() } : null;
+  }, [notes]);
 
   // GardenScene seeds its own state from `initialNotes`, so a changed prop alone
   // would not reach it — remounting is the honest way to re-seed, and it replays
   // the opening sequence, which is worth seeing anyway.
-  const sceneKey = `${flower}-${sky}-${count}-${mix}-${favourites}`;
+  const sceneKey = `${flower}-${sky}-${count}-${mix}-${favourites}-${letter}`;
 
   return (
     <>
@@ -82,7 +142,7 @@ export default function GardenDevPage() {
         initialNotes={notes}
         initialPet={{ happiness: 80, hunger: 30, tricks_unlocked: 4 }}
         serverNow={now}
-        pinnedSky={sky}
+        dev={{ sky, unlock }}
       />
 
       {/*
@@ -131,6 +191,14 @@ export default function GardenDevPage() {
             {(Object.keys(AGES) as AgeMix[]).map((m) => (
               <Chip key={m} on={m === mix} onClick={() => setMix(m)}>
                 {m}
+              </Chip>
+            ))}
+          </Group>
+
+          <Group label="letter">
+            {(Object.keys(LETTER) as LetterState[]).map((l) => (
+              <Chip key={l} on={l === letter} onClick={() => setLetter(l)}>
+                {l}
               </Chip>
             ))}
           </Group>

@@ -68,7 +68,7 @@ export default function GardenScene({
   initialNotes,
   initialPet,
   serverNow,
-  pinnedSky,
+  dev,
 }: {
   token: string;
   title: string;
@@ -80,11 +80,18 @@ export default function GardenScene({
   /** SSR timestamp so the first client render matches the server markup. */
   serverNow: number;
   /**
-   * Holds the sky at one time of day instead of following the clock. Only the
-   * dev sandbox passes it — a recipient's sky is whatever hour they open the
-   * letter at, and there is no way to reach this from the product.
+   * Seams for the `/dev/garden` sandbox, which has to reach states the product
+   * only reaches with a clock and a database. Kept as one clearly-named door
+   * rather than a scatter of optional props, so what is real and what is a test
+   * affordance stays obvious. Nothing in the app passes this, and `/dev` 404s
+   * outside development.
    */
-  pinnedSky?: SkyPhase;
+  dev?: {
+    /** Hold the sky at one time of day instead of following the clock. */
+    sky?: SkyPhase;
+    /** Stand in for the unlock request, so the reveal can run without a letter. */
+    unlock?: () => Promise<Note | null>;
+  };
 }) {
   const [notes, setNotes] = useState(initialNotes);
   const [pet, setPet] = useState(initialPet);
@@ -100,7 +107,7 @@ export default function GardenScene({
   const [openNote, setOpenNote] = useState<Note | null>(null);
   const [mailboxOpen, setMailboxOpen] = useState(false);
   const [now, setNow] = useState(serverNow);
-  const [phase, setPhase] = useState<SkyPhase>(pinnedSky ?? "day");
+  const [phase, setPhase] = useState<SkyPhase>(dev?.sky ?? "day");
   const [showFood, setShowFood] = useState(false);
   const [introPhase, setIntroPhase] = useState<IntroPhase>("waiting");
   const heartId = useRef(0);
@@ -278,7 +285,7 @@ export default function GardenScene({
   useEffect(() => {
     const tick = () => {
       setNow(Date.now());
-      if (pinnedSky) return;
+      if (dev?.sky) return;
       const hour = new Date().getHours();
       setPhase(hour >= 20 || hour < 6 ? "night" : hour >= 17 ? "sunset" : "day");
     };
@@ -290,7 +297,7 @@ export default function GardenScene({
       cancelAnimationFrame(first);
       clearInterval(t);
     };
-  }, [pinnedSky]);
+  }, [dev?.sky]);
 
   /* --- pig wandering when idle --- */
   useEffect(() => {
@@ -421,10 +428,12 @@ export default function GardenScene({
   function openTodaysLetter() {
     if (!unlock.canUnlock || busy) return;
     void reveal.begin(
-      analyticsFetch(`/api/l/${token}/unlock`, { method: "POST" })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((body) => body?.note ?? null)
-        .catch(() => null)
+      dev?.unlock
+        ? dev.unlock()
+        : analyticsFetch(`/api/l/${token}/unlock`, { method: "POST" })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((body) => body?.note ?? null)
+            .catch(() => null)
     );
   }
 
