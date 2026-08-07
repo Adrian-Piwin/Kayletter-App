@@ -1,0 +1,214 @@
+{
+  "_note": "The five paid flowers, generated with create_image_pixflux against the forced palettes in palettes.json (built by scripts/flowers/palettes.py). Every palette keeps the sunflower's own greens and stem brown and changes only the petal ramp, which is what makes six species read as one garden. Canvases match the sunflower stage each sprite stands in for (bloom 172x244, bud 136x220, sprout 108x76, all rounded to the pixel grid's multiple of 4), so at the same display height they carry the same apparent pixel size. Re-running with the same seed + palette reproduces these. The sunflower itself is older hand-kept art and has no job here.",
+  "display_height": {
+    "sprout": 34,
+    "bud": 66,
+    "bloom": 92
+  },
+  "style": {
+    "view": "side",
+    "outline": "single color outline",
+    "shading": "basic shading",
+    "detail": "medium detail (low detail for sprouts)"
+  },
+  "flowers": {
+    "rose": {
+      "bloom": {
+        "job": "8c3f6bc0-5c6a-4afd-97d4-2acfdbc3f578",
+        "seed": 11,
+        "canvas": [
+          172,
+          244
+        ],
+        "description": "one single red rose flower on a tall straight green stem, side view, layered rounded petals forming a cup at the top of the stem, two pointed leaves halfway down the stem, flat cute pixel art, whole plant fills the canvas from bottom to top"
+      },
+      "bud": {
+        "job": "a727a6e7-bad0-4a73-8184-1f3d9d45bdc0",
+        "seed": 31,
+        "canvas": [
+          136,
+          220
+        ],
+        "description": "a young rose plant, one fat closed rose bud wrapped in green sepals with red petal tips showing at the top, thick straight green stem, two broad green leaves either side of the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+      },
+      "sprout": {
+        "job": "43232fd5-40b0-4c46-b53b-1eb1e78c96c6",
+        "seed": 11,
+        "canvas": [
+          108,
+          76
+        ],
+        "description": "a tiny seedling with two small toothed green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+      }
+    },
+    "tulip": {
+      "bloom": {
+        "job": "12c0d1d8-b535-473b-b958-a7abbb34a0b2",
+        "seed": 11,
+        "canvas": [
+          172,
+          244
+        ],
+        "description": "one single red tulip flower on a tall straight green stem, side view, closed cup of smooth pointed petals at the top, two long slender leaves rising from the base of the stem, flat cute pixel art, whole plant fills the canvas from bottom to top"
+      },
+      "bud": {
+        "job": "e465f390-4b6a-4725-9226-4dd539f187e7",
+        "seed": 11,
+        "canvas": [
+          136,
+          220
+        ],
+        "description": "a young tulip plant, one closed pointed flower bud wrapped in green sepals with red petal tips just showing at the very top, straight green stem, two long slender leaves rising from the base, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+      },
+      "sprout": {
+        "job": "fd84bbfb-ea55-4194-9eeb-71a2b9ad655b",
+        "seed": 11,
+        "canvas": [
+          108,
+          76
+        ],
+        "description": "a tiny seedling with two long slender green leaves rising from a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+      }
+    },
+    "daisy": {
+      "bloom": {
+        "job": "5605cbaa-a2cd-435e-83c7-93b317b117a1",
+        "seed": 23,
+        "canvas": [
+          172,
+          244
+        ],
+        "palette": "none \u2014 see rejected",
+        "description": "one big white daisy flower, large round golden yellow centre with a ring of broad white petals, the flower head is huge and fills the whole top half of the image, short thick leaf-green stem below it, two green leaves on the stem, side view, flat cute pixel art, dark green outline"
+      },
+      "bud": {
+        "job": "ec642ed2-b89d-4337-8e08-69ddbfff4932",
+        "seed": 11,
+        "canvas": [
+          136,
+          220
+        ],
+        "description": "a young daisy plant, one round closed flower bud wrapped in green sepals with a hint of white petals at the very top, straight green stem, two small leaves on the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+      },
+      "sprout": {
+        "job": "eb48f4d3-e86f-4706-ba8a-54ca2ab2d1d7",
+        "seed": 11,
+        "canvas": [
+          108,
+          76
+        ],
+        "description": "a tiny seedling with two small round green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+      }
+    },
+    "lily": {
+      "bloom": {
+        "job": "04848c65-eb8a-4ff5-8398-9ec63e5ec6ad",
+        "seed": 31,
+        "canvas": [
+          172,
+          244
+        ],
+        "palette": "none \u2014 white-petalled flowers can't use a forced palette; see rejected",
+        "description": "one big pink stargazer lily flower with six broad pointed deep pink petals with white edges flaring wide open, the flower head is huge and fills the whole top half of the image, short leaf-green stem below it, two narrow green leaves on the stem, side view, flat cute pixel art, dark outline"
+      },
+      "bud": {
+        "job": "a88f8228-3db1-4911-818b-ce7d66235fe6",
+        "seed": 31,
+        "canvas": [
+          136,
+          220
+        ],
+        "palette": "none \u2014 matches the palette-free pink bloom",
+        "description": "a young lily plant, one long closed pointed flower bud wrapped in green sepals with bright pink petal tips showing at the very top, thick straight green stem, two narrow green leaves on the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+      },
+      "sprout": {
+        "job": "99c69b70-f752-4d85-8932-369817bc0332",
+        "seed": 11,
+        "canvas": [
+          108,
+          76
+        ],
+        "description": "a tiny seedling with two narrow pointed green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+      }
+    },
+    "lavender": {
+      "bloom": {
+        "job": "40df8c91-f0fc-4a95-88a4-cc2660b60371",
+        "seed": 11,
+        "canvas": [
+          172,
+          244
+        ],
+        "description": "one lavender plant, tall straight green stem, dense spike of small purple flower buds packed along the whole top half of the stem, two narrow leaves low on the stem, flat cute pixel art, plant fills the canvas from bottom to top"
+      },
+      "bud": {
+        "job": "2f8de16c-0ec4-4be9-8ce0-b34882b4c5e9",
+        "seed": 11,
+        "canvas": [
+          136,
+          220
+        ],
+        "description": "a young lavender plant, short green spike of tightly closed buds at the top with only a hint of purple showing, straight green stem, two narrow leaves low on the stem, side view, flat cute pixel art, plant fills the canvas from bottom to top"
+      },
+      "sprout": {
+        "job": "8594679a-d8b4-4cdc-a88c-cb20d5fa6064",
+        "seed": 11,
+        "canvas": [
+          108,
+          76
+        ],
+        "description": "a tiny seedling with two thin narrow grey-green leaves on a very short stem, small mound of brown soil at the base, side view, flat cute pixel art, fills the canvas"
+      }
+    }
+  },
+  "rejected": {
+    "daisy-bloom@seed11": {
+      "job": "07e5df8a-7562-4d42-8baf-65b06fbdbcf2",
+      "why": "Head about a fifth of the canvas, so at the 92px it ships at the flower read as a white dot on a stick. The fix was in the prompt, not the seed: asking for the head to fill the top half of the image."
+    },
+    "lily-bloom@seed11": {
+      "job": "669931e6-911b-4525-b622-29ddeec0e3e4",
+      "why": "Same problem as the daisy, worse \u2014 a lily's petals are thin, so a small head lost them entirely at display size."
+    },
+    "daisy-bloom@palette": {
+      "job": "0905c518-60d1-41a9-8587-4f6374c1f4d1",
+      "why": "The white-petalled flowers cannot use a forced palette. A palette makes the generator return the art flattened onto its lightest colour instead of transparency, and on the daisy and the lily that lightest colour IS the petal \u2014 so keying the backdrop took the petals with it and left a yellow disc floating on a stem. Both are generated palette-free instead, with the greens named in the prompt; the backdrop then comes back a pale green the petals never use, and keys cleanly."
+    },
+    "lily-bloom@palette": {
+      "job": "8cd716c3-b85f-4e81-858d-bb029ff875c6",
+      "why": "Same as the daisy: cream petals the same colour as the forced backdrop, so keying ate holes through them."
+    },
+    "lily-bloom@white": {
+      "job": "ac39dc5f-5286-4386-a8ac-1f67aa5f5628",
+      "why": "A white lily on light-green grass is nearly all highlight: at 92px its petals lost their edges and the whole flower read as a pale smudge, with a broken orange outline. Every other species carries a colour that holds at display size, so the lily became a pink stargazer \u2014 still the most-planted lily there is, and it survives the downscale."
+    },
+    "rose-sprout@wide": {
+      "job": "bfab7de1-e077-40e3-8fd3-10f6f4d97384",
+      "why": "An attempt to widen the seedling to the sunflower sprout's chunkier proportions, by asking for big leaves spreading left and right. It drew the leaves genuinely detached \u2014 floating either side of a stemless mound of soil \u2014 and the clean-up then binned them as strays. The narrower first batch is kept: it is a little slighter than the sunflower's seedling, but it is a plant."
+    },
+    "tulip-sprout@wide": {
+      "job": "8198aa86-4afb-4a6c-9f1f-0488f5ea22db",
+      "why": "An attempt to widen the seedling to the sunflower sprout's chunkier proportions, by asking for big leaves spreading left and right. It drew the leaves genuinely detached \u2014 floating either side of a stemless mound of soil \u2014 and the clean-up then binned them as strays. The narrower first batch is kept: it is a little slighter than the sunflower's seedling, but it is a plant."
+    },
+    "daisy-sprout@wide": {
+      "job": "25718179-7130-4ae0-bcd5-106ca397f032",
+      "why": "An attempt to widen the seedling to the sunflower sprout's chunkier proportions, by asking for big leaves spreading left and right. It drew the leaves genuinely detached \u2014 floating either side of a stemless mound of soil \u2014 and the clean-up then binned them as strays. The narrower first batch is kept: it is a little slighter than the sunflower's seedling, but it is a plant."
+    },
+    "lily-sprout@wide": {
+      "job": "70e234b9-d4eb-4b72-ae27-51d25f2a55ce",
+      "why": "An attempt to widen the seedling to the sunflower sprout's chunkier proportions, by asking for big leaves spreading left and right. It drew the leaves genuinely detached \u2014 floating either side of a stemless mound of soil \u2014 and the clean-up then binned them as strays. The narrower first batch is kept: it is a little slighter than the sunflower's seedling, but it is a plant."
+    },
+    "lavender-sprout@wide": {
+      "job": "7b6f2b2a-b350-426e-b4ff-a56d5efe389e",
+      "why": "An attempt to widen the seedling to the sunflower sprout's chunkier proportions, by asking for big leaves spreading left and right. It drew the leaves genuinely detached \u2014 floating either side of a stemless mound of soil \u2014 and the clean-up then binned them as strays. The narrower first batch is kept: it is a little slighter than the sunflower's seedling, but it is a plant."
+    },
+    "rose-bud@seed11": {
+      "job": "25677ef9-e42c-4326-bd36-89fd4c60862b",
+      "why": "Drew one leaf detached from a hair-thin stem; the clean-up binned the leaf as a stray and what shipped was a bud on a bare wire. Re-prompted for a thick stem and a leaf either side."
+    },
+    "lily-bud@cream": {
+      "job": "3f41cad6-9783-4e44-bafa-a23401c902d7",
+      "why": "Cream tips, drawn against the white lily this species used to be. Once the bloom became a pink stargazer the bud had to follow, or a garden changed colour as it grew."
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "rose": {
+    "palette": [
+      "#0e4923",
+      "#4e8934",
+      "#a8c848",
+      "#894929",
+      "#8c1f3a",
+      "#c23a56",
+      "#e46a80",
+      "#f8b7c2"
+    ],
+    "base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAABCAIAAABsYngUAAAAIUlEQVR4nGPk81R2cBCMshd52PiQ+ZqgmbSMkoGWiK8TAFMBBnODLQnUAAAAAElFTkSuQmCC"
+  },
+  "tulip": {
+    "palette": [
+      "#0e4923",
+      "#4e8934",
+      "#a8c848",
+      "#894929",
+      "#a32a2f",
+      "#d84b3f",
+      "#f27a4e",
+      "#fbc06d"
+    ],
+    "base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAABCAIAAABsYngUAAAAIUlEQVR4nGPk81R2cBCMshd52PhQ6iGbqaKAlD4/p5s8AFMABirK6UIEAAAAAElFTkSuQmCC"
+  },
+  "daisy": {
+    "palette": [
+      "#0e4923",
+      "#4e8934",
+      "#a8c848",
+      "#894929",
+      "#c9962a",
+      "#f6d64a",
+      "#fdf3d6",
+      "#fffdf2"
+    ],
+    "base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAABCAIAAABsYngUAAAAIUlEQVR4nGPk81R2cBCMshd52PjQwZdR10GBXbaHiUsGAE/yBfCUXsWUAAAAAElFTkSuQmCC"
+  },
+  "lily": {
+    "palette": [
+      "#0e4923",
+      "#4e8934",
+      "#a8c848",
+      "#894929",
+      "#b8683f",
+      "#e89a5c",
+      "#fbd9b0",
+      "#fffaf0"
+    ],
+    "base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAABCAIAAABsYngUAAAAIUlEQVR4nGPk81R2cBCMshd52PhQX17MwEhW2D6ERdEBAE3+Beu7Op5FAAAAAElFTkSuQmCC"
+  },
+  "lavender": {
+    "palette": [
+      "#0e4923",
+      "#4e8934",
+      "#a8c848",
+      "#894929",
+      "#4b2d7a",
+      "#7a52b8",
+      "#a985dd",
+      "#d8c6f2"
+    ],
+    "base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAABCAIAAABsYngUAAAAIUlEQVR4nGPk81R2cBCMshd52Pjw0JNAfVU7fWNVfUdRAGBjB5I7VfJlAAAAAElFTkSuQmCC"
+  }
+}
