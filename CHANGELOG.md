@@ -100,6 +100,29 @@ Six clips showed a pig that blinked and did nothing else. They are drawn from ha
 - A clip is built from key poses now: an extreme pose is harvested from the early frames of an open-ended generation and approved by hand, the leg from idle to that pose is generated between two *different* approved poses, and the return leg is those frames reversed. Pinning the same idle pose at both ends locks identity but averages the middle flat, which is why three attempts at a pinned sit all produced a crouch.
 - `review.py` records the motion of a clip that was approved by eye and fails the build if a later rebuild comes back materially flatter — the one failure every existing check missed, since mass, palette and eye area are all conserved by a clip in which nothing happens.
 
+### Make opening a letter a ceremony, with sound
+
+Opening today's letter was a modal popping in after the network came back. It is a sequence now: the garden dims, the pig lets the envelope go, it floats up and hangs there sealed and glowing, the seal breaks in a burst of the garden's own petals, and the paper unfolds and writes itself on. Closing it folds the letter back down into the soil, where its flower comes up.
+
+#### Changes
+- The reveal is scheduled from the click rather than the API reply, matching every other action in the garden. The request is raced against the opening beats, and a slow one simply leaves the letter hanging sealed a moment longer instead of showing a stalled button.
+- Only a fresh unlock gets the ceremony. Re-reading from a flower or the mailbox opens straight away, as before.
+- Tapping anywhere (or any plain key) skips to the letter.
+- Add a sound toggle to the top bar, remembered across visits.
+
+##### **garden**
+- `letter-reveal.ts` holds the beat timings and the petal scatter; `useLetterReveal` runs the timeline and owns the wait on the letter arriving. Beats are durations rather than offsets from a start, because the sequence pauses mid-way for the network.
+- `LetterReveal` draws the dimming, the flight and the burst, and is handed a phase — it never schedules anything itself.
+- A new flower is planted the moment its letter is read, since the mailbox count and the pig's envelope depend on it, but is held out of sight until the camera walks out to it. Previously the camera panned to it while the modal was still covering the screen.
+- The letter's words fade on in order, with the stagger squeezed to fit so a long note never keeps writing after the reader has started.
+
+##### **sound**
+- `sound.ts` gains a filtered-noise primitive next to the existing oscillator, which is what paper and a tearing seal need. New cues: `rustle`, `seal`, `reveal`, `bloom`.
+- Everything now runs through a master gain, so muting silences the notes a sequence has already scheduled rather than only the next one.
+
+##### **flowers**
+- Each species carries petal colours sampled from its own bloom sprite, so the burst matches the flower that garden grows.
+
 
 ## [0.2.0] - 2026-08-02
 

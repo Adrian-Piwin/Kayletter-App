@@ -134,6 +134,57 @@ def keep(label: str, index: int, name: str) -> None:
     print(f"{name}.png ← {src.relative_to(ROOT)}")
 
 
+def adopt(source: Path, name: str) -> None:
+    """Take a hand-drawn pose from public/sprites/ onto the frame contract.
+
+    The pre-rework art is a set of hand-drawn poses of this exact pig — a real sit,
+    a real dejected slump — and the generator cannot draw any of them. Twelve frames
+    of open-ended "sitting down on its rear" produced a pig that shut its eyes and
+    shrank; the notes record three earlier attempts doing the same. The prior for
+    "round pig standing side-on" is simply stronger than the prompt.
+
+    What made these unusable as *rendered art* was that each is a different canvas
+    with the pig at a different size, so the pig jumped between states. That is a
+    normalisation problem, not an art problem: as a key pose, one is worth more than
+    anything a generation returns, because the pixels are the same artist's.
+
+    Fitting is a uniform scale, only ever down, and only when the subject genuinely
+    does not fit — pig-sit is 202px tall against a 199px frame, so it scales by
+    0.985 and loses three pixel rows. Worth being precise about the trade: the notes
+    propose raising the frame contract instead, which is cleaner in principle but
+    ripples into the atlas, `SpriteSheet` and every display height in the app. A 1.5%
+    scale costs ~3% of the pig's mass, well inside the 15% the review tolerates and
+    far inside the 23% the posed sit this replaces was losing.
+    """
+    im = clean(Image.open(source))
+    box = im.getbbox()
+    if not box:
+        raise SystemExit(f"{source}: empty")
+    subject = im.crop(box)
+    fit = min(FRAME_W / subject.width, FRAME_H / subject.height, 1.0)
+    if fit < 1.0:
+        subject = subject.resize(
+            (max(1, round(subject.width * fit)), max(1, round(subject.height * fit))),
+            Image.NEAREST,
+        )
+        print(f"  scaled {fit:.3f} to fit the {FRAME_W}×{FRAME_H} contract")
+    canvas = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+    # Centre horizontally and stand it on the ground line, the same registration
+    # every other frame gets — a pose that floats is worse than one that is 3px short.
+    canvas.paste(
+        subject,
+        ((FRAME_W - subject.width) // 2, FRAME_H - 1 - subject.height),
+        subject,
+    )
+    # Re-clean: a NEAREST downscale can strand a pixel that was only just connected.
+    canvas, _ = drop_strays(canvas)
+    POSES_DIR.mkdir(parents=True, exist_ok=True)
+    canvas.save(POSES_DIR / f"{name}.png")
+
+    base = Image.open(IDLE_POSE).convert("RGBA")
+    print(f"{name}.png ← {source.relative_to(ROOT)}   mass {mass(canvas) / mass(base):.2f} of canonical")
+
+
 def survey(job_id: str, label: str) -> None:
     files = download(job_id, RAW_DIR / f"pose_{label}")
     if not files:
@@ -174,6 +225,9 @@ def main() -> None:
         raise SystemExit(__doc__)
     if args[0] == "--keep":
         keep(args[1], int(args[2]), args[3])
+        return
+    if args[0] == "--adopt":
+        adopt(Path(args[1]) if Path(args[1]).is_absolute() else ROOT / args[1], args[2])
         return
     survey(args[0], args[1])
 

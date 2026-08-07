@@ -181,7 +181,148 @@ COMPOSED: dict[str, Clip] = {
 # from. Nothing should be added here.
 POSED: dict[str, list[Pose]] = {}
 
-POSE_CLIPS: dict[str, PoseClip] = {}
+POSE_CLIPS: dict[str, PoseClip] = {
+    # Every clip below is out-and-back: the frames that travel to the extreme are
+    # replayed in reverse to come home. That is free — no generation — and it lands
+    # on the canonical pose exactly rather than approximately, which is what lets a
+    # one-shot hand back to the idle loop without a snap.
+    #
+    # A jump is one drawn pose moved up and down. Translation, not scale: the posed
+    # version of this clip lost 26% of the pig's mass to a uniform `scale` and read
+    # as the pig shrinking mid-hop. It opens on the crouch rather than the idle pose,
+    # because a jump that begins from a settled stand reads as hesitant.
+    "play_bounce": PoseClip(
+        ms=110,
+        loop=False,
+        airborne=True,
+        frames=[
+            ("bounce_crouch", Shift()),
+            ("bounce_tuck", Shift(dy=-8)),
+            ("bounce_tuck", Shift(dy=-20)),
+            ("bounce_tuck", Shift(dy=-11)),
+            ("bounce_land", Shift()),
+            ("idle", Shift()),
+        ],
+    ),
+    # Rolling reads as *travel*, which is why the old version did not: it rotated the
+    # idle sprite in place, so the pig tipped over rigidly and came back without
+    # going anywhere. Here the pig tucks into a ball — the drawn poses lose ~15% of
+    # their silhouette, which is honest, since a tucked pig really is smaller than a
+    # standing one with a snout and four legs sticking out — and the ball travels out
+    # and rolls back.
+    "play_roll": PoseClip(
+        ms=120,
+        loop=False,
+        frames=[
+            ("idle", Shift()),
+            ("roll_tuck", Shift(dx=-5)),
+            ("roll_ball", Shift(dx=-13)),
+            ("roll_ball2", Shift(dx=-20)),
+            ("roll_ball", Shift(dx=-11)),
+            ("roll_tuck", Shift(dx=-4)),
+            ("idle", Shift()),
+        ],
+    ),
+    # The sit is the one pose generation could not draw: twelve open-ended frames of
+    # "sitting down on its rear" produced a pig that shut its eyes and shrank, and
+    # the notes record three earlier attempts doing the same. `pig-sit.png` is the
+    # pre-rework hand-drawn art — the same pig, mass within 1% — so the extreme here
+    # is drawn by the artist rather than the model. Three frames of hold is the "for
+    # a bit" in "sits down for a bit, then stands back up".
+    "trick_sit": PoseClip(
+        ms=150,
+        loop=False,
+        frames=[
+            ("idle", Shift()),
+            ("sit_mid", Shift()),
+            ("sit_down", Shift()),
+            ("sit_down", Shift()),
+            ("sit_down", Shift()),
+            ("sit_mid", Shift()),
+            ("idle", Shift()),
+        ],
+    ),
+    # Up on the hind legs, rocking. The two drawn poses are two *heights* of the
+    # rear-up, not a mirrored pair — the pig faces left, so mirroring one to make the
+    # other would flip its facing mid-clip. The side-to-side is translation instead.
+    "trick_dance": PoseClip(
+        ms=120,
+        loop=False,
+        airborne=True,
+        frames=[
+            ("idle", Shift()),
+            ("dance_mid", Shift()),
+            # The lift on every up-beat is what turns a lean into a dance. The drawn
+            # rear-up is real but shallow, and a pig bobbing on the spot reads as
+            # hesitation; hopping it 5px clear on the beat reads as rhythm. Marked
+            # airborne so the lift is not grounded straight back out.
+            ("dance_up", Shift(dx=-6, dy=-5)),
+            ("dance_mid", Shift(dx=4)),
+            ("dance_up", Shift(dx=6, dy=-5)),
+            ("dance_mid", Shift(dx=-4)),
+            ("dance_up", Shift(dy=-5)),
+            ("idle", Shift()),
+        ],
+    ),
+    # A scratch is a *vibration*, not a lift. The generator will raise this pig's
+    # hind leg and no further — twelve open-ended frames of "scratching rapidly
+    # behind its ear" never brought the hoof near the head — so the action is carried
+    # by alternating two nearby lifted-leg poses fast. Repetition sells a scratch more
+    # than depth does, and 90ms is quick enough to read as itching rather than pacing.
+    "idle_scratch": PoseClip(
+        ms=90,
+        loop=False,
+        airborne=True,
+        frames=[
+            ("idle", Shift()),
+            ("scratch_mid", Shift()),
+            ("scratch_up", Shift(dy=-1)),
+            ("scratch_up2", Shift(dx=1)),
+            ("scratch_up", Shift(dy=-1)),
+            ("scratch_up2", Shift(dx=1)),
+            ("scratch_up", Shift()),
+            ("scratch_mid", Shift()),
+            ("idle", Shift()),
+        ],
+    ),
+    # Snout to the grass, then snuffling along it. The nudge on the held pose is what
+    # separates sniffing the ground from merely bending down to it.
+    "idle_sniff": PoseClip(
+        ms=140,
+        loop=False,
+        frames=[
+            ("idle", Shift()),
+            ("sniff_mid", Shift()),
+            ("sniff_down", Shift()),
+            ("sniff_down", Shift(dx=-3)),
+            ("sniff_down", Shift()),
+            ("sniff_mid", Shift()),
+            ("idle", Shift()),
+        ],
+    ),
+    # Flops flat and goes rigid, then springs back up. It shares the floor with
+    # play_roll, so the two are kept apart deliberately: the roll tucks into a ball
+    # and travels, this one stays put and lies still. The held frames are identical
+    # on purpose — a pig playing dead that keeps twitching is not playing dead.
+    "trick_playdead": PoseClip(
+        ms=140,
+        loop=False,
+        frames=[
+            ("idle", Shift()),
+            ("playdead_mid", Shift()),
+            ("playdead_flop", Shift()),
+            ("playdead_flop", Shift()),
+            ("playdead_flop", Shift()),
+            ("playdead_mid", Shift()),
+            ("idle", Shift()),
+        ],
+    ),
+    # A still, not an animation. The 404 wants a pig that looks like it lost
+    # something, and `pig-sad.png` is that pig drawn by hand — the two mood *loops*
+    # this replaces were prompted as adjectives and came back differently
+    # proportioned.
+    "pose_sad": PoseClip(ms=1000, loop=False, frames=[("sad_droop", Shift())]),
+}
 
 
 def reference_box() -> tuple[int, int, int, int]:
@@ -359,7 +500,7 @@ def build_composed(poser: Poser, meta: dict) -> None:
         print(f"{name}: {len(images)} frames (composed from {detail})")
 
 
-def build_pose_clips(meta: dict) -> None:
+def build_pose_clips(ground: int, meta: dict) -> None:
     """Assemble clips from approved key poses, moved by whole-pixel translation."""
     for name, clip in POSE_CLIPS.items():
         missing = sorted(
@@ -378,6 +519,12 @@ def build_pose_clips(meta: dict) -> None:
                     raise SystemExit(f"{src.name}: expected {(FRAME_W, FRAME_H)}, got {im.size}")
                 cache[pose_name] = im
             frame = cache[pose_name]
+            # Ground first, shift second. A pose is drawn at whatever height the
+            # generator left it — the rolled ball sat 12px clear of the grass — and
+            # `Shift` is a deliberate offset from the ground, not a correction to it.
+            # Doing this the other way round would quietly cancel every lift.
+            if not clip.airborne:
+                frame = reground(frame, ground)
             if shift.dx or shift.dy:
                 canvas = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
                 canvas.paste(frame, (shift.dx, shift.dy), frame)
@@ -483,7 +630,7 @@ def main() -> None:
 
     build_generated(poser.ground, meta["clips"])
     build_composed(poser, meta)
-    build_pose_clips(meta)
+    build_pose_clips(poser.ground, meta)
 
     JOBS.write_text(json.dumps(meta, indent=2) + "\n")
     print(f"jobs → {JOBS.relative_to(ROOT)}")

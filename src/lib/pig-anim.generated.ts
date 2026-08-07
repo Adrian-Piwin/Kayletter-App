@@ -6,7 +6,7 @@ export const PIG_SHEET = {
   frameH: 199,
   cols: 12,
   rows: 10,
-  totalFrames: 114,
+  totalFrames: 117,
 } as const;
 
 export const PIG_CLIPS = {
@@ -14,18 +14,20 @@ export const PIG_CLIPS = {
   walk: { start: 6, frames: 8, ms: 120, loop: true },
   walk_letter: { start: 14, frames: 8, ms: 120, loop: true },
   idle_blink: { start: 22, frames: 5, ms: 125, loop: false },
-  idle_sniff: { start: 27, frames: 13, ms: 125, loop: false },
-  idle_scratch: { start: 40, frames: 9, ms: 140, loop: false },
-  idle_letter: { start: 49, frames: 7, ms: 150, loop: true },
-  feed: { start: 56, frames: 8, ms: 150, loop: true, chomps: [3, 5] },
-  play_chase: { start: 64, frames: 8, ms: 110, loop: true },
-  play_bounce: { start: 72, frames: 7, ms: 120, loop: false },
-  play_roll: { start: 79, frames: 6, ms: 130, loop: false },
-  trick_backflip: { start: 85, frames: 6, ms: 110, loop: false },
-  trick_sit: { start: 91, frames: 7, ms: 167, loop: false },
-  trick_dance: { start: 98, frames: 7, ms: 130, loop: false },
-  pet_enjoy: { start: 105, frames: 4, ms: 160, loop: true },
-  pet_end: { start: 109, frames: 5, ms: 150, loop: false },
+  idle_sniff: { start: 27, frames: 7, ms: 140, loop: false },
+  idle_scratch: { start: 34, frames: 9, ms: 90, loop: false },
+  idle_letter: { start: 43, frames: 7, ms: 150, loop: true },
+  pose_sad: { start: 50, frames: 1, ms: 1000, loop: false },
+  feed: { start: 51, frames: 8, ms: 150, loop: true, chomps: [3, 5] },
+  play_chase: { start: 59, frames: 8, ms: 110, loop: true },
+  play_bounce: { start: 67, frames: 6, ms: 110, loop: false },
+  play_roll: { start: 73, frames: 7, ms: 120, loop: false },
+  trick_backflip: { start: 80, frames: 6, ms: 110, loop: false },
+  trick_sit: { start: 86, frames: 7, ms: 150, loop: false },
+  trick_dance: { start: 93, frames: 8, ms: 120, loop: false },
+  trick_playdead: { start: 101, frames: 7, ms: 140, loop: false },
+  pet_enjoy: { start: 108, frames: 4, ms: 160, loop: true },
+  pet_end: { start: 112, frames: 5, ms: 150, loop: false },
 } as const;
 
 export type PigClip = keyof typeof PIG_CLIPS;

@@ -70,11 +70,19 @@
     "idle_sniff": {
       "job_id": "6d3071fd-ac41-4684-9b91-e87d9667dd87",
       "status": "downloaded",
-      "frames": 13,
-      "ms": 125,
+      "frames": 7,
+      "ms": 140,
       "loop": false,
       "skip_input": false,
-      "downloaded_frames": 13
+      "downloaded_frames": 7,
+      "source": "poses",
+      "script": "scripts/pig/derive.py",
+      "poses": [
+        "idle",
+        "sniff_down",
+        "sniff_mid"
+      ],
+      "approved_change": 0.2763
     },
     "idle_blink": {
       "job_id": "a8b7fc25-f588-4eb0-a22b-6d6f9f77ea9a",
@@ -90,10 +98,20 @@
       "job_id": "cd2132d1-8a97-47d9-ac24-344c60483803",
       "status": "downloaded",
       "frames": 9,
-      "ms": 140,
+      "ms": 90,
       "loop": false,
       "skip_input": false,
-      "downloaded_frames": 9
+      "downloaded_frames": 9,
+      "source": "poses",
+      "script": "scripts/pig/derive.py",
+      "poses": [
+        "idle",
+        "scratch_mid",
+        "scratch_up",
+        "scratch_up2"
+      ],
+      "airborne": true,
+      "approved_change": 0.1623
     },
     "idle_letter": {
       "job_id": "736fb7cc-3929-4699-90ac-11ccf44c1459",
@@ -143,8 +161,8 @@
     "play_bounce": {
       "job_id": "a044f254-df5c-4020-9cd8-9b6c0e1f374d",
       "status": "downloaded",
-      "frames": 7,
-      "ms": 120,
+      "frames": 6,
+      "ms": 110,
       "loop": false,
       "skip_input": false,
       "action": "crouching down then jumping straight up off the ground with all four legs tucked under it, and landing back down",
@@ -154,18 +172,34 @@
       "rejected": {
         "af056b8b-25e5-4fd7-ba33-5be0b8224d68": "posed: a lift+scale over generated frames, losing 26% of the pig's mass \u2014 the pig visibly shrank as it hopped"
       },
-      "downloaded_frames": 7,
-      "airborne": true
+      "downloaded_frames": 6,
+      "airborne": true,
+      "source": "poses",
+      "script": "scripts/pig/derive.py",
+      "poses": [
+        "bounce_crouch",
+        "bounce_land",
+        "bounce_tuck",
+        "idle"
+      ],
+      "approved_change": 0.4076
     },
     "play_roll": {
       "status": "downloaded",
-      "source": "composed",
+      "source": "poses",
       "script": "scripts/pig/derive.py",
       "patches": [],
-      "frames": 6,
-      "ms": 130,
+      "frames": 7,
+      "ms": 120,
       "loop": false,
-      "downloaded_frames": 6
+      "downloaded_frames": 7,
+      "poses": [
+        "idle",
+        "roll_ball",
+        "roll_ball2",
+        "roll_tuck"
+      ],
+      "approved_change": 0.5543
     },
     "trick_backflip": {
       "status": "downloaded",
@@ -181,7 +215,7 @@
       "job_id": "e61ecaa8-42df-43ed-9569-54f5bab1596a",
       "status": "downloaded",
       "frames": 7,
-      "ms": 167,
+      "ms": 150,
       "loop": false,
       "skip_input": false,
       "action": "folding its hind legs underneath and dropping its rear all the way to the ground so its back slopes up to the shoulders, front legs planted straight, then pushing back up to standing",
@@ -192,13 +226,21 @@
         "6eb1f2b0-6fd6-4863-b99b-933e099a04a2": "posed: a rotate+squash over generated frames, losing 23% of the pig's mass by the last frame",
         "813effb0-9eb9-49bd-a18a-e79dafd32f32": "reads as a crouch, not a sit: rear-to-front height gap held at +16px across every frame, so the whole pig dropped rather than its rear"
       },
-      "downloaded_frames": 7
+      "downloaded_frames": 7,
+      "source": "poses",
+      "script": "scripts/pig/derive.py",
+      "poses": [
+        "idle",
+        "sit_down",
+        "sit_mid"
+      ],
+      "approved_change": 0.1714
     },
     "trick_dance": {
       "job_id": "67fa0d77-fd7f-4c77-a542-496762faeb4e",
       "status": "downloaded",
-      "frames": 7,
-      "ms": 130,
+      "frames": 8,
+      "ms": 120,
       "loop": false,
       "skip_input": false,
       "action": "hopping from side to side on its hind legs, leaning left then right, then landing square",
@@ -208,7 +250,16 @@
       "rejected": {
         "7553dfcd-5786-4704-b6d7-bae6c1081d02": "posed: a lift+scale over generated frames, losing 17% of the pig's mass"
       },
-      "downloaded_frames": 7
+      "downloaded_frames": 8,
+      "source": "poses",
+      "script": "scripts/pig/derive.py",
+      "poses": [
+        "dance_mid",
+        "dance_up",
+        "idle"
+      ],
+      "airborne": true,
+      "approved_change": 0.3556
     },
     "pet_enjoy": {
       "job_id": "c23daa82-cbd8-44d3-acac-82b6d9abf2a8",
@@ -243,6 +294,34 @@
       "note": "8-frame gait with idle_letter frame-00 pinned as both first and last frame, so the walk loops on the letter-holding pose and the intro can play this instead of bare walk when a note is ready.",
       "downloaded_frames": 9,
       "approved_change": 0.0931
+    },
+    "pose_sad": {
+      "status": "downloaded",
+      "source": "poses",
+      "script": "scripts/pig/derive.py",
+      "poses": [
+        "sad_droop"
+      ],
+      "frames": 1,
+      "ms": 1000,
+      "loop": false,
+      "downloaded_frames": 1,
+      "approved_change": 0.0
+    },
+    "trick_playdead": {
+      "status": "downloaded",
+      "source": "poses",
+      "script": "scripts/pig/derive.py",
+      "poses": [
+        "idle",
+        "playdead_flop",
+        "playdead_mid"
+      ],
+      "frames": 7,
+      "ms": 140,
+      "loop": false,
+      "downloaded_frames": 7,
+      "approved_change": 0.4931
     }
   },
   "pending": []

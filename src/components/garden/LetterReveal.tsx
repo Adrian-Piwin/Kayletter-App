@@ -33,7 +33,12 @@ export default function LetterReveal({
 
   useEffect(() => {
     if (!flying) return;
-    const onKey = () => onSkip();
+    const onKey = (e: KeyboardEvent) => {
+      // Holding a modifier or tabbing about isn't asking to skip the letter.
+      if (e.key.length > 1 && e.key !== "Enter" && e.key !== "Escape") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      onSkip();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [flying, onSkip]);
