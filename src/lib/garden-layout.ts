@@ -84,13 +84,14 @@ const DEPTH_SCALE = { min: 0.4, max: 1.15 };
  * 1 at the pig's depth — the pig holds its place on screen while the world
  * slides past, which is what makes it read as walking.
  */
-const PARALLAX = { min: 0.45, max: 1.17 };
+const PARALLAX = { min: 0.45, max: 1.236 };
 /**
- * Depth the pig stands at, chosen so the parallax rate there is exactly 1. It
- * walks near the front of the field, with the nearest row of all in front of
- * it.
+ * Depth the pig stands at: a little back from the front of the field, so it
+ * walks through the garden rather than along its near edge, with the nearest
+ * row of all still in front of it. `PARALLAX.max` is set from this — the rate
+ * here has to come out at exactly 1, so move the two together.
  */
-const PIG_DEPTH = 0.765;
+const PIG_DEPTH = 0.7;
 /**
  * The pig walks a clear path along the front of the field: the planted rows
  * stop at this depth, leaving the ground between here and the nearest row
@@ -98,9 +99,15 @@ const PIG_DEPTH = 0.765;
  * the pig — the one row beyond the path is rooted low enough (see
  * `FRONT_ROW_REACH`) that its heads only fringe the pig's legs.
  */
-const BACK_ROWS_END = 0.68;
+const BACK_ROWS_END = 0.615;
 /** A field needs this many rows before one of them is spared for the front. */
 const ROWS_FOR_A_FRONT_ROW = 3;
+/**
+ * Depth of that one row ahead of the path. It stops short of the very front of
+ * the ramp, so the nearest flowers sit back off the bottom edge of the scene
+ * and are drawn a touch smaller instead of looming over it.
+ */
+const FRONT_ROW_DEPTH = 0.9;
 /**
  * How far past the pig's feet the tallest sunflower in the front row may reach,
  * in px at full size — about the height of its legs. The row is rooted from
@@ -110,7 +117,7 @@ const ROWS_FOR_A_FRONT_ROW = 3;
  * a sprite's height is: the ramp works in shares of the scene, so the same drop
  * expressed there would let the overlap grow with the size of the screen.
  */
-const FRONT_ROW_REACH = 26;
+const FRONT_ROW_REACH = 29;
 /**
  * Safety valve on that reach: however tall the flowers or short the screen, the
  * front row is never rooted more than this share of the gap between rows below
@@ -242,13 +249,14 @@ export function planField(
   const hasFrontRow = rowsUsed >= ROWS_FOR_A_FRONT_ROW;
   /**
    * Depth of each row, far to near. The planted rows crowd into the back of the
-   * field and stop at the path; the one row beyond it sits at the very front.
+   * field and stop at the path; the one row beyond it sits ahead of the pig,
+   * just short of the front of the ramp.
    */
   const depths =
     rowsUsed === 1
       ? [PIG_DEPTH]
       : hasFrontRow
-        ? [...spread(rowsUsed - 1, 0, BACK_ROWS_END), 1]
+        ? [...spread(rowsUsed - 1, 0, BACK_ROWS_END), FRONT_ROW_DEPTH]
         : spread(rowsUsed, 0, 1);
 
   const usableWidth = viewportWidth * (1 - cfg.margin / 50);
@@ -278,7 +286,7 @@ export function planField(
   /** A px measurement as the share of the scene's height it covers. */
   const heightPct = (px: number) => (px / viewportHeight) * 100;
   /** Tallest sunflower the front row can grow, at the size it draws them. */
-  const tallestFront = flowerHeight("bloom", true) * scaleAt(1) * cfg.sizeScale;
+  const tallestFront = flowerHeight("bloom", true) * scaleAt(FRONT_ROW_DEPTH) * cfg.sizeScale;
   /**
    * Where the front row is rooted. Low enough that even its tallest flower tops
    * out around the pig's legs, but never below the ramp's own baseline (short
@@ -286,8 +294,8 @@ export function planField(
    */
   const frontRowBottomPct = clamp(
     pigBottomPct + heightPct(FRONT_ROW_REACH * cfg.sizeScale - tallestFront),
-    bottomAt(1) - rowGapPct * FRONT_ROW_MAX_DROP,
-    bottomAt(1)
+    bottomAt(FRONT_ROW_DEPTH) - rowGapPct * FRONT_ROW_MAX_DROP,
+    bottomAt(FRONT_ROW_DEPTH)
   );
 
   /** Grass scattered across a band, so no stretch of ground reads as bare. */

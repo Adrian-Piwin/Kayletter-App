@@ -1,8 +1,8 @@
 import { PIG_SHEET } from "@/lib/pig-anim.generated";
 
-/** On-screen pig box heights — optically match the pre-sheet 102/110px look. */
-export const DISPLAY_HEIGHT = 110;
-export const DISPLAY_HEIGHT_MOBILE = 102;
+/** On-screen pig box heights. */
+export const DISPLAY_HEIGHT = 124;
+export const DISPLAY_HEIGHT_MOBILE = 114;
 
 /**
  * Where the snout sits, as a fraction of the frame width in from the pig's
